@@ -1,0 +1,17 @@
+{
+  "name": "@lexhall/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./repositories": "./src/repositories/index.ts"
+  },
+  "scripts": {
+    "reset": "node scripts/reset.ts",
+    "seed": "node scripts/seed.ts",
+    "reindex": "node scripts/reindex.ts",
+    "stats": "node scripts/stats.ts"
+  },
+  "dependencies": { "@lexhall/core": "*" }
+}

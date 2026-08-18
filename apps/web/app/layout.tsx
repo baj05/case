@@ -1,0 +1,53 @@
+import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import { BRAND } from '@/lib/brand';
+import './globals.css';
+
+/* Fonts are self-hosted at build time: no third-party request at runtime, and
+   `display: swap` with a preloaded subset keeps CLS at zero. Only the weights
+   DESIGN.md actually specifies are loaded. */
+const display = Plus_Jakarta_Sans({
+  subsets: ['latin'], weight: ['700', '800'], variable: '--font-display-loaded', display: 'swap',
+});
+const body = Hanken_Grotesk({
+  subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-body-loaded', display: 'swap',
+});
+const mono = JetBrains_Mono({
+  subsets: ['latin'], weight: ['500'], variable: '--font-mono-loaded', display: 'swap',
+});
+
+export const metadata: Metadata = {
+  title: { default: `${BRAND.name} — ${BRAND.tagline}`, template: `%s · ${BRAND.name}` },
+  description:
+    'Search verified advocates, law firms and chambers by legal issue, court, jurisdiction and city. '
+    + 'Listings are compiled from official Bar Council registers with full source attribution.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  openGraph: { type: 'website', siteName: BRAND.name, title: BRAND.name, description: BRAND.tagline },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Never block zoom: WCAG 1.4.4 Resize Text.
+  maximumScale: 5,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#faf8ff' },
+    { media: '(prefers-color-scheme: dark)', color: '#10131c' },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en-IN">
+      <body className={`${display.variable} ${body.variable} ${mono.variable}`}>
+        <a href="#main" className="skip-link">Skip to main content</a>
+        <Header />
+        <main id="main">{children}</main>
+        <Footer />
+      </body>
+    </html>
+  );
+}

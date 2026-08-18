@@ -1,0 +1,26 @@
+{
+  "name": "lexhall",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Legal professional network, discovery and legal-operations platform. India launch market, jurisdiction-abstracted for international expansion.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "setup": "npm install && npm run db:reset && npm run ingest && npm run db:seed",
+    "dev": "npm run dev --workspace=@lexhall/web",
+    "build": "npm run build --workspace=@lexhall/web",
+    "start": "npm run start --workspace=@lexhall/web",
+    "typecheck": "cd apps/web && npx tsc --noEmit",
+    "db:reset": "npm run reset --workspace=@lexhall/db",
+    "db:seed": "npm run seed --workspace=@lexhall/db",
+    "db:stats": "npm run stats --workspace=@lexhall/db",
+    "ingest": "npm run ingest --workspace=@lexhall/ingestion",
+    "ingest:dry": "npm run ingest:dry --workspace=@lexhall/ingestion",
+    "test": "npm run test --workspace=@lexhall/core"
+  }
+}

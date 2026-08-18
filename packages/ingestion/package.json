@@ -1,0 +1,12 @@
+{
+  "name": "@lexhall/ingestion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "ingest": "node cli.ts",
+    "ingest:dry": "node cli.ts --dry-run"
+  },
+  "dependencies": { "@lexhall/core": "*", "@lexhall/db": "*" }
+}
