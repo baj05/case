@@ -1398,3 +1398,71 @@ details[open] > .filter-summary::after { content: '–'; }
   }
   .media-card, .advo-card, .result-card, .plan, .step-card { will-change: transform; }
 }
+
+/* --- hero cut-out figure ----------------------------------------------- */
+.hero-figure {
+  position: relative;
+  z-index: 1;
+  width: min(92%, 440px);
+  height: auto;
+  margin-inline: auto;
+  margin-top: -4%;
+  filter: drop-shadow(0 22px 34px rgba(15, 23, 42, 0.26));
+}
+
+/* --- colour-block advocate cards (reference row) ----------------------- */
+.block-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.block-card {
+  position: relative;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+.block-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.block-blue { background: linear-gradient(165deg, #8fd6fb 0%, #b9e6fd 100%); }
+.block-orange { background: linear-gradient(165deg, var(--action-orange) 0%, #ff9b6f 100%); }
+.block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
+
+.block-photo {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-top: 18px;
+  min-height: 150px;
+}
+.block-photo img {
+  width: auto;
+  max-width: 78%;
+  max-height: 190px;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.22));
+}
+
+/* Inner white card, as the reference overlays on its colour blocks. */
+.block-info {
+  margin: 12px;
+  padding: 14px 16px;
+  background: var(--surface-lowest);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: var(--shadow-sm);
+}
+.block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
+.block-area { font-size: 0.8125rem; color: var(--primary); font-weight: 600; }
+.block-meta { font-size: 0.75rem; color: var(--on-surface-variant); }
+.block-fee {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.125rem;
+  letter-spacing: -0.02em; margin-top: 4px;
+}
+.block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }

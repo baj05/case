@@ -89,3 +89,44 @@ export const getJudges = cache(() =>
     tenureStart: string | null; tenureEnd: string | null; sourceUrl: string | null;
     lastVerifiedAt: string | null; courtName: string | null; courtSlug: string | null;
   }>);
+
+/**
+ * Locally-supplied assets, synced by `npm run assets:sync`.
+ * The hero prefers a hand-supplied cut-out figure and falls back to licensed
+ * court photography, so the page is never broken by a missing file.
+ */
+export const getLocalAssets = cache(async () => {
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+    const raw = await readFile(join(process.cwd(), 'public', 'img', 'local', 'manifest.json'), 'utf8');
+    return JSON.parse(raw) as { hero: Array<{ file: string; name: string }>; figures: Array<{ file: string; name: string }>; backgrounds: Array<{ file: string; name: string }> };
+  } catch {
+    return { hero: [], figures: [], backgrounds: [] };
+  }
+});
+
+/** Advocates with a sourced photograph, for the colour-block feature row. */
+export const getFeaturedWithPhotos = cache((limit = 3) =>
+  db().prepare(
+    `SELECT p.slug, p.display_name AS displayName, p.body_role AS bodyRole, p.photo_url AS photoUrl,
+            p.verification_level AS verificationLevel, p.years_experience AS yearsExperience,
+            p.accepts_consultations AS acceptsConsultations,
+            l.name AS locationName, pb.short_name AS bodyShort,
+            fs.min_consult_minor AS minConsultMinor, fs.currency_code AS currencyCode,
+            (SELECT pa.name FROM professional_practice_area ppa
+               JOIN practice_area pa ON pa.id = ppa.practice_area_id
+              WHERE ppa.professional_id = p.id ORDER BY ppa.is_primary DESC LIMIT 1) AS primaryArea
+       FROM professional p
+       LEFT JOIN location l ON l.id = p.primary_location_id
+       LEFT JOIN professional_body pb ON pb.id = p.professional_body_id
+       LEFT JOIN professional_fee_summary fs ON fs.professional_id = p.id
+      WHERE p.is_published = 1 AND p.photo_url IS NOT NULL AND p.accepts_consultations = 1
+      ORDER BY p.verification_level DESC, fs.min_consult_minor DESC
+      LIMIT ?`,
+  ).all(limit) as Array<{
+    slug: string; displayName: string; bodyRole: string | null; photoUrl: string | null;
+    verificationLevel: number; yearsExperience: number | null; acceptsConsultations: number;
+    locationName: string | null; bodyShort: string | null;
+    minConsultMinor: number | null; currencyCode: string | null; primaryArea: string | null;
+  }>);

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
 import { Notice } from '@/components/States';
-import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady } from '@/lib/data';
+import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, getFeaturedWithPhotos, getLocalAssets, databaseReady } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ const PA_IMAGE: Record<string, string> = {
   INSOLVENCY: '/img/courts/court-karnataka-hc.jpg',
 };
 
-export default function HomePage() {
+export default async function HomePage() {
   if (!databaseReady()) {
     return (
       <div className="container section">
@@ -50,6 +50,11 @@ export default function HomePage() {
   const highCourts = getCourts(2).filter((c) => c.isBench === 0);
   const councils = getBarCouncils();
   const topAreas = areas.filter((a) => a.parentId === null);
+  const featured = getFeaturedWithPhotos(3);
+  const assets = await getLocalAssets();
+  // Prefer a hand-supplied cut-out figure; fall back to licensed court
+  // photography so a missing file never breaks the hero.
+  const heroFigure = assets.hero.find((h) => h.name === 'advocate')?.file ?? assets.hero[0]?.file ?? null;
 
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
@@ -98,17 +103,31 @@ export default function HomePage() {
           {/* Photo stage with floating real-data cards — the reference kit's
               hero composition, using a photograph of an actual court this
               platform indexes rather than a stock figure. */}
-          <div className="photo-stage">
-            <Image
-              src="/img/courts/hero-madras-hc-towers.jpg"
-              alt="The Madras High Court, Chennai"
-              width={1120}
-              height={1400}
-              priority
-              sizes="(max-width: 940px) 92vw, 520px"
-              className="photo-stage-img"
-            />
-            <span className="photo-stage-caption">Madras High Court, Chennai</span>
+          <div className={heroFigure ? 'photo-stage figure-stage' : 'photo-stage'}>
+            {heroFigure ? (
+              <Image
+                src={heroFigure}
+                alt=""
+                width={1120}
+                height={1400}
+                priority
+                sizes="(max-width: 940px) 88vw, 460px"
+                className="hero-figure"
+              />
+            ) : (
+              <>
+                <Image
+                  src="/img/courts/hero-madras-hc-towers.jpg"
+                  alt="The Madras High Court, Chennai"
+                  width={1120}
+                  height={1400}
+                  priority
+                  sizes="(max-width: 940px) 92vw, 520px"
+                  className="photo-stage-img"
+                />
+                <span className="photo-stage-caption">Madras High Court, Chennai</span>
+              </>
+            )}
 
             <div className="float-card float-tl">
               <span className="float-label">Register coverage</span>
@@ -156,6 +175,62 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================ FEATURED (colour blocks) */}
+      {featured.length > 0 && (
+        <section className="container section-tight">
+          <div className="stack gap-5">
+            <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div className="stack gap-2">
+                <p className="t-label-mono ink-variant">Taking bookings now</p>
+                <h2 className="t-headline-lg" style={{ maxWidth: '22ch' }}>
+                  Advocates you can book <span className="hl">today</span>.
+                </h2>
+              </div>
+              <Link href="/search?accepting=1" className="btn btn-secondary btn-pill">See everyone available</Link>
+            </div>
+
+            <div className="block-row">
+              {featured.map((f, i) => (
+                <article key={f.slug} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
+                  <div className="block-photo">
+                    {f.photoUrl && (
+                      <Image
+                        src={f.photoUrl}
+                        alt={`Photograph of ${f.displayName}, published by their Bar Council`}
+                        width={320}
+                        height={400}
+                        sizes="(max-width: 760px) 90vw, 300px"
+                      />
+                    )}
+                  </div>
+
+                  <div className="block-info">
+                    <span className="block-name">{f.displayName}</span>
+                    {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
+                    <span className="block-meta">
+                      {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
+                    </span>
+                    {f.minConsultMinor !== null && (
+                      <span className="block-fee">
+                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
+                        <span className="block-fee-sub"> first consultation</span>
+                      </span>
+                    )}
+                    <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
+                      Book a time
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <p className="t-caption">
+              Real records from the Bar Council register, with their official photographs. Fees are
+              declared by the professional; ordering here is by verification level, never by payment.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* ========================================================== ADVO AI */}
       <section className="container section-tight">
