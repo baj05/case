@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { SearchInput } from '@/components/SearchInput';
+import { DualSearch } from '@/components/DualSearch';
 import { Notice } from '@/components/States';
 import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
@@ -145,7 +145,7 @@ export default function HomePage() {
       {/* ============================================= SEARCH (the product) */}
       <section className="container" style={{ marginTop: 8 }}>
         <div className="glass stack gap-3" style={{ padding: 'clamp(18px, 3vw, 28px)' }}>
-          <SearchInput />
+          <DualSearch />
           <div className="row wrap gap-2">
             <span className="t-caption" style={{ alignSelf: 'center' }}>Try</span>
             {EXAMPLES.map((ex) => (

@@ -1338,3 +1338,63 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (min-width: 1000px) { .advo-compact { grid-template-columns: minmax(0, 1fr); } }
 .advo-compact > .card { position: static; }
 .advo-compact .advo-log { max-height: 34vh; min-height: 180px; }
+
+/* --- dual-field discovery search (Practo pattern) ---------------------- */
+.dual-search {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) 1px minmax(0, 1.6fr) auto;
+  align-items: center;
+  gap: 0;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-full);
+  padding: 6px 6px 6px 4px;
+  box-shadow: var(--shadow-md);
+  transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+.dual-search:focus-within { border-color: var(--trust-navy); box-shadow: var(--shadow-lg), 0 0 0 4px rgba(20,184,166,0.16); }
+.dual-field { display: flex; align-items: center; gap: 8px; min-width: 0; padding-inline: 12px; }
+.dual-icon { color: var(--on-surface-variant); flex: none; font-size: 1rem; }
+.dual-input {
+  flex: 1 1 auto; min-width: 0; min-height: 48px;
+  border: 0; background: transparent; font-size: 0.9375rem;
+}
+.dual-input:focus { outline: none; }
+.dual-divider { width: 1px; height: 26px; background: var(--outline-variant); }
+.dual-clear {
+  border: 0; background: transparent; cursor: pointer; flex: none;
+  width: 24px; height: 24px; border-radius: 50%; color: var(--on-surface-variant); font-size: 1rem;
+}
+.dual-clear:hover { background: var(--surface-container); }
+.dual-submit { border-radius: var(--r-full); flex: none; }
+.dual-panel { top: calc(100% + 10px); }
+.dual-sm { padding: 4px 4px 4px 2px; box-shadow: var(--shadow-sm); }
+.dual-sm .dual-input { min-height: 40px; font-size: 0.875rem; }
+
+/* Below the split point the two fields stack; a squeezed side-by-side pair is
+   unusable on a phone. */
+@media (max-width: 720px) {
+  .dual-search {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: var(--r-lg);
+    padding: 10px;
+    gap: 8px;
+  }
+  .dual-divider { display: none; }
+  .dual-field { border: 1px solid var(--outline-variant); border-radius: var(--r); padding: 2px 10px; }
+  .dual-submit { width: 100%; border-radius: var(--r); }
+}
+
+/* --- motion: scroll reveal, respecting reduced-motion ------------------ */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { animation: reveal-in 620ms var(--ease) both; }
+  .reveal-2 { animation-delay: 70ms; }
+  .reveal-3 { animation-delay: 140ms; }
+  .reveal-4 { animation-delay: 210ms; }
+  @keyframes reveal-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+  .media-card, .advo-card, .result-card, .plan, .step-card { will-change: transform; }
+}

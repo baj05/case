@@ -9,6 +9,7 @@ export function Footer() {
         { href: '/search', label: 'Search professionals' },
         { href: '/practice-areas', label: 'Practice areas' },
         { href: '/courts', label: 'Courts and tribunals' },
+        { href: '/judges', label: 'Supreme Court judges' },
         { href: '/bar-councils', label: 'State Bar Councils' },
       ],
     },

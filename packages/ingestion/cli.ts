@@ -18,6 +18,7 @@ const { values } = parseArgs({
     'no-photos': { type: 'boolean', default: false },
     strategy: { type: 'string', default: 'reader' },
     'init-db': { type: 'boolean', default: false },
+    judges: { type: 'boolean', default: false },
   },
   allowPositionals: false,
 });
@@ -31,6 +32,13 @@ const strategy = values.strategy === 'http' ? 'http' : 'reader';
 const started = Date.now();
 
 process.stdout.write(`\nLexhall ingestion — Bar Council of India\n${'─'.repeat(64)}\n`);
+
+if (values.judges) {
+  const { ingestJudges } = await import('./src/pipeline.ts');
+  const r = await ingestJudges({ dryRun: Boolean(values['dry-run']), onProgress: (m) => process.stdout.write(`${m}\n`) });
+  process.stdout.write(`${'─'.repeat(64)}\njudges seen ${r.seen}, created ${r.created}, updated ${r.updated}, with parent HC ${r.linked}\n\n`);
+  process.exit(0);
+}
 
 try {
   const report = await ingestBci({

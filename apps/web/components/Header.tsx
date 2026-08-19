@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 import { BRAND } from '@/lib/brand';
 
 const NAV = [
-  { href: '/advo-ai', label: 'Advo AI' },
   { href: '/search', label: 'Find a professional' },
   { href: '/practice-areas', label: 'Practice areas' },
   { href: '/courts', label: 'Courts' },
+  { href: '/judges', label: 'Judges' },
   { href: '/bar-councils', label: 'Bar Councils' },
   { href: '/for-professionals', label: 'For professionals' },
 ];

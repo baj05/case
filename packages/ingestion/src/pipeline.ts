@@ -8,7 +8,7 @@
  * Reusable across sources: adding a State Bar Council roll means writing an
  * adapter that yields MemberRecord-shaped rows, not touching this file.
  */
-import { db, now, transaction, toJson } from '@lexhall/db';
+import { db, now, transaction, toJson, slugify } from '@lexhall/db';
 import {
   registerSource, recordRobotsCheck, startRun, finishRun, storeRaw, markRawState,
   logIssue, upsertProfessional, linkCourt, linkLanguage, applyPublishGate,
@@ -347,6 +347,72 @@ export async function ingestBci(options: IngestOptions): Promise<IngestReport> {
       `strategy=${options.strategy} attempts=${options.attempts} incomplete=${incompleteRecords}`);
 
     return { runId, councilsSeen: councils.length, councilsStored, totals, incompleteRecords, photosStored, publishGate, indexed, warnings };
+  } catch (error) {
+    finishRun(runId, 'failed', totals, (error as Error).message);
+    throw error;
+  }
+}
+
+/**
+ * Ingest judges. Separate entry point from the advocate pipeline because the
+ * source, cadence and publish rules differ — and because judge records carry a
+ * hard constraint the advocate path does not: no evaluative data, ever.
+ */
+export async function ingestJudges(options: { dryRun: boolean; onProgress?: (m: string) => void }): Promise<{
+  seen: number; created: number; updated: number; linked: number;
+}> {
+  const log = options.onProgress ?? (() => {});
+  const { JUDGES_SOURCE, fetchJudges } = await import('./sources/judges.ts');
+  seedReferenceData();
+  const sourceId = registerSource(JUDGES_SOURCE);
+  const runId = startRun(sourceId, 'manual', options.dryRun);
+  const totals: RunTotals = { pagesFetched: 1, recordsSeen: 0, created: 0, updated: 0, unchanged: 0, failed: 0 };
+  let linked = 0;
+
+  try {
+    const { judges, sourceUrl } = await fetchJudges();
+    log(`parsed ${judges.length} sitting Supreme Court judges`);
+
+    const h = db();
+    const sc = h.prepare(`SELECT id FROM court WHERE slug = 'supreme-court-of-india'`).get() as { id: number } | undefined;
+
+    for (const j of judges) {
+      totals.recordsSeen += 1;
+      const ref = `judge:${fold(j.fullName).replace(/\s+/g, '-')}`;
+      const raw = storeRaw({ sourceId, runId, sourceRef: ref, sourceUrl, payload: j });
+      if (options.dryRun) { totals.created += 1; continue; }
+      if (!raw.changed) { totals.unchanged += 1; continue; }
+
+      const slug = slugify(j.displayName) || ref;
+      const ts = now();
+      const existing = h.prepare(`SELECT id FROM judge WHERE slug = ?`).get(slug) as { id: number } | undefined;
+
+      if (existing) {
+        h.prepare(
+          `UPDATE judge SET full_name=?, court_id=COALESCE(?, court_id), designation=?,
+             tenure_start=?, tenure_end=?, source_url=?, last_verified_at=?, updated_at=? WHERE id=?`,
+        ).run(j.displayName, sc?.id ?? null, j.designation, j.appointedOn, j.retiresOn, sourceUrl, ts, ts, existing.id);
+        totals.updated += 1;
+      } else {
+        h.prepare(
+          `INSERT INTO judge (full_name, slug, court_id, designation, tenure_start, tenure_end,
+             source_url, last_verified_at, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        ).run(j.displayName, slug, sc?.id ?? null, j.designation, j.appointedOn, j.retiresOn, sourceUrl, ts, ts, ts);
+        totals.created += 1;
+      }
+      if (j.parentHighCourt) linked += 1;
+      markRawState(raw.rawId, 'linked');
+
+      if (!j.designation) {
+        logIssue({ runId, rawRecordId: raw.rawId, code: 'incomplete_extraction', severity: 'info',
+          detail: `No designation parsed for ${j.displayName}.` });
+      }
+    }
+
+    finishRun(runId, options.dryRun ? 'dry_run' : 'succeeded', totals, undefined,
+      `judges: ${totals.created} new, ${totals.updated} updated, ${linked} with a parent High Court`);
+    return { seen: totals.recordsSeen, created: totals.created, updated: totals.updated, linked };
   } catch (error) {
     finishRun(runId, 'failed', totals, (error as Error).message);
     throw error;

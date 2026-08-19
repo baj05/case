@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { SearchInput } from '@/components/SearchInput';
+import { DualSearch } from '@/components/DualSearch';
 import { ResultCard } from '@/components/ResultCard';
 import { FilterPanel, type FilterGroupSpec } from '@/components/FilterPanel';
 import { EmptyState, Notice, ResultSkeletonList } from '@/components/States';
@@ -31,10 +31,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   const sp = await searchParams;
   const q = one(sp.q) ?? '';
+  // `near` is a free-text place from the dual search; the classifier resolves
+  // it, so it is appended to the query rather than needing its own lookup.
+  const near = one(sp.near) ?? '';
+  const combinedQuery = [q, near].filter(Boolean).join(' ');
   const page = Math.max(1, Number(one(sp.page) ?? '1') || 1);
 
   const filters = {
-    q,
+    q: combinedQuery,
     practice: one(sp.practice),
     location: one(sp.location),
     court: one(sp.court),
@@ -134,7 +138,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <div className="container section-tight stack gap-6">
       {/* --------------------------------------------------------- search bar */}
       <div className="stack gap-3">
-        <SearchInput defaultValue={q} size="md" />
+        <DualSearch defaultQuery={q} defaultLocation={one(sp.near) ?? ''} size="sm" />
 
         {/* What we understood, and how to correct it. */}
         {(q || outcome.appliedFilters.length > 0) && (

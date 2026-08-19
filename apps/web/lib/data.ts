@@ -74,3 +74,18 @@ export const getImageCredits = cache(async () => {
     }>;
   } catch { return []; }
 });
+
+/** Judges — factual profiles only. No ratings, by design (COMPLIANCE C-14). */
+export const getJudges = cache(() =>
+  db().prepare(
+    `SELECT j.id, j.full_name AS fullName, j.slug, j.designation,
+            j.tenure_start AS tenureStart, j.tenure_end AS tenureEnd,
+            j.source_url AS sourceUrl, j.last_verified_at AS lastVerifiedAt,
+            c.name AS courtName, c.slug AS courtSlug
+       FROM judge j LEFT JOIN court c ON c.id = j.court_id
+      ORDER BY CASE WHEN j.designation LIKE '%Chief Justice%' THEN 0 ELSE 1 END, j.full_name`,
+  ).all() as Array<{
+    id: number; fullName: string; slug: string; designation: string | null;
+    tenureStart: string | null; tenureEnd: string | null; sourceUrl: string | null;
+    lastVerifiedAt: string | null; courtName: string | null; courtSlug: string | null;
+  }>);
