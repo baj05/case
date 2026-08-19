@@ -3,6 +3,7 @@ import { Avatar } from './Avatar';
 import { VerificationBadge, KindChip } from './Badges';
 import { MatchScore } from './MatchScore';
 import { relativeDate } from '@/lib/format';
+import { feeSummary, formatMinor } from '@lexhall/db';
 import type { SearchHit } from '@lexhall/core';
 
 /**
@@ -15,9 +16,14 @@ import type { SearchHit } from '@lexhall/core';
 export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScore?: boolean }) {
   const p = hit.professional;
   const primaryCourts = p.courts.slice(0, 3);
+  // Fee and years are what people actually compare on, so they get their own
+  // column rather than being buried in the body — Practo's listing model.
+  const fees = feeSummary(p.id);
+  const years = p.yearsExperience
+    ?? (p.enrolmentYear ? new Date().getFullYear() - p.enrolmentYear : null);
 
   return (
-    <article className="result-card">
+    <article className="result-card lift">
       <Link href={`/advocates/${p.slug}`} aria-label={`Profile of ${p.displayName}`}>
         <Avatar name={p.displayName} src={p.photoUrl} size={64} />
       </Link>
@@ -59,13 +65,43 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
           </p>
         )}
 
+        {/* Scannable facts row: years, fee, availability. */}
+        <div className="fact-strip">
+          <span className="fact-item">
+            <span className="fact-label">Experience</span>
+            <span className="fact-value">{years !== null ? `${years} yrs` : 'Not stated'}</span>
+          </span>
+          <span className="fact-item">
+            <span className="fact-label">Consultation</span>
+            <span className="fact-value">
+              {fees?.minConsultMinor != null
+                ? formatMinor(fees.minConsultMinor, fees.currencyCode)
+                : 'Fee not published'}
+            </span>
+          </span>
+          <span className="fact-item">
+            <span className="fact-label">Availability</span>
+            <span className="fact-value">
+              {p.acceptsConsultations ? 'Bookable' : 'Enquiry only'}
+            </span>
+          </span>
+          {fees?.hasFilingFees === 1 && (
+            <span className="fact-item">
+              <span className="fact-label">Filing charges</span>
+              <span className="fact-value">Published</span>
+            </span>
+          )}
+        </div>
+
         <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 2 }}>
           {showScore && <MatchScore score={hit.score} factors={hit.factors} />}
           {/* Must wrap: at 320px these two controls together exceed the card. */}
           <div className="row wrap gap-2">
             <Link href={`/advocates/${p.slug}`} className="btn btn-secondary btn-sm">View profile</Link>
             {p.acceptsConsultations ? (
-              <Link href={`/advocates/${p.slug}/consult`} className="btn btn-primary btn-sm">Request consultation</Link>
+              <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary btn-sm">
+                Book{fees?.minConsultMinor != null ? ` · ${formatMinor(fees.minConsultMinor, fees.currencyCode)}` : ''}
+              </Link>
             ) : (
               <span className="chip chip-outline" title="This professional has not yet enabled consultation requests">
                 Not accepting requests

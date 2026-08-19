@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, Hanken_Grotesk, JetBrains_Mono, Newsreader } from 'next/font/google';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdvoLauncher } from '@/components/AdvoLauncher';
@@ -17,6 +17,14 @@ const body = Hanken_Grotesk({
 });
 const mono = JetBrains_Mono({
   subsets: ['latin'], weight: ['500'], variable: '--font-mono-loaded', display: 'swap',
+});
+/* A restrained serif for display and pull-quotes. Plus Jakarta Sans alone reads
+   friendly-geometric; the serif supplies the institutional register the brief
+   asks for ("modern private chambers") without turning the UI into a law-firm
+   letterhead. Two weights only — the brief also says do not load ten. */
+const serif = Newsreader({
+  subsets: ['latin'], weight: ['400', '600'], style: ['normal', 'italic'],
+  variable: '--font-serif-loaded', display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -43,7 +51,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN">
-      <body className={`${display.variable} ${body.variable} ${mono.variable}`}>
+      <body className={`${display.variable} ${body.variable} ${mono.variable} ${serif.variable}`}>
         <a href="#main" className="skip-link">Skip to main content</a>
         <Header />
         <main id="main">{children}</main>

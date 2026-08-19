@@ -26,7 +26,10 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
 
   const activeCount = groups.reduce((n, g) => n + (params.get(g.key) ? 1 : 0), 0)
     + (params.get('verified') === '1' ? 1 : 0)
-    + (params.get('accepting') === '1' ? 1 : 0);
+    + (params.get('accepting') === '1' ? 1 : 0)
+    + (params.get('available') === '1' ? 1 : 0)
+    + (params.get('feemax') ? 1 : 0)
+    + (params.get('years') ? 1 : 0);
 
   function withParam(key: string, value: string | null): string {
     const next = new URLSearchParams(params.toString());
@@ -77,6 +80,41 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
         );
       })}
 
+      {/* Fee band and experience — the two things people actually compare on,
+          the way Practo surfaces consultation fee and years of experience. */}
+      <details className="filter-group" open={Boolean(params.get('feemax') || params.get('years'))}>
+        <summary className="filter-summary"><span>Fee and experience</span></summary>
+        <div className="stack gap-3" style={{ marginTop: 10 }}>
+          <div className="stack gap-1">
+            <span className="t-caption">Maximum first-consultation fee</span>
+            <div className="row wrap gap-1">
+              {[['Any', ''], ['₹1,000', '100000'], ['₹2,500', '250000'], ['₹5,000', '500000'], ['₹10,000', '1000000']].map(([label, v]) => (
+                <button
+                  key={label} type="button"
+                  className={`chip chip-button ${(params.get('feemax') ?? '') === v ? 'chip-primary' : 'chip-outline'}`}
+                  aria-pressed={(params.get('feemax') ?? '') === v}
+                  onClick={() => router.push(withParam('feemax', v || null))}
+                >{label}</button>
+              ))}
+            </div>
+            <span className="t-caption">Only professionals who have published a fee can be filtered this way.</span>
+          </div>
+          <div className="stack gap-1">
+            <span className="t-caption">Minimum years in practice</span>
+            <div className="row wrap gap-1">
+              {[['Any', ''], ['5+', '5'], ['10+', '10'], ['20+', '20']].map(([label, v]) => (
+                <button
+                  key={label} type="button"
+                  className={`chip chip-button ${(params.get('years') ?? '') === v ? 'chip-primary' : 'chip-outline'}`}
+                  aria-pressed={(params.get('years') ?? '') === v}
+                  onClick={() => router.push(withParam('years', v || null))}
+                >{label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </details>
+
       <div className="filter-group stack gap-2">
         <span className="filter-summary" style={{ cursor: 'default' }}>Trust and availability</span>
         <label className="checkbox-row">
@@ -99,6 +137,17 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
           <span className="stack gap-1">
             <span className="t-body-sm" style={{ fontWeight: 600 }}>Accepting consultation requests</span>
             <span className="t-caption">Requires a claimed profile</span>
+          </span>
+        </label>
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={params.get('available') === '1'}
+            onChange={(e) => router.push(withParam('available', e.target.checked ? '1' : null))}
+          />
+          <span className="stack gap-1">
+            <span className="t-body-sm" style={{ fontWeight: 600 }}>Has published availability</span>
+            <span className="t-caption">Real published times, not a badge — exact slots shown on the booking page</span>
           </span>
         </label>
       </div>

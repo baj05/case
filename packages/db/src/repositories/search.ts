@@ -24,7 +24,14 @@ export interface SearchFilters {
   acceptingOnly?: boolean;
   claimedOnly?: boolean;
   courtTier?: number;
-  sort?: 'relevance' | 'verification' | 'name' | 'recently_verified';
+  /** Maximum first-consultation fee in minor units. */
+  feeMaxMinor?: number;
+  /** Minimum years in practice. */
+  minYears?: number;
+  /** Only professionals with bookable slots in the next 7 days. */
+  availableSoon?: boolean;
+  sort?: 'relevance' | 'verification' | 'name' | 'recently_verified'
+    | 'fee_asc' | 'fee_desc' | 'experience_desc';
   page?: number;
   perPage?: number;
 }
@@ -124,17 +131,42 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
     params.push(...ftsScores.keys());
   }
 
+  // Fee constraints run against the denormalised summary, so sorting by price
+  // costs one join rather than a correlated subquery per row.
+  if (filters.feeMaxMinor !== undefined) {
+    where.push(`(fs.min_consult_minor IS NOT NULL AND fs.min_consult_minor <= ?)`);
+    params.push(Math.round(filters.feeMaxMinor));
+  }
+  if (filters.minYears !== undefined && filters.minYears > 0) {
+    // enrolment_year is the fallback when years_experience was never declared.
+    where.push(`(COALESCE(d.years_experience, CASE WHEN p.enrolment_year IS NOT NULL
+                 THEN CAST(strftime('%Y','now') AS INTEGER) - p.enrolment_year END) >= ?)`);
+    params.push(Math.trunc(filters.minYears));
+  }
+  if (filters.availableSoon) {
+    // Real availability, not a decorative badge: the professional must have an
+    // active rule AND no blanket block. Slot-level truth is confirmed by
+    // generateSlots on the booking page.
+    where.push(`EXISTS (SELECT 1 FROM availability_rule ar
+                         WHERE ar.professional_id = d.professional_id AND ar.is_active = 1)`);
+  }
+
   const candidates = h.prepare(
     `SELECT d.professional_id AS id, d.verification_level, d.years_experience, d.accepts_consultations,
             d.profile_completeness, d.jurisdiction_id, d.location_path, d.practice_area_ids,
-            d.court_ids, d.name_text, d.data_confidence
+            d.court_ids, d.name_text, d.data_confidence,
+            fs.min_consult_minor AS fee_min, fs.currency_code AS fee_currency,
+            p.enrolment_year AS enrolment_year
        FROM professional_search_doc d
+       JOIN professional p ON p.id = d.professional_id
+       LEFT JOIN professional_fee_summary fs ON fs.professional_id = d.professional_id
       WHERE ${where.join(' AND ')}
       LIMIT 2000`,
   ).all(...params) as Array<{
     id: number; verification_level: number; years_experience: number | null; accepts_consultations: number;
     profile_completeness: number; jurisdiction_id: number | null; location_path: string;
     practice_area_ids: string; court_ids: string; name_text: string; data_confidence: number;
+    fee_min: number | null; fee_currency: string | null; enrolment_year: number | null;
   }>;
 
   // ---- rank ---------------------------------------------------------------
@@ -175,10 +207,24 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
       acceptsConsultations: c.accepts_consultations === 1,
       profileCompleteness: c.profile_completeness,
     });
-    return { id: c.id, score, factors };
+    const years = c.years_experience
+      ?? (c.enrolment_year ? new Date().getFullYear() - c.enrolment_year : null);
+    return { id: c.id, score, factors, feeMin: c.fee_min, years };
   });
 
   switch (filters.sort) {
+    case 'fee_asc':
+      // No published fee sorts LAST rather than as if it were free.
+      scored.sort((a, b) =>
+        (a.feeMin ?? Number.POSITIVE_INFINITY) - (b.feeMin ?? Number.POSITIVE_INFINITY) || b.score - a.score);
+      break;
+    case 'fee_desc':
+      scored.sort((a, b) =>
+        (b.feeMin ?? Number.NEGATIVE_INFINITY) - (a.feeMin ?? Number.NEGATIVE_INFINITY) || b.score - a.score);
+      break;
+    case 'experience_desc':
+      scored.sort((a, b) => (b.years ?? -1) - (a.years ?? -1) || b.score - a.score);
+      break;
     case 'verification':
       scored.sort((a, b) => (b.factors.find((f) => f.key === 'verified_credentials')?.earned ?? 0) - (a.factors.find((f) => f.key === 'verified_credentials')?.earned ?? 0) || b.score - a.score);
       break;

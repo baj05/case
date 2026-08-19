@@ -106,6 +106,7 @@
   --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
 }
 
 /* Dark theme. DESIGN.md specifies a light system; this is a faithful
@@ -184,6 +185,7 @@ body {
   --font-display: var(--font-display-loaded, 'Plus Jakarta Sans'), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-body-loaded, 'Hanken Grotesk'), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-loaded, 'JetBrains Mono'), ui-monospace, 'SF Mono', monospace;
+  --font-serif: var(--font-serif-loaded, 'Newsreader'), ui-serif, Georgia, serif;
 
   background: var(--surface);
   color: var(--on-surface);
@@ -1039,13 +1041,17 @@ details[open] > .filter-summary::after { content: '–'; }
 
 /* --- statement / manifesto -------------------------------------------- */
 .statement {
-  font-family: var(--font-display);
-  font-weight: 700;
+  /* Serif here on purpose: a stated position reads as considered rather than
+     marketed. The rest of the UI stays sans. */
+  font-family: var(--font-serif);
+  font-weight: 400;
   font-size: clamp(1.5rem, 1rem + 2.4vw, 2.625rem);
-  line-height: 1.22;
-  letter-spacing: -0.025em;
-  max-width: 30ch;
+  line-height: 1.28;
+  letter-spacing: -0.015em;
+  max-width: 32ch;
 }
+.serif { font-family: var(--font-serif); font-weight: 400; }
+.serif-em { font-family: var(--font-serif); font-style: italic; font-weight: 400; }
 
 /* --- timeline / step cards -------------------------------------------- */
 .step-row {
@@ -1466,3 +1472,81 @@ details[open] > .filter-summary::after { content: '–'; }
   letter-spacing: -0.02em; margin-top: 4px;
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
+
+/* --- scannable fact strip on listing cards (Practo model) -------------- */
+.fact-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--outline-variant);
+  margin-top: 4px;
+}
+.fact-item { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fact-label {
+  font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--on-surface-variant);
+}
+.fact-value { font-family: var(--font-display); font-weight: 700; font-size: 0.9375rem; letter-spacing: -0.01em; }
+
+/* --- textured sections ------------------------------------------------- */
+/* A paper grain at very low opacity, behind content. Purpose: stop large flat
+   areas reading as unfinished. It never sits under body text at an opacity that
+   would affect contrast, and it is decorative so it carries no alt text. */
+.textured { position: relative; isolation: isolate; }
+.textured::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/img/textures/texture-paper.jpg');
+  background-size: 620px auto;
+  background-repeat: repeat;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  border-radius: inherit;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .textured::before { opacity: 0.05; mix-blend-mode: screen; }
+}
+
+/* --- motion pass ------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Scroll-linked reveal with no JavaScript. Falls back to fully visible in
+     browsers without animation-timeline support, so nothing is ever hidden by
+     a feature the browser lacks. */
+  @supports (animation-timeline: view()) {
+    .on-scroll {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 26%;
+    }
+  }
+  .lift { transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease); }
+  .lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+
+  /* Stagger for tile grids. */
+  .stagger > * { animation: reveal-in 520ms var(--ease) both; }
+  .stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .stagger > *:nth-child(7) { animation-delay: 360ms; }
+  .stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+  /* Counting figures settle in rather than snapping. */
+  .stat-band-num { animation: reveal-in 700ms var(--ease) both; }
+}
+
+/* Between the stacking breakpoint and desktop the hero column is narrow enough
+   that a card breaking out by -5% gets clipped by .wash's overflow-x: clip —
+   visible content silently lost. Pull them inside for that range. */
+@media (min-width: 721px) and (max-width: 1080px) {
+  .float-tl { left: 2%; top: 5%; }
+  .float-br { right: 2%; bottom: 8%; }
+  .float-ml { left: 2%; bottom: 40%; }
+  .float-card { max-width: 200px; padding: 10px 12px; }
+  .float-value { font-size: 1.125rem; }
+}

@@ -170,7 +170,7 @@
   {
     "slug": "pa-tech",
     "file": "/img/editorial/pa-tech.jpg",
-    "title": "A system administrator\u2019s workstation within a data processing centre with rack cabinets and servers inside.",
+    "title": "A system administrator’s workstation within a data processing centre with rack cabinets and servers inside.",
     "creator": "Javier Salinas",
     "creatorUrl": "https://javiersalinas.es",
     "licence": "CC0 1.0",
@@ -298,5 +298,41 @@
     "source": "Wikimedia Commons",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:Madras_High_Court,Chennai.jpg",
     "bytes": 1358092
+  },
+  {
+    "slug": "texture-paper",
+    "file": "/img/textures/texture-paper.jpg",
+    "title": "Manu Script - Flickr - kevinzim.jpg",
+    "creator": "Kevin Walsh from Preston Brook, England",
+    "creatorUrl": null,
+    "licence": "CC BY 2.0",
+    "licenceUrl": null,
+    "source": "Wikimedia Commons",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Manu_Script_-_Flickr_-_kevinzim.jpg",
+    "bytes": 1292770
+  },
+  {
+    "slug": "detail-column",
+    "file": "/img/textures/detail-column.jpg",
+    "title": "Palacete Aleppo No. 327. Historical building close to Municipal Market of São Paulo.jpg",
+    "creator": "Wilfredor",
+    "creatorUrl": null,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": null,
+    "source": "Wikimedia Commons",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Palacete_Aleppo_No._327._Historical_building_close_to_Municipal_Market_of_S%C3%A3o_Paulo.jpg",
+    "bytes": 898788
+  },
+  {
+    "slug": "detail-arch",
+    "file": "/img/textures/detail-arch.jpg",
+    "title": "Jerash Arch of Hadrian south side detail 0659 panorama.jpg",
+    "creator": "Dosseman",
+    "creatorUrl": null,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": null,
+    "source": "Wikimedia Commons",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Jerash_Arch_of_Hadrian_south_side_detail_0659_panorama.jpg",
+    "bytes": 434250
   }
 ]

@@ -47,7 +47,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     language: one(sp.language),
     verifiedOnly: one(sp.verified) === '1',
     acceptingOnly: one(sp.accepting) === '1',
-    sort: (one(sp.sort) as 'relevance' | 'verification' | 'name' | undefined) ?? 'relevance',
+    availableSoon: one(sp.available) === '1',
+    feeMaxMinor: one(sp.feemax) ? Number(one(sp.feemax)) : undefined,
+    minYears: one(sp.years) ? Number(one(sp.years)) : undefined,
+    sort: (one(sp.sort) as
+      'relevance' | 'verification' | 'name' | 'fee_asc' | 'fee_desc' | 'experience_desc' | undefined)
+      ?? 'relevance',
     page,
     perPage: 12,
   };
@@ -192,6 +197,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               <label htmlFor="sort" className="t-caption">Sort</label>
               <select id="sort" name="sort" defaultValue={filters.sort} className="select" style={{ width: 'auto', minHeight: 40 }}>
                 <option value="relevance">Best match</option>
+                <option value="fee_asc">Consultation fee: low to high</option>
+                <option value="fee_desc">Consultation fee: high to low</option>
+                <option value="experience_desc">Years in practice: most first</option>
                 <option value="verification">Verification level</option>
                 <option value="name">Name A–Z</option>
               </select>

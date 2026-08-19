@@ -265,7 +265,7 @@ export default async function HomePage() {
 
       {/* ========================================================= STAT BAND */}
       <section className="container section-tight">
-        <div className="stat-band">
+        <div className="stat-band on-scroll">
           {[
             [formatNumber(corpus.professionals), 'Advocates listed from official registers'],
             [String(corpus.bodies), 'State Bar Councils covered'],
@@ -293,7 +293,7 @@ export default async function HomePage() {
             <Link href="/practice-areas" className="btn btn-secondary btn-pill">All {areas.length} areas</Link>
           </div>
 
-          <div className="cat-grid">
+          <div className="cat-grid stagger">
             {topAreas.slice(0, 8).map((area, i) => {
               const img = PA_IMAGE[area.code] ?? '/img/courts/court-madras-hc.jpg';
               // Vary the tiles so the grid reads like the reference collage.
@@ -327,7 +327,7 @@ export default async function HomePage() {
       </section>
 
       {/* ========================================================= STATEMENT */}
-      <section className="container section-tight">
+      <section className="container section-tight textured" style={{ borderRadius: 'var(--r-xl)' }}>
         <div className="grid-auto-lg" style={{ alignItems: 'center' }}>
           <div className="stack gap-4">
             <span className="chip chip-outline" style={{ alignSelf: 'flex-start' }}>Our position</span>
@@ -378,7 +378,7 @@ export default async function HomePage() {
               Four steps, and you can stop at any of them.
             </h2>
           </div>
-          <div className="step-row">
+          <div className="step-row stagger">
             {[
               ['step-navy', 'Step 01', 'Describe it plainly', 'Type what happened in your own words. Our classifier maps it to a practice area, a jurisdiction and a court, and shows you what it concluded.'],
               ['step-blue', 'Step 02', 'Compare on the facts', 'Every result shows what is verified, what is self-declared, and its full match-score breakdown.'],
@@ -437,7 +437,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="plan-grid">
+          <div className="plan-grid stagger">
             <div className="plan">
               <span className="plan-name">Listed</span>
               <span className="t-caption">Every advocate in the register, automatically</span>
