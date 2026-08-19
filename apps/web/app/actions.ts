@@ -10,7 +10,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   createConsultationRequest, createClaim, createDataRequest,
-  getProfessionalBySlug,
+  getProfessionalBySlug, createBooking, getBooking, setBookingStatus,
+  saveIntakeSession,
 } from '@lexhall/db';
 
 export interface ActionResult {
@@ -179,5 +180,107 @@ export async function submitDataRequest(_prev: ActionResult | null, form: FormDa
     };
   } catch {
     return { ok: false, values, message: 'We could not record that request. Please try again.' };
+  }
+}
+
+// ------------------------------------------------------------------- booking
+/**
+ * Confirm a booking. Re-validates everything server-side: the professional must
+ * still be accepting, the slot must still be free, and the quote is recomputed
+ * from the fee schedule rather than trusted from the form.
+ */
+export async function submitBooking(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const values = keep(form, [
+    'clientName', 'clientEmail', 'clientPhone', 'startsAtUtc', 'endsAtUtc',
+    'mode', 'feeScheduleId', 'practiceAreaId', 'matterTypeId', 'brief', 'urgency', 'clientTimezone',
+  ] as const);
+  const fieldErrors: Record<string, string> = {};
+
+  const professional = getProfessionalBySlug(slug);
+  if (!professional) return { ok: false, message: 'That profile is no longer available.', values };
+  if (!professional.acceptsConsultations) {
+    return { ok: false, message: 'This professional is no longer accepting bookings.', values };
+  }
+
+  if (values.clientName.length < 2) fieldErrors.clientName = 'Please give the name for the appointment.';
+  if (!EMAIL_RE.test(values.clientEmail)) fieldErrors.clientEmail = 'Enter a valid email address.';
+  if (values.clientPhone && !/^[+\d][\d\s-]{6,19}$/.test(values.clientPhone)) {
+    fieldErrors.clientPhone = 'Enter a valid phone number, or leave this blank.';
+  }
+  if (values.brief.length < 30) fieldErrors.brief = 'Please describe the matter in a couple of sentences.';
+  if (!values.startsAtUtc || !values.endsAtUtc) fieldErrors.startsAtUtc = 'Choose a time slot.';
+  if (!form.get('feeAck')) fieldErrors.feeAck = 'Please confirm you have read the fee note.';
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
+  }
+
+  try {
+    const booking = createBooking({
+      professionalId: professional.id,
+      feeScheduleId: Number(values.feeScheduleId) || null,
+      clientName: values.clientName,
+      clientEmail: values.clientEmail,
+      clientPhone: values.clientPhone || null,
+      startsAtUtc: values.startsAtUtc,
+      endsAtUtc: values.endsAtUtc,
+      clientTimezone: values.clientTimezone || 'Asia/Kolkata',
+      mode: values.mode || 'video',
+      practiceAreaId: Number(values.practiceAreaId) || null,
+      matterTypeId: Number(values.matterTypeId) || null,
+      brief: values.brief,
+      urgency: (['normal', 'urgent', 'emergency'].includes(values.urgency)
+        ? values.urgency : 'normal') as 'normal' | 'urgent' | 'emergency',
+      feeDisclosureAck: true,
+    });
+    revalidatePath(`/advocates/${slug}`);
+    redirect(`/bookings/${booking.reference}`);
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    const code = (error as Error).message;
+    // Slot contention is the common, expected failure. Say so precisely and
+    // send the user back to pick again rather than losing their brief.
+    if (code === 'SLOT_TAKEN') {
+      return {
+        ok: false, values,
+        message: 'That slot was taken while you were filling this in. Nothing has been booked — choose another time and your details will be kept.',
+        fieldErrors: { startsAtUtc: 'Pick a different time.' },
+      };
+    }
+    if (code === 'NOT_ACCEPTING') return { ok: false, values, message: 'This professional has stopped accepting bookings.' };
+    return { ok: false, values, message: 'We could not complete the booking. Nothing has been charged or reserved — please try again.' };
+  }
+}
+
+/** Client-side cancellation of their own booking, keyed on the reference. */
+export async function cancelBooking(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const reference = str(form, 'reference', 40);
+  const email = str(form, 'email', 200);
+  const reason = str(form, 'reason', 500);
+
+  const booking = getBooking(reference);
+  if (!booking) return { ok: false, message: 'We could not find that booking.' };
+  // Ownership check: the email on the booking must match. Weak without
+  // accounts, but it is a real check rather than a hidden field.
+  if (String(booking.client_email).toLowerCase() !== email.toLowerCase()) {
+    return { ok: false, message: 'That email does not match the booking. Please use the address you booked with.' };
+  }
+  const done = setBookingStatus(reference, 'cancelled_by_client', reason || 'Cancelled by the client.', 'client');
+  if (!done) return { ok: false, message: 'That booking can no longer be cancelled.' };
+  revalidatePath(`/bookings/${reference}`);
+  return { ok: true, message: 'Your booking has been cancelled and the slot released.' };
+}
+
+// ------------------------------------------------------------------- advo ai
+/** Persist a routed Advo AI session so routing accuracy can be audited. */
+export async function recordAdvoSession(facts: unknown, transcript: unknown, resultCount: number): Promise<string> {
+  try {
+    return saveIntakeSession({
+      facts: facts as never,
+      transcript: transcript as never,
+      resultCount,
+    });
+  } catch {
+    return '';
   }
 }

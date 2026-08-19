@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { AdvoLauncher } from '@/components/AdvoLauncher';
 import { BRAND } from '@/lib/brand';
 import './globals.css';
 
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main id="main">{children}</main>
         <Footer />
+        <AdvoLauncher />
       </body>
     </html>
   );

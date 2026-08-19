@@ -76,7 +76,10 @@ export default function HomePage() {
             </p>
 
             <div className="row wrap gap-4">
-              <Link href="/search" className="btn btn-navy btn-pill btn-lg">Start a search</Link>
+              <Link href="/advo-ai" className="btn btn-primary btn-pill btn-lg">
+                Ask Advo AI
+              </Link>
+              <Link href="/search" className="btn btn-secondary btn-pill btn-lg">Search yourself</Link>
               <div className="row gap-3">
                 <span className="avatar-cluster" aria-hidden="true">
                   <span className="mono-av">BCI</span>
@@ -149,6 +152,37 @@ export default function HomePage() {
               <Link key={ex} href={`/search?q=${encodeURIComponent(ex)}`} className="chip chip-button chip-outline">
                 {ex}
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================== ADVO AI */}
+      <section className="container section-tight">
+        <div
+          className="stack gap-4"
+          style={{
+            padding: 'clamp(20px, 4vw, 36px)', borderRadius: 'var(--r-xl)',
+            background: 'var(--trust-navy)', color: '#eef0ff',
+          }}
+        >
+          <div className="row wrap gap-4" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div className="stack gap-2" style={{ maxWidth: '42ch' }}>
+              <p className="t-label-mono" style={{ color: '#a9b2c9' }}>Advo AI</p>
+              <h2 className="t-headline-lg" style={{ color: '#fff' }}>
+                Not sure who you need? <span style={{ color: 'var(--action-orange)' }}>Describe it.</span>
+              </h2>
+              <p className="t-body" style={{ color: '#c7cee0' }}>
+                Advo AI asks a few questions, then shortlists the professionals who can actually act —
+                orderable by fee, high to low, or by years in practice. Deterministic and explainable,
+                never a chatbot pretending to be a lawyer.
+              </p>
+            </div>
+            <Link href="/advo-ai" className="btn btn-primary btn-pill btn-lg">Start with Advo AI</Link>
+          </div>
+          <div className="row wrap gap-2">
+            {['Fee: high to low', 'Fee: low to high', '10+ years in practice', 'Bar enrolment verified', 'Accepting bookings'].map((t) => (
+              <span key={t} className="chip" style={{ background: 'rgba(255,255,255,0.10)', color: '#e7eaf5' }}>{t}</span>
             ))}
           </div>
         </div>

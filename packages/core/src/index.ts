@@ -4,3 +4,4 @@ export * from './text.ts';
 export * from './intake.ts';
 export * from './ranking.ts';
 export * from './geography.ts';
+export * from './advoai.ts';

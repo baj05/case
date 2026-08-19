@@ -4,3 +4,5 @@ export * from './profile.ts';
 export * from './search.ts';
 export * from './ingestion.ts';
 export * from './engagement.ts';
+export * from './fees.ts';
+export * from './shortlist.ts';

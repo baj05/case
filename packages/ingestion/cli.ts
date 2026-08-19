@@ -24,7 +24,7 @@ const { values } = parseArgs({
 
 if (values['init-db'] || !isInitialised()) {
   process.stdout.write('initialising database schema\n');
-  applySchema();
+  applySchema({ fresh: !isInitialised() });
 }
 
 const strategy = values.strategy === 'http' ? 'http' : 'reader';

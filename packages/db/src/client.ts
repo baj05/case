@@ -63,38 +63,90 @@ export function db(): DatabaseSync {
   return handle;
 }
 
-/** Recreate the schema from ./sql/*.sql in filename order. Destroys all data. */
-export function applySchema(target?: DatabaseSync): void {
-  const handle = target ?? db();
+/**
+ * Apply the schema.
+ *
+ * Two modes, because "drop everything and re-run" destroys ingested data and
+ * re-crawling a regulator's site to recover from a schema change is neither
+ * fast nor polite:
+ *
+ *   applySchema()                  additive — applies only .sql files not yet
+ *                                  recorded in schema_migration
+ *   applySchema({ fresh: true })   destructive — drops and rebuilds from zero
+ *
+ * Files are applied in filename order, which is why they are numbered.
+ */
+export function applySchema(options?: { fresh?: boolean; target?: DatabaseSync }): { applied: string[]; skipped: string[] } {
+  const handle = options?.target ?? db();
   const files = readdirSync(SQL_DIR).filter((f) => f.endsWith('.sql')).sort();
   if (files.length === 0) throw new Error(`No .sql files found in ${SQL_DIR}`);
 
-  // Foreign keys must be off while we drop, or ordering becomes a puzzle.
-  handle.exec('PRAGMA foreign_keys = OFF;');
-  for (const row of handle
-    .prepare(
-      `SELECT name, type FROM sqlite_master
-       WHERE name NOT LIKE 'sqlite_%' AND type IN ('table','view','trigger','index')`,
-    )
-    .all() as Array<{ name: string; type: string }>) {
-    // FTS5 shadow tables disappear with their virtual table; dropping them
-    // directly errors, so skip anything the parent already removed.
-    try {
-      handle.exec(`DROP ${row.type === 'index' ? 'INDEX' : row.type.toUpperCase()} IF EXISTS "${row.name}"`);
-    } catch {
-      /* shadow table already gone */
+  if (options?.fresh) {
+    // Foreign keys must be off while dropping, or ordering becomes a puzzle.
+    handle.exec('PRAGMA foreign_keys = OFF;');
+    for (const row of handle
+      .prepare(
+        `SELECT name, type FROM sqlite_master
+         WHERE name NOT LIKE 'sqlite_%' AND type IN ('table','view','trigger','index')`,
+      )
+      .all() as Array<{ name: string; type: string }>) {
+      // FTS5 shadow tables disappear with their virtual table; dropping them
+      // directly errors, so skip anything the parent already removed.
+      try {
+        handle.exec(`DROP ${row.type === 'index' ? 'INDEX' : row.type.toUpperCase()} IF EXISTS "${row.name}"`);
+      } catch {
+        /* shadow table already gone */
+      }
+    }
+    handle.exec('PRAGMA foreign_keys = ON;');
+  }
+
+  handle.exec(
+    `CREATE TABLE IF NOT EXISTS schema_migration (
+       filename TEXT PRIMARY KEY,
+       applied_at TEXT NOT NULL
+     )`,
+  );
+
+  const done = new Set(
+    (handle.prepare(`SELECT filename FROM schema_migration`).all() as Array<{ filename: string }>).map((r) => r.filename),
+  );
+
+  // Adopt a pre-existing schema. A database created before the ledger existed
+  // has the tables but no record of them, so re-applying file 001 would fail on
+  // "table already exists". Each file's first CREATE TABLE acts as a sentinel:
+  // if that table is present, the file is already applied.
+  if (done.size === 0) {
+    for (const file of files) {
+      const sql = readFileSync(join(SQL_DIR, file), 'utf8');
+      const sentinel = /CREATE\s+(?:VIRTUAL\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["']?(\w+)/i.exec(sql)?.[1];
+      if (!sentinel) continue;
+      const exists = handle
+        .prepare(`SELECT count(*) AS n FROM sqlite_master WHERE type IN ('table','view') AND name = ?`)
+        .get(sentinel) as { n: number };
+      if (exists.n > 0) {
+        handle.prepare(`INSERT OR IGNORE INTO schema_migration (filename, applied_at) VALUES (?,?)`)
+          .run(file, new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
+        done.add(file);
+      }
     }
   }
 
+  const applied: string[] = [];
+  const skipped: string[] = [];
   for (const file of files) {
+    if (done.has(file)) { skipped.push(file); continue; }
     const sql = readFileSync(join(SQL_DIR, file), 'utf8');
     try {
       handle.exec(sql);
+      handle.prepare(`INSERT INTO schema_migration (filename, applied_at) VALUES (?,?)`)
+        .run(file, new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
+      applied.push(file);
     } catch (error) {
       throw new Error(`Failed applying ${file}: ${(error as Error).message}`);
     }
   }
-  handle.exec('PRAGMA foreign_keys = ON;');
+  return { applied, skipped };
 }
 
 /** ISO-8601 UTC, second precision. The single source of timestamp format. */
@@ -106,19 +158,39 @@ export function isoDate(value: Date): string {
   return value.toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
-/** Run a function inside a transaction, rolling back on any throw. */
+/**
+ * Run a function inside a transaction, rolling back on any throw.
+ *
+ * RE-ENTRANT. Repository functions compose freely — a seeder may wrap several
+ * helpers that each open their own transaction — and SQLite rejects a nested
+ * BEGIN. Inner calls therefore use a SAVEPOINT, so a failure in an inner block
+ * unwinds just that block while the outermost call still controls the real
+ * commit. Without this, composing two transactional helpers is a runtime error.
+ */
+let txDepth = 0;
+
 export function transaction<T>(fn: () => T, target?: DatabaseSync): T {
   const handle = target ?? db();
-  handle.exec('BEGIN IMMEDIATE');
+  const depth = txDepth;
+  const savepoint = `lexhall_sp_${depth}`;
+
+  if (depth === 0) handle.exec('BEGIN IMMEDIATE');
+  else handle.exec(`SAVEPOINT ${savepoint}`);
+  txDepth = depth + 1;
+
   try {
     const result = fn();
-    handle.exec('COMMIT');
+    txDepth = depth;
+    if (depth === 0) handle.exec('COMMIT');
+    else handle.exec(`RELEASE ${savepoint}`);
     return result;
   } catch (error) {
+    txDepth = depth;
     try {
-      handle.exec('ROLLBACK');
+      if (depth === 0) handle.exec('ROLLBACK');
+      else handle.exec(`ROLLBACK TO ${savepoint}`);
     } catch {
-      /* already rolled back */
+      /* already unwound */
     }
     throw error;
   }

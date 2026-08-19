@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+/**
+ * Seed DEMO CONFIGURATION so the booking, fee and Advo AI flows are
+ * exercisable immediately.
+ *
+ * WHAT THIS DOES AND DOES NOT DO — this distinction matters:
+ *
+ *   It does NOT invent advocates. Every professional touched here is a real
+ *   record ingested from the Bar Council of India register.
+ *
+ *   It DOES simulate those advocates having claimed their profile and declared
+ *   practice areas, availability and fees — configuration that in reality only
+ *   they can supply. Every such row is written with an audit-log entry marking
+ *   it as seeded demo configuration, and the DEMO_DATA_SEEDED flag makes the
+ *   UI say so plainly.
+ *
+ * Run `npm run db:demo -- --clear` to remove it and return every profile to
+ * its true unclaimed state.
+ */
+import { parseArgs } from 'node:util';
+import { db, now, transaction, isInitialised } from '../src/client.ts';
+import {
+  setAvailability, declarePracticeAreas, reindexAll,
+} from '../src/repositories/shortlist.ts';
+import { upsertFee } from '../src/repositories/fees.ts';
+
+const { values } = parseArgs({ options: { clear: { type: 'boolean', default: false }, count: { type: 'string', default: '18' } } });
+
+if (!isInitialised()) {
+  process.stderr.write('Database not initialised. Run `npm run ingest` first.\n');
+  process.exit(1);
+}
+
+const h = db();
+const MARK = 'demo-config';
+
+if (values.clear) {
+  transaction(() => {
+    const ids = (h.prepare(
+      `SELECT DISTINCT subject_id AS id FROM audit_log WHERE action = 'demo.configured'`,
+    ).all() as Array<{ id: number }>).map((r) => r.id);
+    for (const id of ids) {
+      h.prepare(`DELETE FROM fee_schedule WHERE professional_id=?`).run(id);
+      h.prepare(`DELETE FROM professional_fee_summary WHERE professional_id=?`).run(id);
+      h.prepare(`DELETE FROM availability_rule WHERE professional_id=?`).run(id);
+      h.prepare(`DELETE FROM professional_practice_area WHERE professional_id=? AND is_self_declared=1`).run(id);
+      h.prepare(`DELETE FROM verification WHERE professional_id=? AND evidence_note LIKE '%demo configuration%'`).run(id);
+      h.prepare(
+        `UPDATE professional SET claim_status='unclaimed', claimed_at=NULL, verification_level=0,
+           accepts_consultations=0, updated_at=? WHERE id=?`,
+      ).run(now(), id);
+    }
+    h.prepare(`DELETE FROM booking WHERE client_email LIKE '%@demo.invalid'`).run();
+    h.prepare(`DELETE FROM audit_log WHERE action='demo.configured'`).run();
+    h.prepare(`UPDATE feature_flag SET enabled=0, updated_at=? WHERE key='DEMO_DATA_SEEDED'`).run(now());
+  });
+  const r = reindexAll();
+  process.stdout.write(`cleared demo configuration. published ${r.published}, indexed ${r.indexed}, accepting ${r.accepting}\n`);
+  process.exit(0);
+}
+
+// Pick real ingested records that already have the most substance: a role, an
+// office address and ideally a court link. Those make the most convincing
+// demonstration without any invention.
+const target = Number(values.count) || 18;
+const candidates = h.prepare(
+  `SELECT p.id, p.slug, p.display_name AS name, p.kind, p.enrolment_year AS enrolYear,
+          (SELECT count(*) FROM professional_court pc WHERE pc.professional_id = p.id) AS courtCount,
+          p.professional_body_id AS bodyId
+     FROM professional p
+    WHERE p.is_published = 1 AND p.deleted_at IS NULL AND p.claim_status = 'unclaimed'
+    ORDER BY (p.public_office IS NOT NULL) DESC, courtCount DESC, p.data_confidence DESC
+    LIMIT ?`,
+).all(target) as Array<{ id: number; slug: string; name: string; kind: string; enrolYear: number | null; courtCount: number; bodyId: number | null }>;
+
+if (candidates.length === 0) {
+  process.stderr.write('No unclaimed published records found.\n');
+  process.exit(1);
+}
+
+const areas = h.prepare(`SELECT id, code FROM practice_area WHERE is_active=1`).all() as Array<{ id: number; code: string }>;
+const areaId = (code: string) => areas.find((a) => a.code === code)?.id;
+
+/** Practice-area bundles that hang together as a real practice. */
+const BUNDLES: Array<{ codes: string[]; label: string }> = [
+  { codes: ['LABOUR', 'PF', 'ESI', 'LABOUR_COMPLIANCE'], label: 'labour and industrial' },
+  { codes: ['CORPORATE', 'CONTRACT', 'INSOLVENCY'], label: 'corporate and commercial' },
+  { codes: ['CRIMINAL'], label: 'criminal' },
+  { codes: ['FAMILY'], label: 'family and matrimonial' },
+  { codes: ['PROPERTY', 'CIVIL'], label: 'property and civil' },
+  { codes: ['TAX', 'BANKING'], label: 'tax and banking' },
+  { codes: ['IP', 'TECH'], label: 'intellectual property and technology' },
+  { codes: ['CONSTITUTIONAL', 'ADMIN_SERVICE'], label: 'constitutional and service' },
+  { codes: ['ARBITRATION', 'MEDIATION'], label: 'dispute resolution' },
+  { codes: ['CONSUMER'], label: 'consumer' },
+];
+
+/**
+ * Fee bands in paise, scaled by seniority. Senior advocates and long-enrolled
+ * practitioners price higher — the pattern real fee schedules follow. These are
+ * illustrative demo values, clearly flagged as such in the UI.
+ */
+function feeBand(kind: string, years: number): { consult: number; filing: number; drafting: number; appearance: number } {
+  const senior = kind === 'senior_advocate';
+  const base = senior ? 1_500_000 : years >= 25 ? 750_000 : years >= 15 ? 400_000 : years >= 8 ? 250_000 : 150_000;
+  return {
+    consult: base,
+    filing: Math.round(base * 0.45),
+    drafting: Math.round(base * 0.8),
+    appearance: Math.round(base * 1.6),
+  };
+}
+
+let configured = 0;
+const ts = now();
+
+for (const [i, c] of candidates.entries()) {
+  const bundle = BUNDLES[i % BUNDLES.length]!;
+  const years = c.enrolYear ? Math.max(3, new Date().getFullYear() - c.enrolYear) : 8 + (i % 22);
+  const band = feeBand(c.kind, years);
+
+  transaction(() => {
+    // 1. Simulate the claim having been approved.
+    h.prepare(
+      `UPDATE professional SET claim_status='claimed', claimed_at=?, accepts_consultations=1,
+         verification_level=?, years_experience=COALESCE(years_experience, ?), updated_at=?
+       WHERE id=?`,
+    ).run(ts, i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1, years, ts, c.id);
+
+    h.prepare(
+      `INSERT INTO verification (professional_id, level, method, outcome, evidence_note, created_at)
+       VALUES (?,?,?,'granted',?,?)`,
+    ).run(c.id, i % 4 === 0 ? 3 : 1, i % 4 === 0 ? 'bar_enrolment' : 'email',
+      'Seeded demo configuration — not a real verification event.', ts);
+
+    // 2. Declared practice areas.
+    const ids = bundle.codes.map(areaId).filter((x): x is number => typeof x === 'number');
+    declarePracticeAreas(c.id, ids, ids[0]);
+
+    // 3. Availability: weekday mornings and afternoons, Kolkata time.
+    const rules = [1, 2, 3, 4, 5].flatMap((weekday) => ([
+      { weekday, startMinute: 10 * 60 + 30, endMinute: 13 * 60, mode: 'video', slotMinutes: 30, timezone: 'Asia/Kolkata' },
+      { weekday, startMinute: 16 * 60, endMinute: 18 * 60, mode: i % 3 === 0 ? 'in_person' : 'phone', slotMinutes: 30, timezone: 'Asia/Kolkata' },
+    ]));
+    setAvailability(c.id, rules);
+
+    // 4. Fee schedule, including statutory pass-throughs disclosed separately.
+    upsertFee({ professionalId: c.id, kind: 'consultation', label: `First consultation (${bundle.label})`, mode: 'video', durationMinutes: 30, amountMinor: band.consult, basis: 'fixed', includes: 'A 30-minute discussion of your position and the options open to you.', excludes: 'Drafting, filing and appearances are charged separately.', taxNote: 'Taxes, if applicable, are charged in addition.', sortOrder: 10 });
+    upsertFee({ professionalId: c.id, kind: 'consultation', label: 'Follow-up consultation', mode: 'phone', durationMinutes: 20, amountMinor: Math.round(band.consult * 0.6), basis: 'fixed', sortOrder: 20 });
+    upsertFee({ professionalId: c.id, kind: 'drafting', label: 'Drafting a legal notice or application', amountMinor: band.drafting, basis: 'from', includes: 'One draft and one round of revisions.', sortOrder: 30 });
+    upsertFee({ professionalId: c.id, kind: 'filing', label: 'Filing charges', amountMinor: band.filing, basis: 'from', includes: 'Preparation and lodging of the petition.', excludes: 'Court fees and statutory charges are payable in addition and are shown separately.', sortOrder: 40 });
+    upsertFee({ professionalId: c.id, kind: 'filing', label: 'Court fee and statutory charges', amountMinor: 500_00, basis: 'from', isStatutoryPassthrough: true, includes: 'Payable to the court, not to the advocate. Varies by relief claimed.', sortOrder: 45 });
+    upsertFee({ professionalId: c.id, kind: 'appearance', label: 'Court appearance, per hearing', amountMinor: band.appearance, basis: 'from', sortOrder: 50 });
+    if (i % 3 === 0) {
+      upsertFee({ professionalId: c.id, kind: 'retainer', label: 'Monthly retainer', amountMinor: band.appearance * 4, basis: 'on_request', includes: 'Ongoing advisory across the month.', sortOrder: 60 });
+    }
+
+    // 5. Audit marker — this is what `--clear` keys off, and what keeps the
+    //    demo honestly distinguishable from real configuration.
+    h.prepare(
+      `INSERT INTO audit_log (actor_user_id, actor_role, action, subject_type, subject_id, after_state, reason, created_at)
+       VALUES (NULL,'system','demo.configured','professional',?,?,?,?)`,
+    ).run(c.id, JSON.stringify({ practiceAreas: bundle.codes, years, feeBand: band, marker: MARK }),
+      'Seeded demo configuration so booking and fee flows are exercisable. Not supplied by the professional.', ts);
+  });
+
+  configured += 1;
+}
+
+h.prepare(
+  `INSERT INTO feature_flag (key, enabled, description, gate_note, updated_at)
+   VALUES ('DEMO_DATA_SEEDED',1,?,?,?)
+   ON CONFLICT(key) DO UPDATE SET enabled=1, updated_at=excluded.updated_at`,
+).run(
+  'Demo fee schedules and availability are present on some real profiles',
+  'Set by `npm run db:demo`. The advocates are real Bar Council records; their fees and availability are seeded illustrations, not their own figures. Remove with `npm run db:demo -- --clear` before any real use.',
+  now(),
+);
+
+const r = reindexAll();
+process.stdout.write(`\nconfigured ${configured} real profiles with demo fees and availability\n`);
+process.stdout.write(`published ${r.published}, indexed ${r.indexed}, accepting bookings ${r.accepting}\n`);
+const fees = Number((h.prepare(`SELECT count(*) n FROM fee_schedule`).get() as { n: number }).n);
+const slots = Number((h.prepare(`SELECT count(*) n FROM availability_rule`).get() as { n: number }).n);
+process.stdout.write(`fee rows ${fees}, availability rules ${slots}\n`);
+process.stdout.write(`\nDEMO_DATA_SEEDED flag is on; the UI discloses this. Clear with: npm run db:demo -- --clear\n`);

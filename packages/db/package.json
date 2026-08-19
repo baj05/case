@@ -11,7 +11,10 @@
     "reset": "node scripts/reset.ts",
     "seed": "node scripts/seed.ts",
     "reindex": "node scripts/reindex.ts",
-    "stats": "node scripts/stats.ts"
+    "stats": "node scripts/stats.ts",
+    "demo": "node scripts/demo-config.ts"
   },
-  "dependencies": { "@lexhall/core": "*" }
+  "dependencies": {
+    "@lexhall/core": "*"
+  }
 }

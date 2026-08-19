@@ -6,9 +6,10 @@ import { VerificationBadge, KindChip, ClaimChip, EvidenceChip } from '@/componen
 import { ResultCard } from '@/components/ResultCard';
 import { Notice } from '@/components/States';
 import { getProfessional, getDetail, getRelated, getFlags } from '@/lib/data';
+import { listFees, feeSummary, formatMinor, generateSlots } from '@lexhall/db';
 import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/format';
 import { LEGAL_COPY } from '@/lib/brand';
-import { verificationMeta, VERIFICATION_LEVELS } from '@lexhall/core';
+import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexhall/core';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
   const detail = getDetail(slug);
   const related = getRelated(p.id, 4);
   const flags = getFlags();
+  const fees = listFees(p.id);
+  const fsum = feeSummary(p.id);
+  const nextSlots = p.acceptsConsultations ? generateSlots(p.id, new Date().toISOString(), 14).slice(0, 4) : [];
   const meta = verificationMeta(p.verificationLevel);
   const isUnclaimed = p.claimStatus === 'unclaimed' || p.claimStatus === 'claim_pending';
 
@@ -97,7 +101,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
 
               <div className="row wrap gap-2">
                 {p.acceptsConsultations ? (
-                  <Link href={`/advocates/${p.slug}/consult`} className="btn btn-primary">Request a consultation</Link>
+                  <>
+                    <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary">
+                      Book a consultation
+                      {fsum?.minConsultMinor != null && ` · from ${formatMinor(fsum.minConsultMinor, fsum.currencyCode)}`}
+                    </Link>
+                    <Link href={`/advocates/${p.slug}/consult`} className="btn btn-secondary">Send an enquiry instead</Link>
+                  </>
                 ) : (
                   <span className="btn btn-secondary" aria-disabled="true" title="This professional has not enabled consultation requests">
                     Not accepting requests
@@ -235,6 +245,65 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
               </section>
             )}
 
+            {/* fees */}
+            <section className="stack gap-3" id="fees">
+              <h2 className="t-headline-md">Fees</h2>
+              {fees.length === 0 ? (
+                <Notice tone="info">
+                  No fees are published. The Bar Council register does not record fees, and we do not
+                  estimate them — an invented figure would be worse than none. Fees appear once the
+                  professional claims the profile and declares them.
+                </Notice>
+              ) : (
+                <>
+                  <div className="scroll-x">
+                    <table className="table" style={{ minWidth: 560 }}>
+                      <caption className="sr-only">Fee schedule as declared by the professional</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Service</th>
+                          <th scope="col">Basis</th>
+                          <th scope="col" style={{ textAlign: 'right' }}>Fee</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fees.map((f) => (
+                          <tr key={f.id}>
+                            <th scope="row" className="stack gap-1" style={{ fontWeight: 600 }}>
+                              {f.label}
+                              <span className="t-caption" style={{ fontWeight: 400 }}>
+                                {[f.mode ? CONSULTATION_MODES[f.mode as keyof typeof CONSULTATION_MODES] ?? f.mode : null,
+                                  f.durationMinutes ? `${f.durationMinutes} min` : null,
+                                  f.isStatutoryPassthrough === 1 ? 'Payable to the court, not the advocate' : null,
+                                ].filter(Boolean).join(' · ')}
+                              </span>
+                              {f.includes && <span className="t-caption" style={{ fontWeight: 400 }}>Includes: {f.includes}</span>}
+                              {f.excludes && <span className="t-caption" style={{ fontWeight: 400 }}>Not included: {f.excludes}</span>}
+                            </th>
+                            <td className="ink-variant" style={{ textTransform: 'capitalize' }}>{f.basis.replace(/_/g, ' ')}</td>
+                            <td className="num" style={{ fontWeight: 600 }}>
+                              {f.basis === 'on_request' ? 'On request' : formatMinor(f.amountMinor, f.currencyCode)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="t-caption">
+                    <EvidenceChip basis="self_declared" /> Declared by the professional. Court and
+                    statutory charges are additional and shown separately. This platform does not
+                    process these payments and takes no share of them.
+                  </p>
+                  {flags.DEMO_DATA_SEEDED && (
+                    <Notice tone="warn" title="Demo figures">
+                      This advocate is a real Bar Council record, but the fees above are seeded
+                      illustrations so the booking flow is testable — not their own figures.
+                    </Notice>
+                  )}
+                </>
+              )}
+            </section>
+
             {/* reviews — gated */}
             <section className="stack gap-3">
               <h2 className="t-headline-md">Reviews</h2>
@@ -332,6 +401,26 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
                 })}
               </ol>
             </div>
+
+            {/* next availability */}
+            {nextSlots.length > 0 && (
+              <div className="card stack gap-2" style={{ padding: 18 }}>
+                <h2 className="t-title">Next available</h2>
+                {nextSlots.map((s2) => (
+                  <div key={s2.startUtc} className="row gap-2" style={{ justifyContent: 'space-between' }}>
+                    <span className="t-body-sm">
+                      {new Date(s2.startUtc).toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short',
+                        hour: '2-digit', minute: '2-digit', hour12: true,
+                      })}
+                    </span>
+                    <span className="t-caption" style={{ textTransform: 'capitalize' }}>{s2.mode.replace(/_/g, ' ')}</span>
+                  </div>
+                ))}
+                <p className="t-caption">Shown in India Standard Time. The booking page uses your own timezone.</p>
+                <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary btn-sm btn-block">See all times</Link>
+              </div>
+            )}
 
             {/* languages */}
             {p.languages.length > 0 && (

@@ -162,3 +162,49 @@ test('an unverified, unclaimed profile still ranks on merit, not zero', () => {
   });
   assert.ok(out.score > 45, `unclaimed relevant profile should not be buried: ${out.score}`);
 });
+
+test('Advo AI option chips send the machine value, not the visible label', async () => {
+  const { startSession, advance } = await import('../src/advoai.ts');
+  let s = startSession();
+  s = advance(s, 'My employer has not deposited my PF', vocab);
+  // The UI shows "10+ years" but must send "10".
+  s = advance(s, '10', vocab, 'experience', '10+ years');
+  assert.equal(s.facts.minExperienceYears, 10, 'experience filter must be applied');
+  assert.ok(s.transcript.some((t) => t.text === '10+ years'), 'transcript should show the human label');
+
+  s = advance(s, 'notice_received', vocab, 'stage', 'I have received a notice');
+  assert.equal(s.facts.stage, 'notice_received');
+
+  s = advance(s, 'urgent', vocab, 'urgency', 'Within a few weeks');
+  assert.equal(s.facts.urgency, 'urgent');
+
+  s = advance(s, 'video', vocab, 'mode', 'Video call');
+  assert.equal(s.facts.preferredMode, 'video');
+
+  s = advance(s, '250000', vocab, 'budget', 'Up to ₹2,500');
+  assert.equal(s.facts.budgetMaxMinor, 250000);
+});
+
+test('Advo AI: inference escalates urgency, an explicit answer overrides it', async () => {
+  const { startSession, advance } = await import('../src/advoai.ts');
+
+  // Free text escalates.
+  let s = startSession();
+  s = advance(s, 'my brother was arrested last night', vocab);
+  assert.equal(s.facts.urgency, 'emergency');
+
+  // An explicit answer to the urgency question is a CORRECTION and must win —
+  // consistent with the rest of the product, where a user's choice beats our
+  // reading of their sentence. Otherwise a misread cannot be undone.
+  s = advance(s, 'normal', vocab, 'urgency', 'No fixed deadline');
+  assert.equal(s.facts.urgency, 'normal', 'an explicit answer must be able to correct an inference');
+
+  // A later free-text mention still escalates rather than being ignored. Note
+  // the grading: a scheduled hearing tomorrow is time-sensitive ('urgent'),
+  // whereas an arrest is an 'emergency'. Collapsing the two would make the
+  // signal useless.
+  s = advance(s, 'actually the hearing is tomorrow', vocab);
+  assert.equal(s.facts.urgency, 'urgent');
+  s = advance(s, 'and he is still in custody', vocab);
+  assert.equal(s.facts.urgency, 'emergency', 'custody must escalate above a deadline');
+});
