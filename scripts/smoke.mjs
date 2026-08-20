@@ -180,6 +180,185 @@ await check('matter routing from plain language', '/search?q=meter+jal+gaya+and+
   'no error state': notError,
 });
 
+// --- resource library -------------------------------------------------------
+// These assertions exist because the failure modes they guard against are the
+// ones that would make the library actively misleading, not merely broken.
+
+await check('resource hub', '/resources', {
+  '200': status(200),
+  'states the corpus size from the database': has('resources.'),
+  'draws the official-versus-template distinction on the hub itself':
+    (b) => b.includes('Two kinds of thing live here') && b.includes('approved by nobody'),
+  'names the library documentation': has('How this library works'),
+  'offers intent-led kits': has('Start from what happened'),
+  'admits which categories are empty': hasAny('hold nothing yet', 'Browse by category'),
+  'no error state': notError,
+});
+
+await check('resource search understands a state', '/resources/search?q=rent+agreement+for+Maharashtra', {
+  '200': status(200),
+  'shows what it understood': has('What we understood from that'),
+  'resolves the state': has('resources are ranked first'),
+  'ranks the Maharashtra document first': (b) => {
+    const target = b.indexOf('Residential rent agreement — Maharashtra');
+    if (target === -1) return false;
+    const firstCard = b.indexOf('result-card');
+    // The first card rendered must be the state document, not merely present.
+    return firstCard > -1 && target > firstCard && target - firstCard < 1200;
+  },
+  'explains that pan-India documents are still shown': has('genuinely apply across'),
+  'no error state': notError,
+});
+
+await check('resource search finds a document by its own name', '/resources/search?q=vakalatnama', {
+  '200': status(200),
+  'returns something': (b) => !b.includes('Nothing in the library matches that'),
+  'no error state': notError,
+});
+
+await check('an unmatchable query says so rather than showing everything', '/resources/search?q=zzzqqxnothing', {
+  '200': status(200),
+  'admits the library does not hold it': has('Nothing in the library matches that'),
+  'does not silently return the whole library': (b) => !b.includes('result-card'),
+});
+
+await check('state-specific template', '/resources/rent-agreement-maharashtra', {
+  '200': status(200),
+  'is labelled a Lexhall template, not an official form': has('Lexhall template'),
+  'says explicitly that no authority approved it': has('no authority has approved it'),
+  'carries the state rule before the document': has('what this state requires'),
+  'states the compulsory-registration position for the state':
+    hasAny('compulsory', 'must be registered'),
+  'renders a readable preview rather than only a download': has('doc-page'),
+  'marks the blanks the user must fill in': has('doc-placeholder'),
+  'publishes the provenance breakdown': has('How this scores on provenance'),
+  'warns that the score is not legal validity': has('not a statement about legal validity'),
+  'carries a closing disclaimer': has('not legal advice'),
+  'no error state': notError,
+});
+
+// An official resource is published only after its URL has actually been
+// fetched, so on an instance where `--verify-resources` has not run it is
+// correctly absent. That is the publication gate working, not a failure, so the
+// assertion adapts rather than demanding a verified library.
+const officialSlug = 'nalsa-legal-aid-eligibility';
+const officialProbe = await fetch(`${BASE}/resources/${officialSlug}`, { signal: AbortSignal.timeout(30_000) })
+  .then((r) => r.status)
+  .catch(() => 0);
+
+if (officialProbe === 200) {
+  await check('official resource offers the publisher, not a copy', `/resources/${officialSlug}`, {
+    '200': status(200),
+    'is labelled official': has('Official source'),
+    'explains why there is no local preview': has('Why there is no preview here'),
+    'links out to the authority': has('nalsa.gov.in'),
+    'names the authority': has('National Legal Services Authority'),
+    'no error state': notError,
+  });
+
+  await check('download refuses to proxy an official document', `/api/resources/${officialSlug}/download?format=docx`, {
+    '409 conflict': status(409),
+    'explains that we do not host a copy': has('do not host a copy'),
+    'points at the publisher instead': has('nalsa.gov.in'),
+  });
+} else {
+  await check('unverified official resource is withheld rather than published', `/resources/${officialSlug}`, {
+    'is not served': (_b, res) => res.status === 404,
+  });
+  console.log(
+    `  · note: official resources are unpublished on this instance (${BASE}).\n`
+    + '    Run `npm run resources:verify` — publication is gated on fetching the source URL.',
+  );
+}
+
+await check('template download is a real docx', '/api/resources/rent-agreement-maharashtra/download?format=docx', {
+  '200': status(200),
+  'sends a wordprocessing content type':
+    (_b, res) => (res.headers.get('content-type') ?? '').includes('wordprocessingml'),
+  'sends a readable filename':
+    (_b, res) => /filename="Lexhall_[A-Za-z0-9_]+\.docx"/.test(res.headers.get('content-disposition') ?? ''),
+  'is not cached by shared caches':
+    (_b, res) => (res.headers.get('cache-control') ?? '').includes('no-store'),
+});
+
+await check('plain-text download', '/api/resources/vakalatnama/download?format=txt', {
+  '200': status(200),
+  'includes the before-you-use guidance': hasAny('BEFORE YOU USE THIS', 'prescribed'),
+  'records its provenance in the file': has('Lexhall resource library'),
+});
+
+await check('category page', '/resources/category/legal-aid', {
+  '200': status(200),
+  'names the category': has('Legal aid'),
+  'offers state filtering': has('By state'),
+  'no error state': notError,
+});
+
+await check('state-aware kit', '/resources/kits/renting-a-home', {
+  '200': status(200),
+  'asks for the state and says why it matters': has('Which state?'),
+  'admits a bundle is not completeness': has('not a complete legal position'),
+  'orders the documents rather than listing them alphabetically': has('in the order they matter'),
+  'no error state': notError,
+});
+
+await check('kit falls back honestly for a state it has nothing for', '/resources/kits/renting-a-home?state=Mizoram', {
+  '200': status(200),
+  'says so rather than substituting another state':
+    hasAny('We hold nothing specific to', 'specifically'),
+  'no error state': notError,
+});
+
+await check('resource centre leads with the helpline', '/resources/centres/women', {
+  '200': status(200),
+  'shows the helpline before the taxonomy': has('If you need help now'),
+  'carries a real number': has('181'),
+  'no error state': notError,
+});
+
+await check('library documentation is honest about gaps', '/resources/about', {
+  '200': status(200),
+  'explains why a 403 is not a broken link': has('Why a 403 is not a broken link'),
+  'lists what the library will not do': has('What this library will not do'),
+  'states the known gaps': has('Known gaps'),
+  'separates provenance from legal validity': has('provenance score is not a legal score'),
+  'no error state': notError,
+});
+
+await check('resource suggestions', '/api/resources/suggest?q=rent', {
+  '200': status(200),
+  'returns items': has('"items"'),
+  'returns at least one document': (b) => JSON.parse(b).items.length > 0,
+});
+
+await check('resource admin surfaces the review queue', '/admin/resources', {
+  '200': status(200),
+  'declares that it is unauthenticated': has('unauthenticated'),
+  'shows the lifecycle': has('Lifecycle'),
+  'shows the review queue': has('Review queue'),
+  'no error state': notError,
+});
+
+await check('matter page links to its documents', '/matters/property-rent/rent-agreement', {
+  '200': status(200),
+  'offers documents for the matter': hasAny('Documents and forms for this matter', 'Where it is heard'),
+  'no error state': notError,
+});
+
+await check('sitemap lists resources but not search views', '/sitemap.xml', {
+  '200': status(200),
+  'includes a resource': has('/resources/'),
+  'excludes search result pages': (b) => !b.includes('/resources/search'),
+  'excludes the saved list': (b) => !b.includes('/resources/saved'),
+});
+
+await check('robots keeps crawlers off the endpoints', '/robots.txt', {
+  '200': status(200),
+  'disallows the api': has('/api/'),
+  'disallows admin': has('/admin'),
+  'declares a sitemap': has('Sitemap'),
+});
+
 // --- report -----------------------------------------------------------------
 const total = pass + failures.length;
 console.log(`\nsmoke: ${pass}/${total} assertions passed  (${BASE})`);

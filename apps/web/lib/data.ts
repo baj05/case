@@ -15,8 +15,14 @@ import {
   dataHealth, listSources, listRuns, listIssues, listClaims, listDataRequests,
   listFeatureFlags, isInitialised, db,
   listDomains, listMatters, getMatter, listForums,
+  listResourceCategories, resourceLibraryStats, featuredResources, searchResources,
+  getResource as getResourceRepo, relatedResources, resourcesForMatter, resourcesForPracticeArea,
+  listResourceKits, getResourceKit as getResourceKitRepo,
+  listResourceCentres, getResourceCentre as getResourceCentreRepo,
+  recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
 } from '@lexhall/db';
-import type { SearchFilters } from '@lexhall/db';
+import type { SearchFilters, ResourceSearchFilters } from '@lexhall/db';
 
 /** Guard so a missing database renders a helpful page, not a stack trace. */
 export function databaseReady(): boolean {
@@ -137,3 +143,31 @@ export const getDomains = cache(() => listDomains());
 export const getMatters = cache((opts: { domainSlug?: string; practiceAreaSlug?: string; limit?: number } = {}) => listMatters(opts));
 export const getMatterDetail = cache((slug: string) => getMatter(slug));
 export const getForums = cache((kind?: string) => listForums(kind));
+
+// ---------------------------------------------------------------------------
+// Resource library
+//
+// Same discipline as everything else in this file: the page composes, the
+// repository queries. Nothing below builds SQL.
+// ---------------------------------------------------------------------------
+export const getResourceCategories = cache(() => listResourceCategories());
+export const getResourceStats = cache(() => resourceLibraryStats());
+export const getFeaturedResources = cache(() => featuredResources());
+export const getResourceKits = cache(() => listResourceKits());
+export const getResourceKit = cache((slug: string, state?: string) => getResourceKitRepo(slug, state));
+export const getResourceCentres = cache(() => listResourceCentres());
+export const getResourceCentre = cache((slug: string) => getResourceCentreRepo(slug));
+export const getResourceDetail = cache((slug: string) => getResourceRepo(slug));
+export const getRelatedResources = cache((id: number, limit?: number) => relatedResources(id, limit));
+export const getResourcesForMatter = cache((slug: string, limit?: number) => resourcesForMatter(slug, limit));
+export const getResourcesForPracticeArea = cache((slug: string, limit?: number) => resourcesForPracticeArea(slug, limit));
+
+export function runResourceSearch(filters: ResourceSearchFilters) {
+  return searchResources(filters);
+}
+
+export {
+  recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
+};
+export type { ResourceSearchFilters };

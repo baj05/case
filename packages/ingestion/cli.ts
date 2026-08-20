@@ -5,6 +5,12 @@
  *   npm run ingest -- --dry-run        parse and report, write nothing
  *   npm run ingest -- --councils SBC05,SBC12
  *   npm run ingest -- --no-photos --attempts 1
+ *
+ * Resource library (see docs/RESOURCE_INGESTION_REPORT.md):
+ *   npm run ingest -- --resources              seed the catalogue and templates
+ *   npm run ingest -- --verify-resources       link-check every source URL
+ *   npm run ingest -- --harvest-resources      read publisher form pages
+ *   npm run ingest -- --publish-reviewed       promote reviewed harvest rows
  */
 import { parseArgs } from 'node:util';
 import { applySchema, isInitialised } from '@lexhall/db';
@@ -19,6 +25,11 @@ const { values } = parseArgs({
     strategy: { type: 'string', default: 'reader' },
     'init-db': { type: 'boolean', default: false },
     judges: { type: 'boolean', default: false },
+    resources: { type: 'boolean', default: false },
+    'verify-resources': { type: 'boolean', default: false },
+    'harvest-resources': { type: 'boolean', default: false },
+    'publish-reviewed': { type: 'boolean', default: false },
+    limit: { type: 'string' },
   },
   allowPositionals: false,
 });
@@ -32,6 +43,51 @@ const strategy = values.strategy === 'http' ? 'http' : 'reader';
 const started = Date.now();
 
 process.stdout.write(`\nLexhall ingestion — Bar Council of India\n${'─'.repeat(64)}\n`);
+
+const resourceMode = values.resources || values['verify-resources']
+  || values['harvest-resources'] || values['publish-reviewed'];
+
+if (resourceMode) {
+  const {
+    seedResourceLibraryData, verifyResourceLinks, harvestResources, promoteReviewedHarvest,
+  } = await import('./src/resources.ts');
+  const write = (m: string) => process.stdout.write(`${m}\n`);
+  const limit = values.limit ? Math.max(1, Number(values.limit)) : undefined;
+
+  if (values.resources) {
+    write('\nseeding the resource library');
+    seedResourceLibraryData(write);
+  }
+
+  if (values['harvest-resources']) {
+    write('\nharvesting publisher form pages (robots.txt read and obeyed per host)');
+    const r = await harvestResources({ limit, dryRun: Boolean(values['dry-run']), onProgress: write });
+    write(
+      `${'─'.repeat(64)}\ntargets ${r.targetsRun}, discovered ${r.discovered}, inserted ${r.inserted}, `
+      + `duplicates ${r.duplicates}, rejected ${r.rejected}, robots-skipped ${r.blockedByRobots}, errors ${r.errors}`,
+    );
+    write('every inserted row is at REVIEW_REQUIRED and is not visible on the public site');
+  }
+
+  if (values['verify-resources']) {
+    write('\nverifying resource links');
+    const r = await verifyResourceLinks({ limit, dryRun: Boolean(values['dry-run']), onProgress: write });
+    write(`${'─'.repeat(64)}\nchecked ${r.checked}`);
+    for (const [outcome, n] of Object.entries(r.byOutcome).sort((a, b) => b[1] - a[1])) {
+      write(`  ${outcome.padEnd(14)} ${n}`);
+    }
+    write(`published by this pass ${r.published}, unpublished ${r.unpublished}, needing a person ${r.needsHuman}`);
+  }
+
+  if (values['publish-reviewed']) {
+    write('\npromoting reviewed harvest rows');
+    const r = promoteReviewedHarvest({ limit, onProgress: write });
+    write(`${'─'.repeat(64)}\nconsidered ${r.considered}, promoted ${r.promoted}, held ${r.skipped.length}`);
+  }
+
+  process.stdout.write('\n');
+  process.exit(0);
+}
 
 if (values.judges) {
   const { ingestJudges } = await import('./src/pipeline.ts');

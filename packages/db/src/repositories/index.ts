@@ -7,3 +7,4 @@ export * from './engagement.ts';
 export * from './fees.ts';
 export * from './shortlist.ts';
 export * from './taxonomy.ts';
+export * from './resources.ts';

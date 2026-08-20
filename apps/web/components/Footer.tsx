@@ -14,6 +14,16 @@ export function Footer() {
       ],
     },
     {
+      head: 'Free resources',
+      links: [
+        { href: '/resources', label: 'Resource library' },
+        { href: '/resources/category/agreements-contracts', label: 'Agreements and contracts' },
+        { href: '/resources/category/legal-aid', label: 'Legal aid forms' },
+        { href: '/resources/category/government-portals', label: 'Government portals' },
+        { href: '/resources/about', label: 'How the library works' },
+      ],
+    },
+    {
       head: 'Professionals',
       links: [
         { href: '/for-professionals', label: 'Claim your profile' },

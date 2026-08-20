@@ -11,7 +11,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "setup": "npm install && npm run ingest && npm run ingest:judges && npm run db:demo && npm run assets:sync",
+    "setup": "npm install && npm run ingest && npm run ingest:judges && npm run resources && npm run resources:verify && npm run db:demo && npm run assets:sync",
     "dev": "npm run dev --workspace=@lexhall/web",
     "build": "npm run build --workspace=@lexhall/web",
     "start": "npm run start --workspace=@lexhall/web",
@@ -29,6 +29,12 @@
     "db:import": "node scripts/db-snapshot.mjs import",
     "db:verify": "node scripts/db-snapshot.mjs verify",
     "smoke": "node scripts/smoke.mjs",
-    "ci": "npm run typecheck && npm test && npm run build"
+    "ci": "npm run typecheck && npm test && npm run build",
+    "resources": "node packages/ingestion/cli.ts --resources",
+    "resources:verify": "node packages/ingestion/cli.ts --verify-resources --limit 400",
+    "resources:harvest": "node packages/ingestion/cli.ts --harvest-resources --limit 40",
+    "resources:harvest:dry": "node packages/ingestion/cli.ts --harvest-resources --dry-run --limit 6",
+    "resources:publish": "node packages/ingestion/cli.ts --publish-reviewed",
+    "resources:refresh": "npm run resources && npm run resources:verify"
   }
 }

@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getMatterDetail, getMatters, runSearch, databaseReady } from '@/lib/data';
+import { getMatterDetail, getMatters, runSearch, getResourcesForMatter, databaseReady } from '@/lib/data';
 import { Notice } from '@/components/States';
 import { ResultCard } from '@/components/ResultCard';
+import { ResourceCard } from '@/components/ResourceCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,10 @@ export default async function MatterPage({ params }: { params: Promise<{ domain:
   const siblings = getMatters({ practiceAreaSlug: m.practiceAreaSlug, limit: 12 })
     .filter((s) => s.slug !== m.slug)
     .slice(0, 6);
+  // Documents attached to this matter. This join is the point of having a
+  // taxonomy at all: "PF not deposited" leads to the grievance letter and the
+  // EPFO portal, not to a category page the user has to translate.
+  const resources = getResourcesForMatter(m.slug, 6);
   const firstInstance = m.forums.filter((f) => f.stage === 'first_instance');
   const later = m.forums.filter((f) => f.stage !== 'first_instance');
 
@@ -138,6 +143,24 @@ export default async function MatterPage({ params }: { params: Promise<{ domain:
           </Notice>
           <div className="stack gap-3">
             {outcome.hits.map((hit) => <ResultCard key={hit.professional.id} hit={hit} />)}
+          </div>
+        </section>
+      )}
+
+      {resources.length > 0 && (
+        <section className="stack gap-3">
+          <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div className="stack gap-1">
+              <h2 className="t-title-lg">Documents and forms for this matter</h2>
+              <p className="t-body-sm ink-variant measure">
+                Official forms open at the authority that published them. Lexhall templates can be read here
+                before you download them. All free, and each one says which it is.
+              </p>
+            </div>
+            <Link href={`/resources/search?matter=${m.slug}`} className="btn btn-secondary btn-sm">See all</Link>
+          </div>
+          <div className="stack gap-3">
+            {resources.map((card) => <ResourceCard key={card.id} card={card} />)}
           </div>
         </section>
       )}

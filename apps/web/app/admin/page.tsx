@@ -50,9 +50,12 @@ export default function AdminPage() {
 
   return (
     <div className="container section-tight stack gap-6">
-      <div className="stack gap-2">
-        <p className="t-label-mono ink-variant">Platform administration</p>
-        <h1 className="t-headline-lg">Data workbench</h1>
+      <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div className="stack gap-2">
+          <p className="t-label-mono ink-variant">Platform administration</p>
+          <h1 className="t-headline-lg">Data workbench</h1>
+        </div>
+        <Link href="/admin/resources" className="btn btn-secondary btn-sm">Resource library →</Link>
       </div>
 
       <Notice tone="warn" title="Prototype: this page is not access-controlled">

@@ -15,8 +15,21 @@ Requires Node 20+ (developed on Node 26). No Docker, no database server, no API 
 
 ```bash
 npm install
-npm run ingest      # crawls the Bar Council of India register (~2 min, polite, rate-limited)
-npm run dev         # http://localhost:3000
+npm run ingest              # crawls the Bar Council of India register (~2 min, polite, rate-limited)
+npm run resources           # seeds the resource library: catalogue, templates, kits
+npm run resources:verify    # fetches every source URL and records the outcome
+npm run dev                 # http://localhost:3000
+```
+
+The resource library needs those two extra steps because publication is gated on
+verification: `resources` writes the catalogue, and `resources:verify` is what
+actually publishes the entries whose source URL answers. Nothing is published on
+a URL nobody could open. To go further and read the form lists that state
+authorities publish themselves:
+
+```bash
+npm run resources:harvest   # reads publisher form pages, robots.txt obeyed per host
+npm run resources:publish   # promotes the reviewed rows a person is willing to stand behind
 ```
 
 ### Or with Docker
@@ -77,6 +90,13 @@ node scripts/fetch-imagery.mjs   # refresh editorial imagery + attribution
 | `/admin` | Ingestion runs, QC queue, claims, zero-result queries, feature flags with legal gates |
 | `/how-it-works` | The actual ranking weights, published |
 | `/data-sources` | What we ingest, what we withhold, and why |
+| `/resources` | The resource library: 183 free documents, official and platform-written, never confused |
+| `/resources/search?q=rent+agreement+in+Noida` | Noida resolves to Uttar Pradesh, and the UP tenancy document leads |
+| `/resources/rent-agreement-maharashtra` | The state rule *before* the document — Maharashtra registration is compulsory whatever the term |
+| `/resources/nalsa-legal-aid-eligibility` | An official resource: no preview, and the page explains why |
+| `/resources/kits/renting-a-home` | A situation, not a category |
+| `/resources/about` | What the library will not do, and its known gaps |
+| `/admin/resources` | Review queue, link state, harvest runs |
 
 Click **"Why"** on any search result to see its full score breakdown.
 
@@ -99,6 +119,8 @@ docs/                 audit, compliance matrix, architecture, ADRs, roadmap, des
 - `docs/DECISIONS.md` — 12 ADRs with trade-offs and revisit triggers
 - `docs/ROADMAP.md` — phases and their dependencies
 - `docs/DESIGN.md` — the "Vibrant Authority" design system as supplied
+- `docs/RESOURCE_INGESTION_REPORT.md` — what the resource library holds, where each document came from, what was rejected and why
+- `docs/RESOURCE_ARCHITECTURE.md` — the taxonomy, schema, pipeline, ranking and preview architecture behind it
 
 ## Principles this build holds to
 
@@ -111,6 +133,12 @@ Where the register is silent, the profile says so.
 carry a paid boost is constrained to zero at the schema level.
 
 **Personal contact data is not republished** merely because the source is public.
+
+**A document never claims an authority it does not have.** The resource library
+distinguishes an official form from something Lexhall wrote, on every card and
+every page, and the seeder throws rather than accept a row whose declared type and
+publisher contradict each other. No government document is rehosted: the library
+links to the authority's own copy, so the version you get is the current one.
 
 **Risky features ship switched off.** Reviews, payments and referrals are schema-complete and flag-gated pending
 legal sign-off, with each gate recorded in the database and visible in `/admin`.

@@ -1510,6 +1510,13 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .textured::before { opacity: 0.05; mix-blend-mode: screen; }
 }
+/* The paper texture tiles at 620px. On a full-bleed section narrower than that
+   only part of one tile is visible, and the tile's own light regions read as a
+   hard-edged patch rather than a texture. Scaling it down so at least two tiles
+   fit restores the intended effect. */
+@media (max-width: 700px) {
+  .textured::before { background-size: 300px auto; }
+}
 
 /* --- motion pass ------------------------------------------------------- */
 @media (prefers-reduced-motion: no-preference) {
@@ -1549,4 +1556,143 @@ details[open] > .filter-summary::after { content: '–'; }
   .float-ml { left: 2%; bottom: 40%; }
   .float-card { max-width: 200px; padding: 10px 12px; }
   .float-value { font-size: 1.125rem; }
+}
+
+/* ===========================================================================
+   RESOURCE LIBRARY
+   =========================================================================== */
+
+/* Utilities the matter and resource pages rely on. Declared here rather than
+   inline so that spacing stays consistent with the rest of the system. */
+.split-2 { display: grid; gap: var(--gutter); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .split-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.list-plain { list-style: none; padding: 0; margin: 0; }
+.ink-accent { color: var(--action-orange); font-weight: 700; flex: none; }
+
+.t-title-lg {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  line-height: 1.25; letter-spacing: -0.015em;
+}
+.t-title-sm {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1rem; line-height: 1.3; letter-spacing: -0.01em;
+}
+
+/* ---- document viewer ---------------------------------------------------
+   The chrome around a document we authored. Deliberately restrained: the
+   document is the content, and a viewer that competes with it for attention
+   makes a legal document harder to read, not easier. */
+.doc-shell {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  background: var(--surface-lowest);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  position: sticky; top: 0; z-index: 2;
+}
+
+.doc-search { flex: 1 1 180px; min-width: 140px; max-width: 320px; }
+.doc-search .input { min-height: 34px; }
+
+.doc-findbar {
+  padding: 8px 14px;
+  background: var(--surface-container);
+  border-bottom: 1px solid var(--outline-variant);
+}
+.doc-jump {
+  background: none; border: 0; padding: 0 2px; cursor: pointer;
+  color: var(--primary); font-weight: 700; font-family: var(--font-mono);
+  text-decoration: underline;
+}
+
+.doc-stage {
+  padding: clamp(10px, 2vw, 24px);
+  background: var(--surface-dim);
+  overflow-x: auto;
+  min-height: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* A page, not a scrolling wall of text: the proportions of the paper the
+   document will actually be printed on. */
+.doc-page {
+  background: #fff;
+  color: #131b2e;
+  margin-inline: auto;
+  max-width: 76ch;
+  padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 44px);
+  box-shadow: var(--shadow-md);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  line-height: 1.65;
+}
+@media (prefers-color-scheme: dark) {
+  /* The page stays light. A legal document read against a dark page reads as a
+     screenshot rather than a document, and users print from this view. */
+  .doc-page { background: #fbfbfd; color: #14182a; }
+}
+
+.doc-line { margin: 0; white-space: pre-wrap; word-break: break-word; min-height: 1.65em; }
+
+.doc-placeholder {
+  background: var(--primary-fixed);
+  color: var(--on-primary-container);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-weight: 600;
+  font-style: normal;
+}
+.doc-hit { background: var(--electric-lime); color: var(--on-lime); border-radius: 2px; }
+
+.doc-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+}
+
+.doc-fields {
+  padding: 14px 18px;
+  border-top: 1px solid var(--outline-variant);
+  max-height: 320px; overflow-y: auto;
+}
+.doc-fields ol { padding-left: 1.2em; }
+
+.doc-backdrop {
+  position: fixed; inset: 0; z-index: var(--z-modal);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
+}
+.doc-fullscreen {
+  position: fixed; inset: 2vh 2vw; z-index: calc(var(--z-modal) + 1);
+  display: flex; flex-direction: column;
+}
+.doc-fullscreen .doc-shell { height: 100%; }
+.doc-fullscreen .doc-stage { max-height: none; flex: 1 1 auto; }
+
+/* On a narrow screen the toolbar must not eat the document. */
+@media (max-width: 560px) {
+  /* Two rows, not three: page controls and zoom share a row, find gets its own.
+     The toolbar was taking 135px of an 812px screen, which is a third of the
+     document stage. */
+  .doc-toolbar { gap: 6px; padding: 8px; row-gap: 6px; }
+  .doc-toolbar > .row { flex: 0 0 auto; }
+  .doc-search { flex-basis: 100%; order: 3; max-width: none; }
+  .doc-search .input { min-height: 32px; }
+  .doc-stage { padding: 8px; max-height: 66vh; }
+  .doc-page { padding: 18px 14px; }
+  .doc-foot { padding: 8px 10px; }
 }
