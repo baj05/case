@@ -11,7 +11,7 @@ Docker: multi-stage, non-root, self-initialising entrypoint, health-gated.
 ## Data
 373 advocates (Bar Council of India — office-bearers, **not** the full roll) · 47 Supreme Court judges (Wikipedia API) · 24 councils · 60 courts · 24 practice areas · 127 fee rows · 200 availability rules
 20 real profiles carry **demo** fees/availability, audit-marked and disclosed in the UI; `npm run db:demo -- --clear` reverts.
-**Resource library**: 183 published (146 official link-only, 37 Lexhall templates incl. 12 state tenancy variants) · 49 sources · 30 states · 86 authorities · 26 categories · 9 kits · 6 centres · 34 harvest targets · 35 held at REVIEW_REQUIRED. Nothing government-published is rehosted.
+**Resource library**: 183 published (146 official link-only, 37 CaseADVO templates incl. 12 state tenancy variants) · 49 sources · 30 states · 86 authorities · 26 categories · 9 kits · 6 centres · 34 harvest targets · 35 held at REVIEW_REQUIRED. Nothing government-published is rehosted.
 
 ## Works
 Resource library: NL search with published signals (city→state resolution, AND-FTS, score-bucketed ranking) · state-aware rent agreements · dependency-free .docx export · in-browser paginated viewer (zoom, in-doc search, fullscreen, keyboard) · robots-obeying harvest of 34 SLSA form pages · link verification that classifies 403 as *blocked*, not broken · operator-gated publication of scraped rows · aggregate-only analytics · sitemap/robots/schema.org.

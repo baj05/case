@@ -224,7 +224,7 @@ await check('an unmatchable query says so rather than showing everything', '/res
 
 await check('state-specific template', '/resources/rent-agreement-maharashtra', {
   '200': status(200),
-  'is labelled a Lexhall template, not an official form': has('Lexhall template'),
+  'is labelled a CaseADVO template, not an official form': has('CaseADVO template'),
   'says explicitly that no authority approved it': has('no authority has approved it'),
   'carries the state rule before the document': has('what this state requires'),
   'states the compulsory-registration position for the state':
@@ -276,7 +276,7 @@ await check('template download is a real docx', '/api/resources/rent-agreement-m
   'sends a wordprocessing content type':
     (_b, res) => (res.headers.get('content-type') ?? '').includes('wordprocessingml'),
   'sends a readable filename':
-    (_b, res) => /filename="Lexhall_[A-Za-z0-9_]+\.docx"/.test(res.headers.get('content-disposition') ?? ''),
+    (_b, res) => /filename="CaseADVO_[A-Za-z0-9_]+\.docx"/.test(res.headers.get('content-disposition') ?? ''),
   'is not cached by shared caches':
     (_b, res) => (res.headers.get('cache-control') ?? '').includes('no-store'),
 });
@@ -284,7 +284,7 @@ await check('template download is a real docx', '/api/resources/rent-agreement-m
 await check('plain-text download', '/api/resources/vakalatnama/download?format=txt', {
   '200': status(200),
   'includes the before-you-use guidance': hasAny('BEFORE YOU USE THIS', 'prescribed'),
-  'records its provenance in the file': has('Lexhall resource library'),
+  'records its provenance in the file': has('CaseADVO resource library'),
 });
 
 await check('category page', '/resources/category/legal-aid', {

@@ -4,9 +4,9 @@ import { downloadFilename, OFFICIAL_STATUS_META } from '@lexhall/core';
 import type { OfficialStatus } from '@lexhall/core';
 
 /**
- * Serves a Lexhall-authored document as a real file.
+ * Serves a CaseADVO-authored document as a real file.
  *
- * Only documents Lexhall wrote are served from here. An official form is not
+ * Only documents CaseADVO wrote are served from here. An official form is not
  * proxied through this endpoint under any circumstances: we do not hold a copy,
  * proxying one would present the authority's document as ours, and it would
  * serve a stale copy the moment the authority revised it. Requesting a download
@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     const where = resource.sourceUrl ?? resource.landingUrl;
     return new Response(
       [
-        `“${resource.title}” is published by ${resource.authorityName ?? 'its publisher'}, not by Lexhall.`,
+        `“${resource.title}” is published by ${resource.authorityName ?? 'its publisher'}, not by CaseADVO.`,
         '',
         'We do not host a copy, so there is nothing for us to send you. That is deliberate: a mirrored',
         'government form is out of date the moment the authority revises it, and presenting their document',
@@ -62,7 +62,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   ];
 
   const provenance = [
-    `Source: Lexhall resource library, /resources/${resource.slug}`,
+    `Source: CaseADVO resource library, /resources/${resource.slug}`,
     `Version ${resource.version}. Downloaded ${generated}.`,
     resource.stateName
       ? `Prepared for ${resource.stateName}. The position differs in other states.`

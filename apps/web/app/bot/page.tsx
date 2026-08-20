@@ -4,7 +4,7 @@ import { BRAND } from '@/lib/brand';
 
 export const metadata: Metadata = {
   title: 'About our crawler',
-  description: 'What LexhallBot does, which paths it requests, how to rate-limit it, and how to have it stop.',
+  description: 'What CaseADVOBot does, which paths it requests, how to rate-limit it, and how to have it stop.',
 };
 
 export default function BotPage() {
@@ -26,7 +26,7 @@ export default function BotPage() {
         <dl className="stack gap-2">
           <div className="stack gap-1">
             <dt className="t-label-mono ink-variant">User-Agent</dt>
-            <dd className="mono" style={{ wordBreak: 'break-all' }}>LexhallBot/0.1 (+/bot; {BRAND.supportEmail})</dd>
+            <dd className="mono" style={{ wordBreak: 'break-all' }}>CaseADVOBot/0.1 (+/bot; {BRAND.supportEmail})</dd>
           </div>
           <div className="stack gap-1">
             <dt className="t-label-mono ink-variant">Requests</dt>
@@ -43,7 +43,7 @@ export default function BotPage() {
         <h2 className="t-title">To slow us down or stop us</h2>
         <p className="t-body-sm">Add this to your robots.txt and we will comply on the next run:</p>
         <pre className="mono scroll-x" style={{ background: 'var(--surface-low)', padding: 14, borderRadius: 'var(--r)', margin: 0 }}>
-{`User-agent: LexhallBot
+{`User-agent: CaseADVOBot
 Crawl-delay: 10
 Disallow: /path-you-want-left-alone`}
         </pre>

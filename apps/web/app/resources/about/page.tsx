@@ -42,7 +42,7 @@ export default function AboutResourcesPage() {
         <div className="stat-strip">
           <span className="stat"><span className="stat-num">{formatNumber(stats.published)}</span><span className="stat-label">Published</span></span>
           <span className="stat"><span className="stat-num">{formatNumber(stats.official)}</span><span className="stat-label">Official sources</span></span>
-          <span className="stat"><span className="stat-num">{formatNumber(stats.templates)}</span><span className="stat-label">Lexhall templates</span></span>
+          <span className="stat"><span className="stat-num">{formatNumber(stats.templates)}</span><span className="stat-label">CaseADVO templates</span></span>
           <span className="stat"><span className="stat-num">{formatNumber(stats.previewable)}</span><span className="stat-label">Readable here</span></span>
           <span className="stat"><span className="stat-num">{formatNumber(stats.awaitingReview)}</span><span className="stat-label">Awaiting review</span></span>
         </div>
@@ -68,7 +68,7 @@ export default function AboutResourcesPage() {
           ))}
         </div>
         <Notice tone="legal">
-          Nothing Lexhall wrote is ever labelled official, and the seeder throws an error rather than accept a
+          Nothing CaseADVO wrote is ever labelled official, and the seeder throws an error rather than accept a
           document whose declared type and status contradict each other. That check runs before anything reaches
           the database, which is why it cannot be bypassed by an editorial mistake.
         </Notice>
@@ -241,7 +241,7 @@ export default function AboutResourcesPage() {
       <Notice tone="legal">
         <span>
           Nothing in this library is legal advice, and using a document from it does not create any
-          relationship between you and Lexhall or any advocate listed on this site. Requirements differ between
+          relationship between you and CaseADVO or any advocate listed on this site. Requirements differ between
           states and change over time. If the amount at stake, or the deadline, makes advice worth having,{' '}
           <Link href="/search" style={{ textDecoration: 'underline' }}>find an advocate</Link> — or check
           whether you qualify for{' '}

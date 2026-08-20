@@ -20,7 +20,7 @@ npm run resources:publish   # promote reviewed harvest rows
 |---|---|
 | Resources published | **183** |
 | Official (published by the authority named) | 146 |
-| Lexhall templates | 37 |
+| CaseADVO templates | 37 |
 | Held at REVIEW_REQUIRED (not public) | 35 |
 | Awaiting first link check | 1 |
 | States and union territories covered | 30 |
@@ -40,7 +40,7 @@ npm run resources:publish   # promote reviewed harvest rows
 |---|---|---|
 | `catalogue` | 121 | Written by hand. A person chose the URL, opened it, and described the document. |
 | `harvest` | 61 | Discovered by the pipeline reading a publisher's own forms page. |
-| `template` | 37 | Authored by Lexhall — 25 base templates plus 12 state tenancy variants. |
+| `template` | 37 | Authored by CaseADVO — 25 base templates plus 12 state tenancy variants. |
 
 ### By document type (published only)
 
@@ -70,7 +70,7 @@ npm run resources:publish   # promote reviewed harvest rows
 | 1 | Government or court — the issuing authority itself | 47 |
 | 2 | Statutory or regulatory authority | 28 |
 | 3 | Legal services authority | 71 |
-| 6 | Lexhall-authored | 37 |
+| 6 | CaseADVO-authored | 37 |
 
 No resource is published at level 4 or 5. Nothing in the library comes from a
 commercial legal-content publisher.
@@ -238,13 +238,13 @@ distinguishes a machine check from a human decision.
 
 ## 5. Rights and licensing
 
-| Rights basis | Count | Downloadable from Lexhall |
+| Rights basis | Count | Downloadable from CaseADVO |
 |---|---|---|
 | `link_only` | 182 | No — opens at the publisher |
 | `platform_owned` | 37 | Yes |
 | `unknown` | 0 | Never |
 
-**No government document is hosted by Lexhall.** Permission to rehost has not
+**No government document is hosted by CaseADVO.** Permission to rehost has not
 been sought from any publisher, so every official resource stores metadata and
 links to the authority's own copy. Two consequences, both stated on the public
 pages:
@@ -336,7 +336,7 @@ These appear in `/admin/resources` and in the "Known gaps" section of
   `unknown`, which this library refuses to publish.
 - **No document was mirrored.** See §5.
 - **No fabricated official format.** Where a prescribed form exists, the entry
-  links to it and any Lexhall document is presented as a covering document.
+  links to it and any CaseADVO document is presented as a covering document.
   `assertStatusConsistent` throws at seed time on a type/status mismatch, so an
   editorial mistake cannot put a false official label into the database.
 - **No fee, rate or deposit cap is stated in a state note.** Those change by

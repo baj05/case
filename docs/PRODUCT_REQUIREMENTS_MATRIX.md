@@ -1,6 +1,6 @@
 # PRODUCT_REQUIREMENTS_MATRIX
 
-Every capability originally intended for Lexhall, grouped by area, with each
+Every capability originally intended for CaseADVO, grouped by area, with each
 requirement mapped to a stable ID used by GAP_ANALYSIS and RECTIFICATION_TASKS.
 
 Source columns: **PM** = master product/engineering briefs;

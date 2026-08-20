@@ -153,7 +153,7 @@ export default async function MatterPage({ params }: { params: Promise<{ domain:
             <div className="stack gap-1">
               <h2 className="t-title-lg">Documents and forms for this matter</h2>
               <p className="t-body-sm ink-variant measure">
-                Official forms open at the authority that published them. Lexhall templates can be read here
+                Official forms open at the authority that published them. CaseADVO templates can be read here
                 before you download them. All free, and each one says which it is.
               </p>
             </div>

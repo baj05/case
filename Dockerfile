@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Lexhall — production image.
+# CaseADVO — production image.
 #
 # Multi-stage: deps -> build -> runtime. The runtime stage carries no compiler
 # and no dev dependencies, runs as a non-root user, and includes a healthcheck.

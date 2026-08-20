@@ -42,7 +42,7 @@ if (values['init-db'] || !isInitialised()) {
 const strategy = values.strategy === 'http' ? 'http' : 'reader';
 const started = Date.now();
 
-process.stdout.write(`\nLexhall ingestion — Bar Council of India\n${'─'.repeat(64)}\n`);
+process.stdout.write(`\nCaseADVO ingestion — Bar Council of India\n${'─'.repeat(64)}\n`);
 
 const resourceMode = values.resources || values['verify-resources']
   || values['harvest-resources'] || values['publish-reviewed'];

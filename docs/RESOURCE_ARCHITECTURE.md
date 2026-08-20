@@ -17,7 +17,7 @@ Two axes, deliberately separate.
 | Status | Meaning |
 |---|---|
 | `OFFICIAL` | Published by the authority named. Linked, never hosted. |
-| `PLATFORM_TEMPLATE` | Written by Lexhall. Approved by nobody. |
+| `PLATFORM_TEMPLATE` | Written by CaseADVO. Approved by nobody. |
 | `THIRD_PARTY` | Published by someone who is neither. |
 | `REFERENCE` | Background material. Not a form, not for filing. |
 
@@ -162,7 +162,7 @@ those words, because a user will otherwise read 100/100 as legal assurance.
 
 ## 5. Preview and download
 
-**Preview** exists only for documents Lexhall wrote. `DocumentViewer` paginates
+**Preview** exists only for documents CaseADVO wrote. `DocumentViewer` paginates
 by line budget (responsive: 46 lines on desktop, 22 on a phone, because a clause
 that occupies one line at 1280px occupies four at 375px), zooms 70–200%, searches
 within the document with per-page hit counts and jump links, goes full screen with
@@ -189,7 +189,7 @@ itself and a provenance footer with the download date.
 There is no PDF. A word processor makes a better one from the `.docx` in one step
 than a hand-rolled generator would.
 
-Filenames are readable — `Lexhall_Maharashtra_Residential_Rent_Agreement.docx`,
+Filenames are readable — `CaseADVO_Maharashtra_Residential_Rent_Agreement.docx`,
 not `document_final_v2.pdf` — and the state is not repeated when the title already
 carries it.
 

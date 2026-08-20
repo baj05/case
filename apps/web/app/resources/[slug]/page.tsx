@@ -79,7 +79,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
     version: resource.version,
     ...(resource.authorityName
       ? { publisher: { '@type': 'GovernmentOrganization', name: resource.authorityName } }
-      : { publisher: { '@type': 'Organization', name: 'Lexhall' } }),
+      : { publisher: { '@type': 'Organization', name: 'CaseADVO' } }),
     ...(resource.sourceUrl ? { sameAs: resource.sourceUrl } : {}),
     breadcrumb: {
       '@type': 'BreadcrumbList',
@@ -162,7 +162,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
           </div>
           <div>
             <dt>Published by</dt>
-            <dd>{resource.authorityName ?? 'Lexhall'}</dd>
+            <dd>{resource.authorityName ?? 'CaseADVO'}</dd>
           </div>
           <div>
             <dt>Source level</dt>
@@ -197,7 +197,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
           </div>
           <div>
             <dt>Rights basis</dt>
-            <dd>{resource.deliveryMode === 'link_only' ? 'Linked, not hosted' : 'Lexhall-authored'}</dd>
+            <dd>{resource.deliveryMode === 'link_only' ? 'Linked, not hosted' : 'CaseADVO-authored'}</dd>
           </div>
         </dl>
         <p className="t-caption" style={{ marginTop: 14 }}>{resource.rightsNote}</p>

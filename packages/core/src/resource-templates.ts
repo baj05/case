@@ -1,7 +1,7 @@
 /**
  * Platform-authored document templates.
  *
- * These are written by Lexhall. They are NOT official government or court
+ * These are written by CaseADVO. They are NOT official government or court
  * forms, and the library must never present them as such — `official_status`
  * is 'PLATFORM_TEMPLATE' for every one of them and the badge is not optional.
  * Where an official form exists (a consumer complaint, a gratuity claim, an RTI

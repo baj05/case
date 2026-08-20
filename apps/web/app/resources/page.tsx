@@ -64,7 +64,7 @@ export default function ResourcesPage() {
             </h1>
             <p className="t-body-lg ink-variant">
               {formatNumber(stats.published)} resources. {formatNumber(stats.official)} are published by the
-              authority itself and open at their own site; {formatNumber(stats.templates)} are Lexhall
+              authority itself and open at their own site; {formatNumber(stats.templates)} are CaseADVO
               templates you can read here before downloading. Every one of them is free, and every one says
               plainly which of the two it is.
             </p>
@@ -88,7 +88,7 @@ export default function ResourcesPage() {
           <span>
             <strong>Two kinds of thing live here, and they are not the same.</strong>{' '}
             An <em>official</em> resource was published by the government body named on it — we link to their
-            copy rather than hosting one, so you always reach the current version. A <em>Lexhall template</em>{' '}
+            copy rather than hosting one, so you always reach the current version. A <em>CaseADVO template</em>{' '}
             is a document we wrote: a starting point for drafting, approved by nobody. Neither is legal advice,
             and requirements differ by state.{' '}
             <Link href="/resources/about" style={{ textDecoration: 'underline' }}>How this library works</Link>.
@@ -250,7 +250,7 @@ export default function ResourcesPage() {
             <Link href="/matters" className="btn btn-ghost">Browse legal matters</Link>
           </div>
           <p className="t-caption">
-            Lexhall does not take a share of any fee, and ranking in search cannot be bought — the weights are
+            CaseADVO does not take a share of any fee, and ranking in search cannot be bought — the weights are
             published. Nothing on this page is a recommendation of a particular advocate.
           </p>
         </section>

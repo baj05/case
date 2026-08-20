@@ -64,7 +64,7 @@ async function searchOne(slug, query) {
 
 async function download(slug, hit) {
   const dest = join(OUT, `${slug}.jpg`);
-  const res = await fetch(hit.url, { headers: { 'user-agent': 'LexhallImageFetch/0.1' } });
+  const res = await fetch(hit.url, { headers: { 'user-agent': 'CaseADVOImageFetch/0.1' } });
   if (!res.ok) throw new Error(`download ${slug}: HTTP ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.byteLength < 8000) throw new Error(`download ${slug}: suspiciously small`);

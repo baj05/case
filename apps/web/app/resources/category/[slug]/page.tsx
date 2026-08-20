@@ -165,7 +165,7 @@ export default async function CategoryPage({ params, searchParams }: {
 
       <Notice tone="legal">
         Nothing in this category is legal advice. Where a resource is marked official it belongs to the
-        authority named on it, and where it is marked as a Lexhall template it has been approved by nobody.
+        authority named on it, and where it is marked as a CaseADVO template it has been approved by nobody.
       </Notice>
     </div>
   );

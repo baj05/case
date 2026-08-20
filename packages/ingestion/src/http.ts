@@ -19,7 +19,7 @@ export interface FetchPolicy {
 
 export const DEFAULT_POLICY: FetchPolicy = {
   userAgent: process.env.INGEST_USER_AGENT
-    ?? 'LexhallBot/0.1 (+http://localhost:3000/bot; data-correction@lexhall.example)',
+    ?? 'CaseADVOBot/0.1 (+http://localhost:3000/bot; data-correction@caseadvo.example)',
   minDelayMs: Number(process.env.INGEST_RATE_LIMIT_MS ?? 2000),
   maxRetries: 3,
   timeoutMs: 45_000,

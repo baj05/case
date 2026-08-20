@@ -1,4 +1,4 @@
-# Lexhall
+# CaseADVO
 
 A legal professional network and legal-operations platform. India launch market, jurisdiction-abstracted for
 international expansion.
@@ -135,7 +135,7 @@ carry a paid boost is constrained to zero at the schema level.
 **Personal contact data is not republished** merely because the source is public.
 
 **A document never claims an authority it does not have.** The resource library
-distinguishes an official form from something Lexhall wrote, on every card and
+distinguishes an official form from something CaseADVO wrote, on every card and
 every page, and the seeder throws rather than accept a row whose declared type and
 publisher contradict each other. No government document is rehosted: the library
 links to the authority's own copy, so the version you get is the current one.

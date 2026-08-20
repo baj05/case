@@ -91,12 +91,12 @@ export const OFFICIAL_STATUS_META: Record<OfficialStatus, OfficialStatusMeta> = 
     plain: 'Published by the authority named. We link to their copy rather than hosting our own, so you always get the current version.',
   },
   PLATFORM_TEMPLATE: {
-    label: 'Lexhall template', short: 'Template', tone: 'chip-primary',
-    plain: 'Written by Lexhall. It is not a government or court form and no authority has approved it. Use it as a drafting starting point.',
+    label: 'CaseADVO template', short: 'Template', tone: 'chip-primary',
+    plain: 'Written by CaseADVO. It is not a government or court form and no authority has approved it. Use it as a drafting starting point.',
   },
   THIRD_PARTY: {
     label: 'Third-party resource', short: 'Third party', tone: 'chip-warn',
-    plain: 'Published by an organisation that is neither Lexhall nor the authority concerned. Judge it accordingly.',
+    plain: 'Published by an organisation that is neither CaseADVO nor the authority concerned. Judge it accordingly.',
   },
   REFERENCE: {
     label: 'Reference material', short: 'Reference', tone: 'chip-outline',
@@ -151,7 +151,7 @@ export const RIGHTS_BASIS_META: Record<RightsBasis, { label: string; mayMirror: 
   government_open: { label: 'Government open data', mayMirror: true, plain: 'Published under a government open-data or reuse policy.' },
   open_licence: { label: 'Open licence', mayMirror: true, plain: 'Released under a licence that permits redistribution.' },
   permission_granted: { label: 'Permission granted', mayMirror: true, plain: 'The publisher gave written permission to host a copy.' },
-  platform_owned: { label: 'Lexhall-authored', mayMirror: true, plain: 'Written by Lexhall, so Lexhall may publish it.' },
+  platform_owned: { label: 'CaseADVO-authored', mayMirror: true, plain: 'Written by CaseADVO, so CaseADVO may publish it.' },
   link_only: { label: 'Link only', mayMirror: false, plain: 'We link to the publisher’s copy. Hosting one ourselves has not been cleared.' },
   unknown: { label: 'Rights unresolved', mayMirror: false, plain: 'The rights position has not been established, so no copy is offered.' },
 };
@@ -382,12 +382,12 @@ export function disclaimerFor(_type: ResourceType, status: OfficialStatus, opts?
         + 'so that you always reach the current version — but confirm on the authority’s own site that it is current '
         + 'before you file or submit anything.' + jurisdiction;
     case 'PLATFORM_TEMPLATE':
-      return 'This is a Lexhall template, not a government or court form, and no authority has approved it. '
+      return 'This is a CaseADVO template, not a government or court form, and no authority has approved it. '
         + 'It is general information, not legal advice, and it has not been drafted for your facts.'
         + jurisdiction
         + ' Have it reviewed by an advocate before you rely on it for anything that matters.';
     case 'THIRD_PARTY':
-      return 'This resource is published by a third party. Lexhall neither wrote it nor verified its contents, '
+      return 'This resource is published by a third party. CaseADVO neither wrote it nor verified its contents, '
         + 'and linking to it is not an endorsement.' + jurisdiction;
     case 'REFERENCE':
       return 'Background material for orientation only. It is not a form, not something to file, and not legal advice.'
@@ -511,7 +511,7 @@ export function downloadFilename(parts: {
     .join('_');
   const version = parts.version && parts.version !== '1.0' ? `_v${parts.version.replace(/\./g, '-')}` : '';
   const ext = parts.extension.replace(/^\./, '');
-  return `Lexhall_${words}${version}.${ext}`.replace(/_+/g, '_');
+  return `CaseADVO_${words}${version}.${ext}`.replace(/_+/g, '_');
 }
 
 // ---------------------------------------------------------------------------

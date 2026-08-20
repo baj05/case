@@ -3,12 +3,12 @@
  * only — nothing else hardcodes the name.
  */
 export const BRAND = {
-  name: 'Lexhall',
-  wordmark: 'Lexhall',
-  mark: 'L',
+  name: 'CaseADVO',
+  wordmark: 'CaseADVO',
+  mark: 'C',
   tagline: 'Find the right legal professional for your matter.',
   descriptor: 'A legal professional network and legal-operations platform',
-  supportEmail: 'data-correction@lexhall.example',
+  supportEmail: 'data-correction@caseadvo.example',
 } as const;
 
 /** Copy that carries legal weight, kept in one place for counsel to review. */

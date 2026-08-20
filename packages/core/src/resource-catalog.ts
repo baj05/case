@@ -11,7 +11,7 @@
  *    at the publisher's own copy. That is also the honest answer to "is this the
  *    current version" — the authority's copy always is.
  * 3. `officialStatus: 'OFFICIAL'` means the named authority published it. It is
- *    never used for anything Lexhall wrote.
+ *    never used for anything CaseADVO wrote.
  * 4. Where a landing page is offered rather than a direct PDF, that is
  *    deliberate: deep links to government PDFs rot within months, landing pages
  *    survive, and the landing page is where the authority itself publishes the
@@ -72,7 +72,7 @@ const COURTS: ResourceCatalogSeed[] = [
     docFormat: 'html', trustLevel: 1, forum: 'F_SC', panIndia: true, confirmed: false,
     keywords: ['supreme court form', 'certified copy application', 'sci forms', 'registry form'],
     notes: [
-      'These are the Supreme Court’s own forms. Nothing Lexhall writes is a substitute for them.',
+      'These are the Supreme Court’s own forms. Nothing CaseADVO writes is a substitute for them.',
       'The certified-copy application is the one most people actually need — it is how you obtain an authenticated copy of an order or judgment.',
       'The site refuses automated requests, so open it in a browser.',
     ],

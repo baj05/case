@@ -4,7 +4,7 @@
 
 ## 1. The prompt
 
-Build a complete Legal Resource Library into the existing Lexhall platform: free
+Build a complete Legal Resource Library into the existing CaseADVO platform: free
 downloadable/previewable legal resources (rent agreements, applications, notices,
 affidavits, court documents, government forms), searchable, categorised,
 jurisdiction-aware, with ingestion from real internet sources, preview, download,
@@ -60,7 +60,7 @@ admin, SEO and marketplace integration. ~115 numbered requirements.
 
 ## 3. Data actually in the DB now
 
-183 published (146 official link-only, 37 Lexhall templates incl. 12 state rent
+183 published (146 official link-only, 37 CaseADVO templates incl. 12 state rent
 agreements) · 35 held at REVIEW_REQUIRED · 49 sources · 30 states · 86
 authorities · 285 verification records · 62 documents harvested from 34
 authorities, 41 promoted after review, 20 held back.

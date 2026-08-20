@@ -134,7 +134,7 @@ export async function fetchJudges(): Promise<{ judges: JudgeRecord[]; sourceUrl:
     action: 'parse', page: PAGE, prop: 'wikitext', format: 'json', formatversion: '2',
   }).toString();
   const res = await fetch(u, {
-    headers: { 'user-agent': 'LexhallBot/0.1 (+http://localhost:3000/bot)' },
+    headers: { 'user-agent': 'CaseADVOBot/0.1 (+http://localhost:3000/bot)' },
     signal: AbortSignal.timeout(45_000),
   });
   if (!res.ok) throw new Error(`Wikipedia API HTTP ${res.status}`);

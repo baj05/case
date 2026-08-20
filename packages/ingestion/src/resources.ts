@@ -516,7 +516,7 @@ function insertHarvested(input: HarvestedInput): boolean {
     const ts = now();
     const disclaimer =
       `This document was discovered on the website of the ${input.authority} and is linked from there, not hosted `
-      + 'by Lexhall. It has not yet been reviewed by a person, so treat its currency as unconfirmed and check the '
+      + 'by CaseADVO. It has not yet been reviewed by a person, so treat its currency as unconfirmed and check the '
       + 'authority’s own page before filing or submitting anything. It is not legal advice.';
 
     db().prepare(

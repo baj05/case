@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 export interface ViewerField { key: string; label: string; hint?: string }
 
 /**
- * Document viewer for Lexhall-authored templates.
+ * Document viewer for CaseADVO-authored templates.
  *
  * The requirement was "do not make the user download a file to see what it is",
  * and this is the honest way to meet it for the documents we actually hold. It

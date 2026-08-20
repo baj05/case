@@ -18,7 +18,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'apps', 'web', 'public', 'img', 'courts');
 const CREDITS = join(ROOT, 'apps', 'web', 'public', 'img', 'editorial', 'credits.json');
 const API = 'https://commons.wikimedia.org/w/api.php';
-const UA = 'LexhallImageFetch/0.1 (legal-directory prototype; contact data-correction@lexhall.example)';
+const UA = 'CaseADVOImageFetch/0.1 (legal-directory prototype; contact data-correction@caseadvo.example)';
 
 /** slug -> [search term, preferred filename fragment] */
 const WANTED = [

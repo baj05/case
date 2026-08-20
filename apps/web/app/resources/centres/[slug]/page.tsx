@@ -59,7 +59,7 @@ export default async function CentrePage({ params }: { params: Promise<{ slug: s
             ))}
           </div>
           <p className="t-caption">
-            These are public helplines operated by government bodies, not by Lexhall. We do not intermediate the
+            These are public helplines operated by government bodies, not by CaseADVO. We do not intermediate the
             call and we do not see it.
           </p>
         </section>
@@ -85,7 +85,7 @@ export default async function CentrePage({ params }: { params: Promise<{ slug: s
           <div className="stack gap-1">
             <h2 className="t-title-lg">Documents you can read and adapt</h2>
             <p className="t-body-sm ink-variant measure">
-              Lexhall templates and checklists. Not official forms, and approved by nobody.
+              CaseADVO templates and checklists. Not official forms, and approved by nobody.
             </p>
           </div>
           {templates.map((card) => <ResourceCard key={card.id} card={card} />)}

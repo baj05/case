@@ -482,7 +482,7 @@ test('a download filename is readable and carries the state', () => {
     title: 'Residential rent agreement (11 months)',
     stateName: 'Maharashtra', version: '1.0', extension: 'docx',
   });
-  assert.match(name, /^Lexhall_Maharashtra_Residential_Rent_Agreement_11_Months\.docx$/);
+  assert.match(name, /^CaseADVO_Maharashtra_Residential_Rent_Agreement_11_Months\.docx$/);
   assert.equal(name.includes('final'), false);
   assert.equal(/\s/.test(name), false, 'a filename with spaces breaks on download');
 });
