@@ -1616,19 +1616,21 @@ details[open] > .filter-summary::after { content: '–'; }
   gap: 20px;
   overflow: hidden;
 }
-/* Rectangular card: the photo is a normal contained image (rounded top
-   corners only), not a cutout breaking the card's boundary — the overflow
-   trick in the previous version produced oversized, badly-cropped photos
-   spilling out of their cards, which is the bug being fixed here. */
+/* Four-layer stacking per the reference: (1) the colour card itself is the
+   relative anchor with overflow:hidden so the colour forms a clean rounded
+   rectangle; (2) the white info panel sits absolute on the LEFT at z-10;
+   (3) the transparent cutout sits absolute on the RIGHT at z-20, so its left
+   edge (torso/arm) visibly overlaps and paints on top of the white card's
+   right edge — that overlap is the point, not a bug, because the cutout is
+   transparent everywhere the person isn't. */
 .block-card {
   position: relative;
   flex: none;
   width: 460px;
+  height: 420px;
   border-radius: var(--r-2xl, 28px);
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .block-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
@@ -1638,28 +1640,51 @@ details[open] > .filter-summary::after { content: '–'; }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
 .block-coral { background: linear-gradient(165deg, #ff6b6b 0%, #ffab91 100%); }
 
-/* The photo: a plain rectangle, contained within the card, filling its
-   upper portion. Sits in normal flow — no absolute positioning, no
-   boundary-breaking, no z-index games. */
+/* Layer 3: the cutout, anchored bottom-right, full card height, cropped to
+   at most 62% of the card's width so the left-hand info panel always has
+   room. z-index 20 — the front layer. */
 .block-photo {
-  display: block;
-  width: 100%;
-  height: 300px;
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  z-index: 20;
+  height: 100%;
+  width: auto;
+  max-width: 62%;
   object-fit: cover;
   object-position: top center;
+  pointer-events: none;
   transition: transform 400ms var(--ease);
 }
 
-/* The white panel: a plain rectangle below the photo, filling the rest of
-   the card. */
+/* Layer 2: the white panel, pinned to the left and vertically centred,
+   z-index 10 — behind the cutout, in front of the colour. */
 .block-info {
-  flex: 1 1 auto;
-  padding: 18px 20px 20px;
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 58%;
+  padding: 20px 18px;
   background: var(--surface-lowest);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 3px;
-  text-align: center;
+  text-align: left;
+}
+.block-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--electric-lime);
+  color: var(--on-lime);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
 }
 .block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
 .block-area { font-size: 0.8125rem; color: var(--primary); font-weight: 600; }
@@ -1669,9 +1694,23 @@ details[open] > .filter-summary::after { content: '–'; }
   letter-spacing: -0.02em; margin-top: 4px;
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
+/* Below 600px there is no room for a side-by-side split — fall back to the
+   plain stacked layout (photo on top, panel filling the width below it)
+   rather than crushing either into an unreadable sliver. */
 @media (max-width: 600px) {
-  .block-card { width: 88vw; }
-  .block-photo { height: 240px; }
+  .block-card { width: 88vw; height: auto; display: flex; flex-direction: column; }
+  .block-photo {
+    position: static;
+    width: 100%;
+    height: 240px;
+    max-width: none;
+  }
+  .block-info {
+    position: static;
+    transform: none;
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* --- scannable fact strip on listing cards (Practo model) -------------- */

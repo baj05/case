@@ -210,6 +210,7 @@ export default async function HomePage() {
                     className="block-photo"
                   />
                   <div className="block-info">
+                    <span className="block-icon" aria-hidden="true">{['⚖', '₹', '📄'][i % 3]}</span>
                     <span className="block-name">{a.name}</span>
                     <span className="block-area">{a.area}</span>
                     <span className="block-meta">{a.years} yrs · {a.location}</span>
