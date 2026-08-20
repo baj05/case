@@ -51,7 +51,7 @@ export default async function HomePage() {
   const highCourts = getCourts(2).filter((c) => c.isBench === 0);
   const councils = getBarCouncils();
   const topAreas = areas.filter((a) => a.parentId === null);
-  const featured = getFeaturedWithPhotos(3);
+  const featured = getFeaturedWithPhotos(10);
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
@@ -178,10 +178,27 @@ export default async function HomePage() {
               <Link href="/search?accepting=1" className="btn btn-secondary btn-pill">See everyone available</Link>
             </div>
 
-            <div className="block-row">
-              {featured.map((f, i) => (
-                <article key={f.slug} className="block-card">
-                  <div className={`block-color block-${['blue', 'orange', 'lime'][i % 3]}`}>
+            {/* Auto-scrolling marquee: the track is the real list rendered twice
+                back to back, then translated exactly -50% in a seamless loop, so
+                it reads as a continuous ribbon rather than a jump-cut. Paused on
+                hover/focus and under prefers-reduced-motion (see globals.css). */}
+            <div className="block-marquee">
+              <div className="block-track">
+                {[...featured, ...featured].map((f, i) => (
+                  <article key={`${f.slug}-${i}`} className="block-card">
+                    <div className={`block-color block-${['blue', 'orange', 'lime', 'coral'][i % 4]}`}>
+                      {f.photoUrl && (
+                        <div className="block-photo-cascade">
+                          <Image
+                            src={f.photoUrl}
+                            alt={`Photograph of ${f.displayName}, published by their Bar Council`}
+                            width={320}
+                            height={400}
+                            sizes="240px"
+                          />
+                        </div>
+                      )}
+                    </div>
                     <div className="block-info">
                       <span className="block-name">{f.displayName}</span>
                       {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
@@ -198,25 +215,15 @@ export default async function HomePage() {
                         Book a time
                       </Link>
                     </div>
-                  </div>
-
-                  {f.photoUrl && (
-                    <div className="block-photo-ring">
-                      <Image
-                        src={f.photoUrl}
-                        alt={`Photograph of ${f.displayName}, published by their Bar Council`}
-                        width={112}
-                        height={112}
-                        sizes="112px"
-                      />
-                    </div>
-                  )}
-                </article>
-              ))}
+                  </article>
+                ))}
+              </div>
             </div>
             <p className="t-caption">
               Real records from the Bar Council register, with their official photographs. Fees are
               declared by the professional; ordering here is by verification level, never by payment.
+              Their photograph is the one published on the official register — we do not have a
+              higher-resolution version to show and do not substitute one.
             </p>
           </div>
         </section>

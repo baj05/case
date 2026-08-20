@@ -1600,6 +1600,37 @@ details[open] > .filter-summary::after { content: '–'; }
   filter: drop-shadow(0 22px 34px rgba(15, 23, 42, 0.26));
 }
 
+/* --- auto-scrolling marquee for the featured-advocate ribbon ------------ */
+.block-marquee {
+  overflow: hidden;
+  /* Fade the hard edges so cards entering/leaving read as continuous motion,
+     not a clipped box. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  padding-top: 60px;
+  padding-bottom: 8px;
+}
+.block-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: block-scroll 46s linear infinite;
+}
+.block-marquee:hover .block-track,
+.block-marquee:focus-within .block-track {
+  animation-play-state: paused;
+}
+@keyframes block-scroll {
+  from { transform: translateX(0); }
+  /* Exactly -50%: the track holds the list twice, so this lands precisely on
+     the seam between the two copies with no visible jump. */
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .block-track { animation: none; }
+  .block-marquee { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
 /* --- colour-block advocate cards ----------------------------------------
    These are real advocates' official Bar Council register photographs, not
    stock imagery — a full silhouette cutout was tested and rejected: at their
@@ -1608,73 +1639,70 @@ details[open] > .filter-summary::after { content: '–'; }
    tearing a hole through the neck, and the edge is visibly jagged when
    scaled up. A circular frame gets the reference's "breaks the boundary,
    overlaps the info panel" depth without altering a real person's photo. */
-.block-row {
-  display: grid;
-  gap: 20px 16px;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  /* Room above each card for the portrait to break its top edge. */
-  padding-top: 60px;
-}
 .block-card {
   position: relative;
+  flex: none;
+  width: 240px;
   border-radius: var(--r-2xl, 28px);
   overflow: visible;
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .block-card:hover { transform: translateY(-6px); }
-.block-card:hover .block-photo-ring { transform: translate(-50%, 0) scale(1.05); }
+.block-card:hover .block-photo-cascade img { transform: scale(1.06); }
 
+/* The full-height colour block. A real, non-cutout photograph can only show
+   colour peeking round it at the sides (the photo has its own studio
+   backdrop, so it cannot show colour THROUGH it) — the cascade is inset a
+   little on each side so a sliver of colour still frames it. */
 .block-color {
+  position: relative;
   border-radius: inherit;
-  padding-top: 74px;
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  height: 244px;
   box-shadow: var(--shadow-md);
+  overflow: visible;
 }
 .block-card:hover .block-color { box-shadow: var(--shadow-lg); }
 .block-blue { background: linear-gradient(165deg, #8fd6fb 0%, #b9e6fd 100%); }
 .block-orange { background: linear-gradient(165deg, var(--action-orange) 0%, #ff9b6f 100%); }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
+.block-coral { background: linear-gradient(165deg, #ff6b6b 0%, #ffab91 100%); }
 
-/* The portrait: a circular frame with a white ring (stands in for the
-   cutout's "pop"), centred on the card's top edge so roughly half of it
-   breaks above the colour block. */
-.block-photo-ring {
+/* The portrait: cropped to the top of the frame so the head breaks above the
+   colour block (negative top), and tall enough that its lower edge cascades
+   past the colour block's own bottom to overlap the white info panel below —
+   the reference's actual layering, using the real photograph rather than a
+   small circular avatar. */
+.block-photo-cascade {
   position: absolute;
-  /* Negative so the ring genuinely breaks above the card's top edge instead
-     of merely sitting flush with it — this was the bug: `top: 0` put the
-     ring's top at the SAME y as the card's top, so nothing ever crossed the
-     boundary; verified via getBoundingClientRect before and after. */
-  top: -48px;
-  left: 50%;
-  transform: translate(-50%, 0);
+  top: -40px;
+  left: 10px;
+  right: 10px;
   z-index: 3;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  padding: 4px;
-  background: var(--surface-lowest);
-  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.28);
-  transition: transform var(--t) var(--ease);
+  /* color height (244) + 40px break above + 20px cascade past its bottom. */
+  height: 304px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.24);
 }
-.block-photo-ring img {
+.block-photo-cascade img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
+  object-position: top center;
   display: block;
+  transition: transform 400ms var(--ease);
 }
 
-/* Inner white card, floating at the bottom — pulled up so the ring's lower
-   half overlaps it, matching the reference's layered depth. */
+/* Inner white card sits after the colour block in normal flow, then a
+   negative margin slides it up so the photo's bottom edge — which reaches
+   20px past the colour block's own bottom — overlaps its top by that same
+   20px (photo z-index 3 sits above info's 2, so the overlap reads as the
+   photo resting on the panel, matching the reference). */
 .block-info {
   position: relative;
   z-index: 2;
-  margin: 0 12px 12px;
-  margin-top: -22px;
-  padding: 34px 16px 16px;
+  margin-top: -20px;
+  padding: 24px 16px 18px;
   background: var(--surface-lowest);
   border-radius: var(--r-lg);
   display: flex;
@@ -1692,7 +1720,9 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
 @media (max-width: 480px) {
-  .block-photo-ring { width: 92px; height: 92px; }
+  .block-card { width: 210px; }
+  .block-color { height: 210px; }
+  .block-photo-cascade { height: 270px; }
 }
 
 /* --- scannable fact strip on listing cards (Practo model) -------------- */
