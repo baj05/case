@@ -3,19 +3,20 @@ import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
 import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
-import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, getFeaturedWithPhotos, databaseReady } from '@/lib/data';
+import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-/** Placeholder-only stock portraits for the featured-advocates row — see the
- * disclosure printed beneath that section. Never used anywhere a photo is
- * asserted to belong to the named professional. */
-const STOCK_PHOTOS: readonly [string, string, string] = [
-  '/img/figures/stock-advocate-1.jpg',
-  '/img/figures/stock-advocate-2.jpg',
-  '/img/figures/stock-advocate-3.jpg',
-];
+/** Fully illustrative example cards for the "Advocates you can book today"
+ * row — name, photo, practice area, years, location and fee are all
+ * placeholders, disclosed as such beneath the row. Not derived from, and not
+ * matched to, any real professional's record. */
+const ILLUSTRATIVE_ADVOCATES = [
+  { name: 'Kourosh Rostami', area: 'Corporate & Commercial', years: 22, location: 'Mumbai', fee: '\u20b93,000', photo: '/img/figures/stock-advocate-1.png' },
+  { name: 'Mateo Fernandez Ruiz', area: 'Arbitration', years: 14, location: 'Bengaluru', fee: '\u20b92,800', photo: '/img/figures/stock-advocate-2.png' },
+  { name: 'Farhad Hosseini', area: 'Property & Real Estate', years: 19, location: 'Delhi', fee: '\u20b93,200', photo: '/img/figures/stock-advocate-3.png' },
+] as const;
 
 const EXAMPLES = [
   'Labour lawyer for a PF dispute',
@@ -60,7 +61,6 @@ export default async function HomePage() {
   const highCourts = getCourts(2).filter((c) => c.isBench === 0);
   const councils = getBarCouncils();
   const topAreas = areas.filter((a) => a.parentId === null);
-  const featured = getFeaturedWithPhotos(3);
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
@@ -173,50 +173,46 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ============================================ FEATURED (colour blocks) */}
-      {featured.length > 0 && (
+      {/* ============================================ FEATURED (colour blocks)
+          Illustrative example cards: name, photo, practice area and fee are
+          all placeholders (see disclosure below the row), not a real
+          professional's record. "See everyone available" is the only real
+          destination here, and it goes to the actual live directory. */}
+      {ILLUSTRATIVE_ADVOCATES.length > 0 && (
         <section className="container section-tight">
           <div className="stack gap-5">
-            <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div className="stack gap-2">
-                <p className="t-label-mono ink-variant">Taking bookings now</p>
-                <h2 className="t-headline-lg" style={{ maxWidth: '22ch', fontWeight: 800, letterSpacing: '-0.03em' }}>
-                  Advocates you can book <span className="hl">today</span>.
-                </h2>
-              </div>
-              <Link href="/search?accepting=1" className="btn btn-secondary btn-pill">See everyone available</Link>
+            <div className="stack gap-2" style={{ textAlign: 'center', alignItems: 'center' }}>
+              <p className="t-label-mono ink-variant">Taking bookings now</p>
+              <h2
+                className="t-display-lg"
+                style={{ maxWidth: '26ch', fontWeight: 800, letterSpacing: '-0.03em' }}
+              >
+                Advocates you can book <span className="hl">today</span>.
+              </h2>
+              <p className="t-body ink-variant" style={{ maxWidth: '52ch' }}>
+                A sense of what a booking looks like — real advocates, real fees and real
+                availability are one search away.
+              </p>
+              <Link href="/search?accepting=1" className="btn btn-secondary btn-pill" style={{ marginTop: 6 }}>
+                See everyone available
+              </Link>
             </div>
 
-            {/* Static 3-card row. Data (name, practice area, years, location,
-                fee, and the "Book a time" link) is real — pulled from
-                getFeaturedWithPhotos, unchanged. Only the portrait is a stock
-                placeholder photo, disclosed as such below, standing in until
-                each professional's own photograph is used here. */}
             <div className="block-row">
-              {featured.map((f, i) => (
-                <article key={f.slug} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
+              {ILLUSTRATIVE_ADVOCATES.map((a, i) => (
+                <article key={a.name} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
                   <div className="block-photo">
-                    <Image
-                      src={STOCK_PHOTOS[i % STOCK_PHOTOS.length]!}
-                      alt=""
-                      width={380}
-                      height={440}
-                      sizes="380px"
-                    />
+                    <Image src={a.photo} alt="" width={380} height={440} sizes="380px" />
                   </div>
                   <div className="block-info">
-                    <span className="block-name">{f.displayName}</span>
-                    {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
-                    <span className="block-meta">
-                      {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
+                    <span className="block-name">{a.name}</span>
+                    <span className="block-area">{a.area}</span>
+                    <span className="block-meta">{a.years} yrs · {a.location}</span>
+                    <span className="block-fee">
+                      {a.fee}
+                      <span className="block-fee-sub"> first consultation</span>
                     </span>
-                    {f.minConsultMinor !== null && (
-                      <span className="block-fee">
-                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
-                        <span className="block-fee-sub"> first consultation</span>
-                      </span>
-                    )}
-                    <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
+                    <Link href="/search?accepting=1" className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
                       Book a time
                     </Link>
                   </div>
@@ -224,9 +220,9 @@ export default async function HomePage() {
               ))}
             </div>
             <p className="t-caption">
-              Names, practice areas, experience, fees and every "Book a time" link are real, from the
-              Bar Council register. Portraits above are placeholder stock photography, not the
-              professional's own photograph — replaced with their real photo once uploaded.
+              Illustrative example only. These three names, photographs, practice areas and fees are
+              placeholders and do not correspond to a real listing — "Book a time" leads to the real,
+              live directory rather than a specific record.
             </p>
           </div>
         </section>
