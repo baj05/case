@@ -209,7 +209,16 @@ export function loadIntakeVocabulary(): IntakeVocabulary {
     `SELECT id, code, name, slug FROM matter_type WHERE is_active=1 ORDER BY sort_order`,
   ).all() as Array<{ id: number; code: string; name: string; slug: string }>).map((m) => ({ ...m, synonyms: [] as string[] }));
 
-  return { practiceAreas, locations, courts, matterTypes };
+  const matters = (h.prepare(
+    `SELECT m.id, m.code, m.name, m.slug, m.practice_area_id AS practiceAreaId, pa.slug AS practiceAreaSlug
+       FROM legal_matter m JOIN practice_area pa ON pa.id = m.practice_area_id
+      WHERE m.is_active = 1`,
+  ).all() as Array<{ id: number; code: string; name: string; slug: string; practiceAreaId: number; practiceAreaSlug: string }>).map((m) => ({
+    ...m,
+    synonyms: (h.prepare(`SELECT phrase, weight FROM legal_matter_synonym WHERE legal_matter_id=?`).all(m.id) as Array<{ phrase: string; weight: number }>),
+  }));
+
+  return { practiceAreas, locations, courts, matterTypes, matters };
 }
 
 /** Aliases live in the seed file; look them up by name at load time. */

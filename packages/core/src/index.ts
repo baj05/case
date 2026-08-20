@@ -5,3 +5,7 @@ export * from './intake.ts';
 export * from './ranking.ts';
 export * from './geography.ts';
 export * from './advoai.ts';
+export * from './taxonomy-domains.ts';
+export * from './taxonomy-matters.ts';
+export * from './taxonomy-forums.ts';
+export * from './taxonomy-matters-2.ts';

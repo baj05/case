@@ -44,6 +44,7 @@ if (values.clear) {
       h.prepare(`DELETE FROM professional_fee_summary WHERE professional_id=?`).run(id);
       h.prepare(`DELETE FROM availability_rule WHERE professional_id=?`).run(id);
       h.prepare(`DELETE FROM professional_practice_area WHERE professional_id=? AND is_self_declared=1`).run(id);
+      h.prepare(`DELETE FROM professional_legal_matter WHERE professional_id=? AND is_self_declared=1`).run(id);
       h.prepare(`DELETE FROM verification WHERE professional_id=? AND evidence_note LIKE '%demo configuration%'`).run(id);
       h.prepare(
         `UPDATE professional SET claim_status='unclaimed', claimed_at=NULL, verification_level=0,
@@ -63,15 +64,42 @@ if (values.clear) {
 // office address and ideally a court link. Those make the most convincing
 // demonstration without any invention.
 const target = Number(values.count) || 18;
-const candidates = h.prepare(
-  `SELECT p.id, p.slug, p.display_name AS name, p.kind, p.enrolment_year AS enrolYear,
+
+/**
+ * Re-running must reconfigure the SAME profiles, not enlist another batch.
+ * Selecting purely on `claim_status = 'unclaimed'` meant every run claimed a
+ * fresh 18 and the demo set grew without bound, so already-configured profiles
+ * are taken first and the remainder topped up from unclaimed records.
+ */
+const CANDIDATE_COLUMNS = `p.id, p.slug, p.display_name AS name, p.kind, p.enrolment_year AS enrolYear,
           (SELECT count(*) FROM professional_court pc WHERE pc.professional_id = p.id) AS courtCount,
-          p.professional_body_id AS bodyId
+          p.professional_body_id AS bodyId`;
+type Candidate = { id: number; slug: string; name: string; kind: string; enrolYear: number | null; courtCount: number; bodyId: number | null };
+
+const alreadyConfigured = h.prepare(
+  `SELECT ${CANDIDATE_COLUMNS}
+     FROM professional p
+    WHERE p.is_published = 1 AND p.deleted_at IS NULL
+      AND EXISTS (SELECT 1 FROM audit_log a
+                   WHERE a.action = 'demo.configured' AND a.subject_type = 'professional' AND a.subject_id = p.id)
+    ORDER BY p.id LIMIT ?`,
+).all(target) as Candidate[];
+
+const topUp = alreadyConfigured.length >= target ? [] : (h.prepare(
+  `SELECT ${CANDIDATE_COLUMNS}
      FROM professional p
     WHERE p.is_published = 1 AND p.deleted_at IS NULL AND p.claim_status = 'unclaimed'
+      AND NOT EXISTS (SELECT 1 FROM audit_log a
+                       WHERE a.action = 'demo.configured' AND a.subject_type = 'professional' AND a.subject_id = p.id)
     ORDER BY (p.public_office IS NOT NULL) DESC, courtCount DESC, p.data_confidence DESC
     LIMIT ?`,
-).all(target) as Array<{ id: number; slug: string; name: string; kind: string; enrolYear: number | null; courtCount: number; bodyId: number | null }>;
+).all(target - alreadyConfigured.length) as Candidate[]);
+
+// Sorted by id so the ordering — and therefore every derived choice below — is
+// identical on every run. Ordering by the selection heuristic instead meant a
+// re-run handed the same professional a different bundle, and the declarations
+// from both runs accumulated on one profile.
+const candidates = [...alreadyConfigured, ...topUp].sort((a, b) => a.id - b.id);
 
 if (candidates.length === 0) {
   process.stderr.write('No unclaimed published records found.\n');
@@ -93,6 +121,10 @@ const BUNDLES: Array<{ codes: string[]; label: string }> = [
   { codes: ['CONSTITUTIONAL', 'ADMIN_SERVICE'], label: 'constitutional and service' },
   { codes: ['ARBITRATION', 'MEDIATION'], label: 'dispute resolution' },
   { codes: ['CONSUMER'], label: 'consumer' },
+  { codes: ['ELECTRICITY', 'UTILITIES'], label: 'electricity and utilities' },
+  { codes: ['REALESTATE', 'MUNICIPAL'], label: 'real estate and local body' },
+  { codes: ['MOTOR', 'INSURANCE'], label: 'motor accident and insurance' },
+  { codes: ['SUCCESSION', 'RTI'], label: 'succession and information' },
 ];
 
 /**
@@ -113,9 +145,11 @@ function feeBand(kind: string, years: number): { consult: number; filing: number
 
 let configured = 0;
 const ts = now();
+let declaredMatters = 0;
 
 for (const [i, c] of candidates.entries()) {
-  const bundle = BUNDLES[i % BUNDLES.length]!;
+  // Keyed on the record id, not the loop index, so a bundle never moves.
+  const bundle = BUNDLES[c.id % BUNDLES.length]!;
   const years = c.enrolYear ? Math.max(3, new Date().getFullYear() - c.enrolYear) : 8 + (i % 22);
   const band = feeBand(c.kind, years);
 
@@ -125,33 +159,55 @@ for (const [i, c] of candidates.entries()) {
       `UPDATE professional SET claim_status='claimed', claimed_at=?, accepts_consultations=1,
          verification_level=?, years_experience=COALESCE(years_experience, ?), updated_at=?
        WHERE id=?`,
-    ).run(ts, i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1, years, ts, c.id);
+    ).run(ts, c.id % 4 === 0 ? 3 : c.id % 3 === 0 ? 2 : 1, years, ts, c.id);
 
+    // Replace, never append: re-running must not stack demo rows.
+    h.prepare(`DELETE FROM verification WHERE professional_id=? AND evidence_note LIKE '%demo configuration%'`).run(c.id);
     h.prepare(
       `INSERT INTO verification (professional_id, level, method, outcome, evidence_note, created_at)
        VALUES (?,?,?,'granted',?,?)`,
-    ).run(c.id, i % 4 === 0 ? 3 : 1, i % 4 === 0 ? 'bar_enrolment' : 'email',
+    ).run(c.id, c.id % 4 === 0 ? 3 : 1, c.id % 4 === 0 ? 'bar_enrolment' : 'email',
       'Seeded demo configuration — not a real verification event.', ts);
 
     // 2. Declared practice areas.
     const ids = bundle.codes.map(areaId).filter((x): x is number => typeof x === 'number');
     declarePracticeAreas(c.id, ids, ids[0]);
 
+    // 2b. Declared legal matters, drawn only from the areas above so the
+    //     declaration stays internally consistent. Real professionals pick
+    //     these themselves after claiming; here they are simulated and audited.
+    h.prepare(`DELETE FROM professional_legal_matter WHERE professional_id=? AND is_self_declared=1`).run(c.id);
+    const matterRows = ids.length
+      ? (h.prepare(
+          `SELECT id FROM legal_matter WHERE practice_area_id IN (${ids.map(() => '?').join(',')})
+             AND is_active = 1 ORDER BY id`,
+        ).all(...ids) as Array<{ id: number }>)
+      : [];
+    for (const m of matterRows) {
+      h.prepare(
+        `INSERT INTO professional_legal_matter (professional_id, legal_matter_id, is_self_declared, created_at)
+         VALUES (?,?,1,?) ON CONFLICT DO NOTHING`,
+      ).run(c.id, m.id, ts);
+    }
+    declaredMatters += matterRows.length;
+
     // 3. Availability: weekday mornings and afternoons, Kolkata time.
     const rules = [1, 2, 3, 4, 5].flatMap((weekday) => ([
       { weekday, startMinute: 10 * 60 + 30, endMinute: 13 * 60, mode: 'video', slotMinutes: 30, timezone: 'Asia/Kolkata' },
-      { weekday, startMinute: 16 * 60, endMinute: 18 * 60, mode: i % 3 === 0 ? 'in_person' : 'phone', slotMinutes: 30, timezone: 'Asia/Kolkata' },
+      { weekday, startMinute: 16 * 60, endMinute: 18 * 60, mode: c.id % 3 === 0 ? 'in_person' : 'phone', slotMinutes: 30, timezone: 'Asia/Kolkata' },
     ]));
     setAvailability(c.id, rules);
 
     // 4. Fee schedule, including statutory pass-throughs disclosed separately.
+    // Replace rather than append: a re-run must not stack duplicate fee rows.
+    h.prepare(`DELETE FROM fee_schedule WHERE professional_id=?`).run(c.id);
     upsertFee({ professionalId: c.id, kind: 'consultation', label: `First consultation (${bundle.label})`, mode: 'video', durationMinutes: 30, amountMinor: band.consult, basis: 'fixed', includes: 'A 30-minute discussion of your position and the options open to you.', excludes: 'Drafting, filing and appearances are charged separately.', taxNote: 'Taxes, if applicable, are charged in addition.', sortOrder: 10 });
     upsertFee({ professionalId: c.id, kind: 'consultation', label: 'Follow-up consultation', mode: 'phone', durationMinutes: 20, amountMinor: Math.round(band.consult * 0.6), basis: 'fixed', sortOrder: 20 });
     upsertFee({ professionalId: c.id, kind: 'drafting', label: 'Drafting a legal notice or application', amountMinor: band.drafting, basis: 'from', includes: 'One draft and one round of revisions.', sortOrder: 30 });
     upsertFee({ professionalId: c.id, kind: 'filing', label: 'Filing charges', amountMinor: band.filing, basis: 'from', includes: 'Preparation and lodging of the petition.', excludes: 'Court fees and statutory charges are payable in addition and are shown separately.', sortOrder: 40 });
     upsertFee({ professionalId: c.id, kind: 'filing', label: 'Court fee and statutory charges', amountMinor: 500_00, basis: 'from', isStatutoryPassthrough: true, includes: 'Payable to the court, not to the advocate. Varies by relief claimed.', sortOrder: 45 });
     upsertFee({ professionalId: c.id, kind: 'appearance', label: 'Court appearance, per hearing', amountMinor: band.appearance, basis: 'from', sortOrder: 50 });
-    if (i % 3 === 0) {
+    if (c.id % 3 === 0) {
       upsertFee({ professionalId: c.id, kind: 'retainer', label: 'Monthly retainer', amountMinor: band.appearance * 4, basis: 'on_request', includes: 'Ongoing advisory across the month.', sortOrder: 60 });
     }
 
@@ -183,4 +239,5 @@ process.stdout.write(`published ${r.published}, indexed ${r.indexed}, accepting 
 const fees = Number((h.prepare(`SELECT count(*) n FROM fee_schedule`).get() as { n: number }).n);
 const slots = Number((h.prepare(`SELECT count(*) n FROM availability_rule`).get() as { n: number }).n);
 process.stdout.write(`fee rows ${fees}, availability rules ${slots}\n`);
+process.stdout.write(`declared legal matters ${declaredMatters}\n`);
 process.stdout.write(`\nDEMO_DATA_SEEDED flag is on; the UI discloses this. Clear with: npm run db:demo -- --clear\n`);

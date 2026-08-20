@@ -115,6 +115,71 @@ await check('suggest api', '/api/suggest?q=del', {
 await check('404', '/definitely-not-a-real-page', { '404': status(404) });
 await check('unknown advocate', '/advocates/not-a-real-person-xyz', { '404': status(404) });
 
+// --- legal matter taxonomy --------------------------------------------------
+await check('matters index', '/matters', {
+  '200': status(200),
+  'names the domain count': (b) => /matters across[\s\S]{0,40}domains/.test(b),
+  'links a domain': has('/matters/electricity-power'),
+  'no error state': notError,
+});
+
+await check('matters domain', '/matters/electricity-power', {
+  '200': status(200),
+  'groups by practice area': has('Electricity &amp; Power'),
+  'links a matter': has('/matters/electricity-power/excess-electricity-bill'),
+  'no error state': notError,
+});
+
+await check('matter detail', '/matters/electricity-power/excess-electricity-bill', {
+  '200': status(200),
+  'states what is at issue': has('What is usually at issue'),
+  'lists an issue from the taxonomy': hasAny('Average billing applied without reading', 'Wrong tariff category applied'),
+  'names the work a lawyer does': has('What a lawyer does here'),
+  'shows the forum ladder': has('Where it is heard'),
+  'names the first forum': hasAny('DISCOM Consumer Grievance Cell', 'Consumer Grievance Redressal Forum'),
+  'shows the escalation route': has('Escalates to'),
+  'offers a matter-scoped search': has('legalMatter=excess-electricity-bill'),
+  'carries the not-advice notice': hasAny('not advice on your case', 'general information'),
+  'no error state': notError,
+});
+
+await check('matter detail (document matter)', '/matters/property-rent/rent-agreement', {
+  '200': status(200),
+  'names the stamp duty issue': hasAny('Stamp duty', 'stamp duty'),
+  'lists drafting as the work': hasAny('Drafting', 'Document review'),
+  'no error state': notError,
+});
+
+await check('unknown matter is a 404', '/matters/electricity-power/not-a-real-matter', {
+  '404': status(404),
+});
+
+await check('forums index', '/forums', {
+  '200': status(200),
+  'counts the forums': (b) => /forums a legal matter/.test(b),
+  'groups tribunals': has('Appellate tribunals'),
+  'shows an escalation route': has('Appeal lies to'),
+  'no error state': notError,
+});
+
+await check('matter-scoped search', '/search?legalMatter=excess-electricity-bill', {
+  '200': status(200),
+  'labels the declared matter filter': hasAny('declared by the professional', 'via its practice area'),
+  'no error state': notError,
+});
+
+await check('unrecognised matter filter returns nothing, not everything', '/search?legalMatter=nonsense-matter-slug', {
+  '200': status(200),
+  'says it is not recognised': has('not recognised'),
+  'shows an empty state instead of the whole directory': has('No professionals match that combination yet'),
+});
+
+await check('matter routing from plain language', '/search?q=meter+jal+gaya+and+discom+wants+money', {
+  '200': status(200),
+  'routes to the meter matter': hasAny('Meter or smart meter dispute', 'Electricity'),
+  'no error state': notError,
+});
+
 // --- report -----------------------------------------------------------------
 const total = pass + failures.length;
 console.log(`\nsmoke: ${pass}/${total} assertions passed  (${BASE})`);

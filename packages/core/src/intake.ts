@@ -17,6 +17,12 @@ export interface IntakeVocabulary {
   locations: Array<{ id: number; name: string; slug: string; level: number; aliases: string[] }>;
   courts: Array<{ id: number; name: string; shortName: string | null; slug: string; tier: number; aliases: string[] }>;
   matterTypes: Array<{ id: number; code: string; name: string; slug: string; synonyms: string[] }>;
+  /** Level 3 of the taxonomy: the specific problem, e.g. an excess electricity bill. */
+  matters: Array<{
+    id: number; code: string; name: string; slug: string;
+    practiceAreaId: number; practiceAreaSlug: string;
+    synonyms: Array<{ phrase: string; weight: number }>;
+  }>;
 }
 
 export interface IntakeMatch<T> { value: T; confidence: number; matchedOn: string }
@@ -28,6 +34,9 @@ export interface IntakeResult {
   location: IntakeMatch<{ id: number; name: string; slug: string; level: number }> | null;
   court: IntakeMatch<{ id: number; name: string; slug: string; tier: number }> | null;
   matterType: IntakeMatch<{ id: number; code: string; name: string; slug: string }> | null;
+  /** The specific legal matter, when the text names one. */
+  matter: IntakeMatch<{ id: number; code: string; name: string; slug: string; practiceAreaId: number }> | null;
+  alternativeMatters: Array<IntakeMatch<{ id: number; code: string; name: string; slug: string; practiceAreaId: number }>>;
   urgency: 'normal' | 'urgent' | 'emergency';
   /** True when the text reads like a described problem rather than a keyword. */
   isNaturalLanguage: boolean;
@@ -64,9 +73,60 @@ function phraseScore(haystack: string, phrase: string, weight: number): number {
   return weight + lengthBonus;
 }
 
+/**
+ * Crude suffix stripper for the loose matcher only. Not a real stemmer — it
+ * exists so "deposit not returned" still matches "not returning my deposit".
+ */
+function stem(w: string): string {
+  if (w.length <= 4) return w;
+  for (const suffix of ['ing', 'ed', 'es', 's']) {
+    if (w.endsWith(suffix) && w.length - suffix.length >= 3) return w.slice(0, w.length - suffix.length);
+  }
+  return w;
+}
+
+/**
+ * Scores a phrase whose words all appear in the text but not adjacently and
+ * not necessarily in the same form. Discounted, so an exact contiguous match
+ * always outranks a scattered one.
+ */
+function looseScore(haystackStems: Set<string>, phrase: string, weight: number): number {
+  const tokens = fold(phrase).split(' ').filter((t) => t.length > 1);
+  if (tokens.length < 2) return 0;
+  for (const t of tokens) if (!haystackStems.has(stem(t))) return 0;
+  return (weight + Math.min(6, tokens.length * 2)) * 0.62;
+}
+
 export function classifyIntake(rawQuery: string, vocab: IntakeVocabulary): IntakeResult {
   const q = fold(rawQuery);
   const words = q.split(' ').filter(Boolean);
+  const stems = new Set(words.map(stem));
+
+  // ---- legal matter (level 3) ---------------------------------------------
+  // Matched before the practice area: a matter phrase is the more specific
+  // signal, so "wrong electricity bill" resolves to the matter and lets the
+  // matter decide the practice area, not the other way round.
+  const matterScores = new Map<number, { score: number; matchedOn: string; ref: IntakeVocabulary['matters'][number] }>();
+  for (const m of vocab.matters ?? []) {
+    let best = 0;
+    let matchedOn = '';
+    for (const syn of m.synonyms) {
+      const s = Math.max(phraseScore(q, syn.phrase, syn.weight), looseScore(stems, syn.phrase, syn.weight));
+      if (s > best) { best = s; matchedOn = syn.phrase; }
+    }
+    const nameScore = Math.max(phraseScore(q, m.name, 9), looseScore(stems, m.name, 9));
+    if (nameScore > best) { best = nameScore; matchedOn = m.name; }
+    if (best > 0) matterScores.set(m.id, { score: best, matchedOn, ref: m });
+  }
+  const matterRanked = [...matterScores.values()].sort((a, b) => b.score - a.score);
+  const matterTop = matterRanked[0]?.score ?? 0;
+  const toMatterMatch = (e: (typeof matterRanked)[number]) => ({
+    value: { id: e.ref.id, code: e.ref.code, name: e.ref.name, slug: e.ref.slug, practiceAreaId: e.ref.practiceAreaId },
+    confidence: Math.min(1, e.score / 18),
+    matchedOn: e.matchedOn,
+  });
+  const matter = matterRanked[0] ? toMatterMatch(matterRanked[0]) : null;
+  const alternativeMatters = matterRanked.slice(1, 5).filter((e) => e.score >= matterTop * 0.7).map(toMatterMatch);
 
   // ---- practice area -------------------------------------------------------
   const paScores = new Map<number, { score: number; matchedOn: string; ref: IntakeVocabulary['practiceAreas'][number] }>();
@@ -88,7 +148,19 @@ export function classifyIntake(rawQuery: string, vocab: IntakeVocabulary): Intak
     confidence: Math.min(1, e.score / 16),
     matchedOn: e.matchedOn,
   });
-  const practiceArea = ranked[0] ? toMatch(ranked[0]) : null;
+  let practiceArea = ranked[0] ? toMatch(ranked[0]) : null;
+  // A confidently matched matter overrides a weaker practice-area guess, and
+  // supplies the area outright when no area phrase matched at all.
+  if (matter && matterRanked[0] && (!practiceArea || matterRanked[0].score > topScore)) {
+    const owner = vocab.practiceAreas.find((pa) => pa.id === matter.value.practiceAreaId);
+    if (owner) {
+      practiceArea = {
+        value: { id: owner.id, code: owner.code, name: owner.name, slug: owner.slug },
+        confidence: matter.confidence,
+        matchedOn: matter.matchedOn,
+      };
+    }
+  }
   // Show alternatives only when they are genuinely competitive.
   const alternativePracticeAreas = ranked
     .slice(1, 4)
@@ -167,7 +239,7 @@ export function classifyIntake(rawQuery: string, vocab: IntakeVocabulary): Intak
     /\b(my|i|me|we|our|has|have|is|are|not|didn t|won t|cannot|can t|need|want|should)\b/.test(q);
 
   const consumed = new Set<string>();
-  for (const phrase of [practiceArea?.matchedOn, location?.matchedOn, court?.matchedOn, matterType?.matchedOn]) {
+  for (const phrase of [practiceArea?.matchedOn, location?.matchedOn, court?.matchedOn, matterType?.matchedOn, matter?.matchedOn]) {
     if (phrase) for (const w of fold(phrase).split(' ')) consumed.add(w);
   }
   const STOP = new Set(['a','an','the','in','at','for','of','to','my','me','i','we','our','is','are','has','have','need','want','with','and','or','near','who','that','from','on','be','it','not','do','does']);
@@ -180,9 +252,11 @@ export function classifyIntake(rawQuery: string, vocab: IntakeVocabulary): Intak
     location,
     court,
     matterType,
+    matter,
+    alternativeMatters,
     urgency,
     isNaturalLanguage,
-    interpretation: describe(practiceArea, location, court, matterType, urgency),
+    interpretation: describe(practiceArea, location, court, matterType, urgency, matter),
     residualTerms,
   };
 }
@@ -193,10 +267,12 @@ function describe(
   court: IntakeResult['court'],
   mt: IntakeResult['matterType'],
   urgency: IntakeResult['urgency'],
+  matter?: IntakeResult['matter'],
 ): string {
-  if (!pa && !loc && !court) return 'Showing all listed legal professionals.';
+  if (!pa && !loc && !court && !matter) return 'Showing all listed legal professionals.';
   const bits: string[] = [];
   bits.push(pa ? `${pa.value.name} professionals` : 'Legal professionals');
+  if (matter) bits.push(`who handle ${matter.value.name.toLowerCase()}`);
   if (mt) bits.push(`for ${mt.value.name.toLowerCase()}`);
   if (court) bits.push(`practising before ${court.value.name}`);
   else if (loc) bits.push(`in ${loc.value.name}`);

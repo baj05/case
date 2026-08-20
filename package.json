@@ -22,7 +22,7 @@
     "ingest": "npm run ingest --workspace=@lexhall/ingestion",
     "ingest:dry": "npm run ingest:dry --workspace=@lexhall/ingestion",
     "test": "npm run test --workspace=@lexhall/core",
-    "db:demo": "npm run demo --workspace=@lexhall/db",
+    "db:demo": "npm run demo --workspace=@lexhall/db --",
     "ingest:judges": "npm run ingest --workspace=@lexhall/ingestion -- --judges",
     "assets:sync": "node scripts/sync-assets.mjs",
     "db:export": "node scripts/db-snapshot.mjs export",

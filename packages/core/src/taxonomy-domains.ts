@@ -1,0 +1,156 @@
+/**
+ * India legal matter taxonomy — domains and matters.
+ *
+ * Six levels: DOMAIN → PRACTICE AREA → MATTER → ISSUE / SERVICE / FORUM.
+ * This file carries levels 1 and 3; practice areas live in `taxonomy.ts`,
+ * forums in `taxonomy-forums.ts`.
+ *
+ * `syn` entries are the plain words a member of the public actually uses. They
+ * are the difference between a directory that requires legal vocabulary and one
+ * that does not.
+ *
+ * Nothing here is a claim about a person, a fee or an outcome — it is a
+ * classification of problems, which is configuration, not fabricated data.
+ */
+
+export interface DomainSeed {
+  code: string; name: string; slug: string; plainSummary: string;
+  icon?: string; sortOrder: number;
+  /** Practice-area codes from taxonomy.ts that belong to this domain. */
+  practiceAreas: string[];
+}
+
+export const LEGAL_DOMAINS: DomainSeed[] = [
+  { code: 'D_FAMILY', name: 'Family & Personal', slug: 'family-personal', sortOrder: 10, icon: 'family',
+    plainSummary: 'Marriage, divorce, maintenance, children, inheritance and disputes within a family.',
+    practiceAreas: ['FAMILY'] },
+  { code: 'D_PROPERTY', name: 'Property & Rent', slug: 'property-rent', sortOrder: 20, icon: 'home',
+    plainSummary: 'Buying, selling, renting, title, possession, builders and land.',
+    practiceAreas: ['PROPERTY'] },
+  { code: 'D_EMPLOYMENT', name: 'Employment & Labour', slug: 'employment-labour', sortOrder: 30, icon: 'work',
+    plainSummary: 'Jobs, wages, termination, PF, ESI, workplace conduct and industrial disputes.',
+    practiceAreas: ['LABOUR', 'PF', 'ESI', 'LABOUR_COMPLIANCE', 'POSH'] },
+  { code: 'D_CRIMINAL', name: 'Criminal', slug: 'criminal', sortOrder: 40, icon: 'shield',
+    plainSummary: 'FIRs, bail, investigation, trial and criminal appeals.',
+    practiceAreas: ['CRIMINAL'] },
+  { code: 'D_CONSUMER', name: 'Consumer & Utilities', slug: 'consumer-utilities', sortOrder: 50, icon: 'cart',
+    plainSummary: 'Defective goods, poor service, electricity, water, telecom and municipal complaints.',
+    practiceAreas: ['CONSUMER'] },
+  { code: 'D_ELECTRICITY', name: 'Electricity & Power', slug: 'electricity-power', sortOrder: 55, icon: 'bolt',
+    plainSummary: 'Billing disputes, meters, connections, disconnection, theft allegations, tariffs and the power sector.',
+    practiceAreas: [] },
+  { code: 'D_MONEY', name: 'Money, Banking & Debt', slug: 'money-banking-debt', sortOrder: 60, icon: 'bank',
+    plainSummary: 'Loans, recovery, cheque bounce, fraud, insurance claims and investments.',
+    practiceAreas: ['BANKING'] },
+  { code: 'D_BUSINESS', name: 'Business & Corporate', slug: 'business-corporate', sortOrder: 70, icon: 'building',
+    plainSummary: 'Companies, shareholders, contracts, insolvency and commercial disputes.',
+    practiceAreas: ['CORPORATE', 'CONTRACT', 'INSOLVENCY'] },
+  { code: 'D_TAX', name: 'Tax & GST', slug: 'tax-gst', sortOrder: 80, icon: 'receipt',
+    plainSummary: 'Income tax, GST, customs, notices, assessments and appeals.',
+    practiceAreas: ['TAX'] },
+  { code: 'D_IP', name: 'Intellectual Property', slug: 'intellectual-property', sortOrder: 90, icon: 'lightbulb',
+    plainSummary: 'Trade marks, copyright, patents, designs and brand protection.',
+    practiceAreas: ['IP'] },
+  { code: 'D_TECH', name: 'Technology, Cyber & Data', slug: 'technology-cyber-data', sortOrder: 100, icon: 'chip',
+    plainSummary: 'Online fraud, cybercrime, data protection, platforms and technology contracts.',
+    practiceAreas: ['TECH'] },
+  { code: 'D_PUBLIC', name: 'Government & Public Law', slug: 'government-public-law', sortOrder: 110, icon: 'gov',
+    plainSummary: 'Writs, service matters, pensions, licences, municipal action and public interest.',
+    practiceAreas: ['CONSTITUTIONAL', 'ADMIN_SERVICE'] },
+  { code: 'D_CIVIL', name: 'Civil Disputes', slug: 'civil-disputes', sortOrder: 120, icon: 'scales',
+    plainSummary: 'Recovery, contracts, injunctions, partition and general civil litigation.',
+    practiceAreas: ['CIVIL'] },
+  { code: 'D_ADR', name: 'Mediation & Arbitration', slug: 'mediation-arbitration', sortOrder: 130, icon: 'handshake',
+    plainSummary: 'Settling disputes outside court, and enforcing or challenging awards.',
+    practiceAreas: ['ARBITRATION', 'MEDIATION'] },
+  { code: 'D_ENV', name: 'Environment & Resources', slug: 'environment-resources', sortOrder: 140, icon: 'leaf',
+    plainSummary: 'Pollution, clearances, forests, wildlife, mining and land acquisition.',
+    practiceAreas: ['ENVIRONMENT'] },
+  { code: 'D_MOTOR', name: 'Motor, Transport & Accidents', slug: 'motor-transport-accidents', sortOrder: 150, icon: 'car',
+    plainSummary: 'Road accident compensation, insurance, challans and vehicle disputes.',
+    practiceAreas: [] },
+  { code: 'D_HEALTH', name: 'Health & Education', slug: 'health-education', sortOrder: 160, icon: 'health',
+    plainSummary: 'Medical negligence, hospitals, schools, colleges and student grievances.',
+    practiceAreas: [] },
+  { code: 'D_RIGHTS', name: 'Rights & Protection', slug: 'rights-protection', sortOrder: 170, icon: 'people',
+    plainSummary: 'Women, children, senior citizens, persons with disabilities and human rights.',
+    practiceAreas: [] },
+  { code: 'D_REGULATORY', name: 'Regulatory & Compliance', slug: 'regulatory-compliance', sortOrder: 180, icon: 'clipboard',
+    plainSummary: 'Sector regulators, licensing, competition, securities and industry compliance.',
+    practiceAreas: ['COMPETITION'] },
+  { code: 'D_LPO', name: 'Legal Operations & LPO', slug: 'legal-operations-lpo', sortOrder: 190, icon: 'stack',
+    plainSummary: 'Outsourced legal work, contract management, research and corporate legal operations.',
+    practiceAreas: ['LPO'] },
+];
+
+/**
+ * Practice areas that did not exist in the original 24 and are needed for the
+ * expanded domain map. Same shape as PRACTICE_AREAS in taxonomy.ts.
+ */
+export const EXTRA_PRACTICE_AREAS = [
+  { code: 'ELECTRICITY', name: 'Electricity & Power', slug: 'electricity-power', domain: 'D_ELECTRICITY', sortOrder: 55,
+    plainSummary: 'Electricity billing, meters, connections, disconnection, theft allegations, tariffs and power-sector regulation.',
+    synonyms: [['electricity', 10], ['electricity bill', 10], ['power bill', 10], ['bijli', 9], ['discom', 9],
+      ['electricity board', 10], ['wrong electricity bill', 10], ['meter', 8], ['smart meter', 9],
+      ['disconnection', 9], ['electricity theft', 9], ['tariff', 7], ['power cut', 8], ['load sanction', 7],
+      ['net metering', 8], ['rooftop solar', 8], ['electricity department', 9]] },
+  { code: 'UTILITIES', name: 'Public Utilities', slug: 'public-utilities', domain: 'D_CONSUMER', sortOrder: 56,
+    plainSummary: 'Water, telephone, broadband, transport, public housing and other notified public utility services.',
+    synonyms: [['water bill', 9], ['water connection', 9], ['telephone bill', 9], ['broadband', 8],
+      ['internet not working', 8], ['public utility', 8], ['sewerage', 7], ['municipal water', 8]] },
+  { code: 'MUNICIPAL', name: 'Municipal & Local Body', slug: 'municipal-local-body', domain: 'D_PUBLIC', sortOrder: 112,
+    plainSummary: 'House tax, property tax, building permissions, demolition notices, encroachment and trade licences.',
+    synonyms: [['house tax', 10], ['property tax', 10], ['municipal notice', 10], ['demolition notice', 10],
+      ['building permission', 9], ['trade licence', 8], ['nagar nigam', 9], ['municipal corporation', 9],
+      ['encroachment', 8], ['sealing', 8]] },
+  { code: 'MOTOR', name: 'Motor Accident & Vehicles', slug: 'motor-accident-vehicles', domain: 'D_MOTOR', sortOrder: 150,
+    plainSummary: 'Road accident compensation, motor insurance claims, challans, vehicle seizure and transport permits.',
+    synonyms: [['accident', 10], ['road accident', 10], ['motor accident', 10], ['mact', 9], ['challan', 9],
+      ['traffic fine', 9], ['hit and run', 9], ['vehicle seized', 9], ['driving licence', 8],
+      ['accident compensation', 10], ['insurance claim accident', 9]] },
+  { code: 'INSURANCE', name: 'Insurance', slug: 'insurance', domain: 'D_MONEY', sortOrder: 65,
+    plainSummary: 'Claim rejection, partial settlement, policy interpretation and insurance grievances.',
+    synonyms: [['insurance', 10], ['insurance claim', 10], ['claim rejected', 10], ['policy', 7],
+      ['health insurance', 9], ['life insurance', 9], ['mediclaim', 9], ['irdai', 8], ['insurance ombudsman', 9]] },
+  { code: 'MEDICAL', name: 'Medical & Healthcare', slug: 'medical-healthcare', domain: 'D_HEALTH', sortOrder: 160,
+    plainSummary: 'Medical negligence, hospital disputes, patient rights and healthcare regulation.',
+    synonyms: [['medical negligence', 10], ['hospital', 8], ['doctor negligence', 10], ['wrong treatment', 9],
+      ['patient rights', 8], ['medical malpractice', 9]] },
+  { code: 'EDUCATION', name: 'Education', slug: 'education', domain: 'D_HEALTH', sortOrder: 162,
+    plainSummary: 'Admission and fee disputes, examinations, academic action and student grievances.',
+    synonyms: [['school', 8], ['college', 8], ['university', 8], ['admission', 9], ['fee refund', 9],
+      ['exam result', 8], ['student grievance', 9], ['education dispute', 9]] },
+  { code: 'SUCCESSION', name: 'Succession & Inheritance', slug: 'succession-inheritance', domain: 'D_FAMILY', sortOrder: 15,
+    plainSummary: 'Wills, probate, succession certificates, intestate succession and estate disputes.',
+    synonyms: [['will', 9], ['probate', 10], ['succession certificate', 10], ['inheritance', 10],
+      ['legal heir certificate', 10], ['ancestral property', 9], ['estate dispute', 9], ['nominee dispute', 8]] },
+  { code: 'REALESTATE', name: 'Real Estate & RERA', slug: 'real-estate-rera', domain: 'D_PROPERTY', sortOrder: 22,
+    plainSummary: 'Builder delay, possession, refunds, defective construction, societies and RERA complaints.',
+    synonyms: [['builder', 10], ['rera', 10], ['possession delay', 10], ['flat not delivered', 10],
+      ['builder refund', 10], ['society dispute', 9], ['maintenance charges', 8], ['rwa', 8],
+      ['apartment dispute', 9], ['project delay', 10]] },
+  { code: 'IMMIGRATION', name: 'Immigration & Citizenship', slug: 'immigration-citizenship', domain: 'D_PUBLIC', sortOrder: 116,
+    plainSummary: 'Passport, visa, OCI, citizenship, work permits and deportation.',
+    synonyms: [['passport', 9], ['visa', 9], ['oci', 9], ['citizenship', 9], ['immigration', 9],
+      ['work permit', 8], ['deportation', 9], ['nri legal', 8]] },
+  { code: 'SECURITIES', name: 'Securities & Capital Markets', slug: 'securities-capital-markets', domain: 'D_REGULATORY', sortOrder: 182,
+    plainSummary: 'SEBI proceedings, insider trading, listing compliance, broker and investor disputes.',
+    synonyms: [['sebi', 10], ['insider trading', 9], ['stock market fraud', 9], ['broker dispute', 9],
+      ['demat', 8], ['mutual fund dispute', 9], ['sat appeal', 8]] },
+  { code: 'MEDIA', name: 'Media, Defamation & Content', slug: 'media-defamation-content', domain: 'D_RIGHTS', sortOrder: 174,
+    plainSummary: 'Defamation, publication disputes, content takedown, personality and image rights.',
+    synonyms: [['defamation', 10], ['defamed', 10], ['reputation', 8], ['content takedown', 9],
+      ['fake news about me', 9], ['media case', 8], ['image rights', 8], ['deepfake', 9]] },
+  { code: 'ELECTION', name: 'Election Law', slug: 'election-law', domain: 'D_PUBLIC', sortOrder: 118,
+    plainSummary: 'Election petitions, candidate disputes, electoral roll issues and campaign compliance.',
+    synonyms: [['election petition', 10], ['election dispute', 9], ['voter list', 8], ['electoral roll', 9],
+      ['election commission', 9]] },
+  { code: 'RTI', name: 'Right to Information', slug: 'right-to-information', domain: 'D_PUBLIC', sortOrder: 114,
+    plainSummary: 'RTI applications, first and second appeals, and information commission proceedings.',
+    synonyms: [['rti', 10], ['right to information', 10], ['information not given', 9], ['rti appeal', 10],
+      ['information commission', 9]] },
+  { code: 'LEGALAID', name: 'Legal Aid & Lok Adalat', slug: 'legal-aid-lok-adalat', domain: 'D_ADR', sortOrder: 135,
+    plainSummary: 'Free legal aid, Lok Adalat, pre-litigation settlement and legal services authorities.',
+    synonyms: [['legal aid', 10], ['free lawyer', 10], ['lok adalat', 10], ['nalsa', 9], ['dlsa', 9],
+      ['slsa', 9], ['cannot afford lawyer', 10], ['pre litigation settlement', 9]] },
+];

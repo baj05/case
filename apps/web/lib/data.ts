@@ -14,6 +14,7 @@ import {
   searchProfessionals, suggest, recordSearchEvent, zeroResultQueries,
   dataHealth, listSources, listRuns, listIssues, listClaims, listDataRequests,
   listFeatureFlags, isInitialised, db,
+  listDomains, listMatters, getMatter, listForums,
 } from '@lexhall/db';
 import type { SearchFilters } from '@lexhall/db';
 
@@ -130,3 +131,9 @@ export const getFeaturedWithPhotos = cache((limit = 3) =>
     locationName: string | null; bodyShort: string | null;
     minConsultMinor: number | null; currencyCode: string | null; primaryArea: string | null;
   }>);
+
+// ---------------------------------------------------------------- taxonomy
+export const getDomains = cache(() => listDomains());
+export const getMatters = cache((opts: { domainSlug?: string; practiceAreaSlug?: string; limit?: number } = {}) => listMatters(opts));
+export const getMatterDetail = cache((slug: string) => getMatter(slug));
+export const getForums = cache((kind?: string) => listForums(kind));

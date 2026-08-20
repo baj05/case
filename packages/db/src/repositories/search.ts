@@ -18,7 +18,9 @@ export interface SearchFilters {
   location?: string;      // location slug
   court?: string;         // court slug
   kind?: string;          // professional kind
-  matter?: string;        // matter type slug
+  matter?: string;        // matter type slug (the service wanted)
+  /** Legal matter slug — level 3 of the taxonomy, i.e. the actual problem. */
+  legalMatter?: string;
   language?: string;      // iso639
   verifiedOnly?: boolean;
   acceptingOnly?: boolean;
@@ -74,13 +76,21 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
   const matterRow = filters.matter
     ? (h.prepare(`SELECT id, name, slug FROM matter_type WHERE slug=?`).get(filters.matter) as { id: number; name: string; slug: string } | undefined)
     : undefined;
+  // A legal matter narrows to its practice area. It is deliberately NOT a hard
+  // filter on declared matters: professionals declare matters only after
+  // claiming, so filtering on it would hide everyone who has not claimed yet.
+  const legalMatterRow = filters.legalMatter
+    ? (h.prepare(
+        `SELECT m.id, m.name, m.slug, m.practice_area_id AS practiceAreaId FROM legal_matter m WHERE m.slug=?`,
+      ).get(filters.legalMatter) as { id: number; name: string; slug: string; practiceAreaId: number } | undefined)
+    : undefined;
   const languageRow = filters.language
     ? (h.prepare(`SELECT id, name FROM language WHERE iso639=?`).get(filters.language) as { id: number; name: string } | undefined)
     : undefined;
 
   // An explicit filter always beats an inferred one: the user's click is a
   // stronger signal than our guess about their sentence.
-  const practiceAreaId = practiceRow?.id ?? intake.practiceArea?.value.id ?? null;
+  const practiceAreaId = practiceRow?.id ?? legalMatterRow?.practiceAreaId ?? intake.practiceArea?.value.id ?? null;
   const locationId = locationRow?.id ?? intake.location?.value.id ?? null;
   const courtId = courtRow?.id ?? intake.court?.value.id ?? null;
 
@@ -88,7 +98,23 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
   const where: string[] = ['d.is_published = 1'];
   const params: Array<string | number> = [];
 
-  if (practiceAreaId) { where.push(`d.practice_area_ids LIKE ?`); params.push(`%,${practiceAreaId},%`); }
+  // When professionals have actually declared this matter, filter to them —
+  // that is a real specialism claim they made. When nobody has declared it, fall
+  // back to the practice area rather than returning an empty page, and say so.
+  const declaredMatterIds = legalMatterRow
+    ? (h.prepare(
+        `SELECT professional_id AS id FROM professional_legal_matter WHERE legal_matter_id = ?`,
+      ).all(legalMatterRow.id) as Array<{ id: number }>).map((r) => r.id)
+    : [];
+  const matterIsDeclared = declaredMatterIds.length > 0;
+  if (matterIsDeclared) {
+    where.push(`d.professional_id IN (${declaredMatterIds.map(() => '?').join(',')})`);
+    params.push(...declaredMatterIds);
+  } else if (practiceAreaId) { where.push(`d.practice_area_ids LIKE ?`); params.push(`%,${practiceAreaId},%`); }
+  // A matter slug that resolves to nothing must not silently widen the search to
+  // the whole corpus — that reads as "here is everyone" when it means "unknown".
+  const unknownLegalMatter = Boolean(filters.legalMatter) && !legalMatterRow;
+  if (unknownLegalMatter) where.push('1 = 0');
   if (courtId) { where.push(`d.court_ids LIKE ?`); params.push(`%,${courtId},%`); }
   if (filters.courtTier) { where.push(`d.court_tiers LIKE ?`); params.push(`%,${filters.courtTier},%`); }
   if (matterRow) { where.push(`d.matter_type_ids LIKE ?`); params.push(`%,${matterRow.id},%`); }
@@ -123,7 +149,7 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
     }
   }
 
-  const hasStructural = Boolean(practiceAreaId || courtId || locationId || matterRow || languageRow || filters.kind);
+  const hasStructural = Boolean(legalMatterRow || practiceAreaId || courtId || locationId || matterRow || languageRow || filters.kind);
   // If the query produced text hits, restrict to them — unless structured
   // filters alone are meaningful (e.g. browsing a practice area with no query).
   if (textQuery && ftsScores.size > 0 && !hasStructural) {
@@ -250,6 +276,17 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
 
   // ---- applied filter chips ----------------------------------------------
   const appliedFilters: SearchOutcome['appliedFilters'] = [];
+  if (unknownLegalMatter) {
+    appliedFilters.push({ key: 'legalMatter', label: 'Legal matter (not recognised)', value: String(filters.legalMatter) });
+  }
+  if (legalMatterRow) {
+    appliedFilters.push({
+      key: 'legalMatter',
+      label: matterIsDeclared ? 'Legal matter (declared by the professional)' : 'Legal matter (via its practice area)',
+      value: legalMatterRow.name,
+    });
+  }
+  else if (intake.matter) appliedFilters.push({ key: 'legalMatter', label: 'Legal matter (from your words)', value: intake.matter.value.name });
   if (practiceRow) appliedFilters.push({ key: 'practice', label: 'Practice area', value: practiceRow.name });
   else if (intake.practiceArea) appliedFilters.push({ key: 'practice', label: 'Practice area (from your words)', value: intake.practiceArea.value.name });
   if (locationRow) appliedFilters.push({ key: 'location', label: 'Location', value: locationRow.name });
