@@ -100,15 +100,17 @@ export default async function HomePage() {
               the Countesia reference: one dominant figure, three supporting cards
               layered around it rather than a rectangular photo card. */}
           <div className="hero-stage">
-            <Image
-              src="/img/hero/advocate-cutout.png"
-              alt=""
-              width={832}
-              height={1700}
-              priority
-              sizes="(max-width: 640px) 220px, (max-width: 1024px) 300px, 380px"
-              className="hero-subject"
-            />
+            <div className="hero-subject-wrap">
+              <Image
+                src="/img/hero/advocate-cutout.png"
+                alt=""
+                width={924}
+                height={1900}
+                priority
+                sizes="(max-width: 640px) 280px, (max-width: 1024px) 420px, 520px"
+                className="hero-subject"
+              />
+            </div>
 
             <div className="glass-card gcard-left">
               <span className="gcard-icon" aria-hidden="true">⚖</span>

@@ -984,18 +984,40 @@ details[open] > .filter-summary::after { content: '–'; }
 .hero-stage {
   position: relative;
   width: 100%;
-  max-width: 920px;
-  margin-top: clamp(28px, 5vw, 48px);
+  max-width: 780px;
+  margin-top: clamp(4px, 1vw, 12px);
   display: flex;
   justify-content: center;
-  min-height: clamp(320px, 40vw, 480px);
+  min-height: clamp(420px, 52vw, 640px);
+}
+.hero-subject-wrap {
+  position: relative;
+  z-index: 3;
+  height: clamp(420px, 52vw, 640px);
+}
+.hero-subject-wrap::after {
+  /* A drop-shadow() filter on this element fails to composite in some
+     renderers when applied to a large transparent PNG (verified: the filter
+     alone made the whole figure disappear even though the image itself
+     decoded and painted fine). A grounding ellipse behind the feet gives the
+     same "not floating" cue without relying on filter compositing. */
+  content: '';
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 24px;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(15, 23, 42, 0.22), transparent 72%);
+  z-index: -1;
 }
 .hero-subject {
+  /* Dominant figure, per the reference: it is the visual anchor the cards
+     gather around, not a small illustration floating in empty space. */
   position: relative;
-  z-index: 1;
-  height: clamp(280px, 34vw, 480px);
+  display: block;
+  height: 100%;
   width: auto;
-  filter: drop-shadow(0 24px 32px rgba(15, 23, 42, 0.22));
 }
 
 .glass-card {
@@ -1008,7 +1030,7 @@ details[open] > .filter-summary::after { content: '–'; }
   backdrop-filter: blur(16px) saturate(1.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
   padding: 14px 16px;
-  max-width: 240px;
+  max-width: 226px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1016,9 +1038,12 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .glass-card { background: rgba(26, 31, 43, 0.82); }
 }
-.gcard-left { top: 12%; left: -2%; }
-.gcard-top-right { top: 4%; right: -3%; max-width: 260px; }
-.gcard-bottom-right { bottom: 6%; right: -4%; }
+/* Pulled in close enough that the figure (z-index 3) overlaps their inner
+   edge — the "tucked behind the subject" depth the reference composition
+   uses, rather than cards floating in open space beside a small figure. */
+.gcard-left { top: 44%; left: 2%; }
+.gcard-top-right { top: 6%; right: 2%; max-width: 240px; }
+.gcard-bottom-right { bottom: 8%; right: 4%; }
 
 .gcard-icon {
   display: inline-grid;
