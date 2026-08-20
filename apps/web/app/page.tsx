@@ -13,9 +13,9 @@ export const dynamic = 'force-dynamic';
  * placeholders, disclosed as such beneath the row. Not derived from, and not
  * matched to, any real professional's record. */
 const ILLUSTRATIVE_ADVOCATES = [
-  { name: 'Kourosh Rostami', area: 'Corporate & Commercial', years: 22, location: 'Mumbai', fee: '\u20b93,000', photo: '/img/figures/stock-advocate-1.png' },
-  { name: 'Mateo Fernandez Ruiz', area: 'Arbitration', years: 14, location: 'Bengaluru', fee: '\u20b92,800', photo: '/img/figures/stock-advocate-2.png' },
-  { name: 'Farhad Hosseini', area: 'Property & Real Estate', years: 19, location: 'Delhi', fee: '\u20b93,200', photo: '/img/figures/stock-advocate-3.png' },
+  { name: 'Rajeev Malhotra', area: 'Corporate & Commercial', years: 22, location: 'Mumbai', fee: '\u20b93,000', photo: '/img/figures/stock-advocate-1.png' },
+  { name: 'Arjun Nair', area: 'Arbitration', years: 14, location: 'Bengaluru', fee: '\u20b92,800', photo: '/img/figures/stock-advocate-2.png' },
+  { name: 'Vikram Choudhary', area: 'Property & Real Estate', years: 19, location: 'Delhi', fee: '\u20b93,200', photo: '/img/figures/stock-advocate-3.png' },
 ] as const;
 
 const EXAMPLES = [

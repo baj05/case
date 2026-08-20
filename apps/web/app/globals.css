@@ -1632,32 +1632,19 @@ details[open] > .filter-summary::after { content: '–'; }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
 .block-coral { background: linear-gradient(165deg, #ff6b6b 0%, #ffab91 100%); }
 
-/* Layer 2 (middle): the cutout. Anchored to the card's bottom and taller than
-   the card (110%), so the extra height pushes the head above the top edge —
-   the card's own overflow:visible lets that show instead of clipping it. */
-.block-photo {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  width: 100%;
-  height: 110%;
-  object-fit: contain;
-  object-position: bottom center;
-  pointer-events: none;
-  transition: transform 400ms var(--ease);
-}
-
-/* Layer 3 (top): the white panel. Inset from the card's own edges so colour
-   shows as a frame on the left, right and bottom — a floating glass panel
-   across the torso, not a wall hiding it. */
+/* Layer 2: the white panel sits BEHIND the cutout, not in front of it. This
+   is the actual reference mechanic — the cutout's arms/torso visibly overlap
+   the card's edge because the photo is drawn on top, and the name is still
+   legible only because a PNG cutout is transparent everywhere the person
+   isn't: the white card and its text show straight through that transparency
+   wherever the silhouette doesn't cover it. Inset from the card's own edges
+   so colour still frames it on the left, right and bottom. */
 .block-info {
   position: absolute;
   left: 16px;
   right: 16px;
   bottom: 16px;
-  z-index: 20;
+  z-index: 10;
   padding: 16px 18px 18px;
   background: var(--surface-lowest);
   border-radius: var(--r-lg);
@@ -1667,6 +1654,20 @@ details[open] > .filter-summary::after { content: '–'; }
   box-shadow: var(--shadow-lg);
   text-align: center;
 }
+.block-photo {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 100%;
+  height: 110%;
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+  transition: transform 400ms var(--ease);
+}
+
 .block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
 .block-area { font-size: 0.8125rem; color: var(--primary); font-weight: 600; }
 .block-meta { font-size: 0.75rem; color: var(--on-surface-variant); }
