@@ -407,7 +407,7 @@ ul, ol { list-style: none; padding: 0; }
 .btn-ghost { background: transparent; color: var(--on-surface); }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-container); }
 
-.btn-pill { border-radius: var(--r-full); }
+.btn-pill { border-radius: var(--r-full); white-space: nowrap; }
 .btn-sm { min-height: 36px; padding: 6px 14px; font-size: 0.875rem; }
 .btn-lg { min-height: 52px; padding: 14px 28px; font-size: 1rem; }
 .btn-block { width: 100%; }
@@ -831,8 +831,23 @@ details[open] > .filter-summary::after { content: '–'; }
 .measure { max-width: 68ch; }
 .measure-tight { max-width: 52ch; }
 .full { width: 100%; }
+/* Visibility utilities.
+   `display: initial` computes to a value that is NOT the component's own
+   display, so `.nav-pill.hide-mobile` lost its flex layout (gap and
+   align-items became inert) and `.btn.hide-mobile` stopped being an
+   inline-flex button, at exactly the widths where they are visible. The
+   component display is therefore restored explicitly.
+   The breakpoint is 1200px, not 900px: the nav carries eight items and, with
+   the wordmark and the call to action, needs about 1180px. At 900px the header
+   overflowed the viewport horizontally on every page. */
 .hide-mobile { display: none; }
-@media (min-width: 900px) { .hide-mobile { display: initial; } .hide-desktop { display: none; } }
+@media (min-width: 1200px) {
+  .hide-mobile { display: initial; }
+  .nav-pill.hide-mobile { display: flex; }
+  .btn.hide-mobile { display: inline-flex; }
+  .card.hide-mobile { display: block; }
+  .hide-desktop { display: none; }
+}
 
 /* --- search page layout ----------------------------------------------- */
 /* Single column on small screens; filter rail appears only when there is
@@ -1494,7 +1509,12 @@ details[open] > .filter-summary::after { content: '–'; }
    areas reading as unfinished. It never sits under body text at an opacity that
    would affect contrast, and it is decorative so it carries no alt text. */
 .textured { position: relative; isolation: isolate; }
-.textured::before {
+/* Painted on ::after, not ::before. `.hero` already claims its own ::before for
+   the ambient glow, so `.hero.textured` had the two rules fighting over one
+   pseudo-element: the texture's background-image won, the glow's width and
+   aspect-ratio survived, and the result was a 670x335 box translated half off
+   the left edge — a hard-edged patch of paper with no glow behind it. */
+.textured::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1508,14 +1528,14 @@ details[open] > .filter-summary::after { content: '–'; }
   border-radius: inherit;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .textured::before { opacity: 0.05; mix-blend-mode: screen; }
+  :root:not([data-theme='light']) .textured::after { opacity: 0.05; mix-blend-mode: screen; }
 }
 /* The paper texture tiles at 620px. On a full-bleed section narrower than that
    only part of one tile is visible, and the tile's own light regions read as a
    hard-edged patch rather than a texture. Scaling it down so at least two tiles
    fit restores the intended effect. */
 @media (max-width: 700px) {
-  .textured::before { background-size: 300px auto; }
+  .textured::after { background-size: 300px auto; }
 }
 
 /* --- motion pass ------------------------------------------------------- */
