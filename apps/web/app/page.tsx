@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
+import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
 import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, getFeaturedWithPhotos, getLocalAssets, databaseReady } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
@@ -80,11 +81,11 @@ export default async function HomePage() {
               and the court — no legal terminology needed.
             </p>
 
+            <div className="stack gap-3" style={{ maxWidth: 560 }}>
+              <DualSearch />
+              <HeroDescribeLink />
+            </div>
             <div className="row wrap gap-4">
-              <Link href="/advo-ai" className="btn btn-primary btn-pill btn-lg">
-                Ask Advo AI
-              </Link>
-              <Link href="/search" className="btn btn-secondary btn-pill btn-lg">Search yourself</Link>
               <div className="row gap-3">
                 <span className="avatar-cluster" aria-hidden="true">
                   <span className="mono-av">BCI</span>
@@ -161,12 +162,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ============================================= SEARCH (the product) */}
+      {/* Example queries: search input is in the hero above; these chips
+          are the "here is what we understand" gallery, not a second search. */}
       <section className="container" style={{ marginTop: 8 }}>
         <div className="glass stack gap-3" style={{ padding: 'clamp(18px, 3vw, 28px)' }}>
-          <DualSearch />
           <div className="row wrap gap-2">
-            <span className="t-caption" style={{ alignSelf: 'center' }}>Try</span>
+            <span className="t-caption" style={{ alignSelf: 'center' }}>Try a search like</span>
             {EXAMPLES.map((ex) => (
               <Link key={ex} href={`/search?q=${encodeURIComponent(ex)}`} className="chip chip-button chip-outline">
                 {ex}

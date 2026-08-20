@@ -138,7 +138,16 @@ export function getProfileDetail(slug: string) {
       `SELECT institution, qualification, field, start_year AS startYear, end_year AS endYear, evidence_basis AS evidenceBasis
          FROM education WHERE professional_id = ? ORDER BY COALESCE(end_year, start_year) DESC`,
     ).all(id) as Array<{ institution: string; qualification: string; field: string | null; startYear: number | null; endYear: number | null; evidenceBasis: string }>,
-    experience: h.prepare(
+    legalMatters: h.prepare(
+      `SELECT m.id, m.code, m.name, m.slug, pa.slug AS practiceAreaSlug, d.slug AS domainSlug
+         FROM professional_legal_matter plm
+         JOIN legal_matter m ON m.id = plm.legal_matter_id
+         JOIN practice_area pa ON pa.id = m.practice_area_id
+         LEFT JOIN legal_domain d ON d.id = pa.legal_domain_id
+        WHERE plm.professional_id = ? AND m.is_active = 1
+        ORDER BY d.sort_order, pa.sort_order, m.name`,
+    ).all(id) as Array<{ id: number; code: string; name: string; slug: string; practiceAreaSlug: string; domainSlug: string | null }>,
+        experience: h.prepare(
       `SELECT organisation_name AS organisationName, role, start_year AS startYear, end_year AS endYear,
               is_current AS isCurrent, summary, evidence_basis AS evidenceBasis
          FROM experience WHERE professional_id = ? ORDER BY is_current DESC, COALESCE(end_year, start_year) DESC`,

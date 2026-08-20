@@ -218,7 +218,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     ? `We understood this as ${outcome.intake.practiceArea.value.name}. Practice areas are self-declared, so they only appear on profiles a professional has claimed — which is why a specific area can return nothing while the directory itself is large.`
                     : 'Try widening the location, or search by name, court or Bar Council instead.'
                 }
-                actions={outcome.recovery.map((r) => ({ label: r.label, href: r.href, detail: `${r.count}` }))}
+                actions={[
+                  ...outcome.recovery.map((r) => ({ label: r.label, href: r.href, detail: `${r.count}` })),
+                  { label: 'Browse legal matters', href: '/matters' },
+                  { label: 'Browse free resources', href: '/resources' },
+                ]}
               />
             ) : (
               <div className="stack gap-3">

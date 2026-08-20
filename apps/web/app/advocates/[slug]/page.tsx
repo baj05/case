@@ -4,8 +4,9 @@ import type { Metadata } from 'next';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge, KindChip, ClaimChip, EvidenceChip } from '@/components/Badges';
 import { ResultCard } from '@/components/ResultCard';
+import { ResourceCard } from '@/components/ResourceCard';
 import { Notice } from '@/components/States';
-import { getProfessional, getDetail, getRelated, getFlags } from '@/lib/data';
+import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter } from '@/lib/data';
 import { listFees, feeSummary, formatMinor, generateSlots } from '@lexhall/db';
 import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/format';
 import { LEGAL_COPY } from '@/lib/brand';
@@ -35,6 +36,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
 
   const detail = getDetail(slug);
   const related = getRelated(p.id, 4);
+
+  // Free resources for the matters this professional has declared.
+  // Deduplicated by resource id, capped at 4 so it stays supporting content
+  // and never dominates the profile.
+  const declaredMatters = detail?.legalMatters ?? [];
+  const resourceMap = new Map<number, Awaited<ReturnType<typeof getResourcesForMatter>>[number]>();
+  for (const m of declaredMatters.slice(0, 6)) {
+    for (const r of getResourcesForMatter(m.slug, 2)) if (!resourceMap.has(r.id)) resourceMap.set(r.id, r);
+    if (resourceMap.size >= 4) break;
+  }
+  const profileResources = [...resourceMap.values()].slice(0, 4);
   const flags = getFlags();
   const fees = listFees(p.id);
   const fsum = feeSummary(p.id);
@@ -317,6 +329,47 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
                 </Notice>
               )}
             </section>
+
+            {/* Matters this professional has declared, with free resources for
+                those matters. Only appears when a matter has been claimed —
+                otherwise there is nothing honest to show here. */}
+            {declaredMatters.length > 0 && (
+              <section className="stack gap-3">
+                <h2 className="t-headline-md">Matters this advocate handles</h2>
+                <p className="t-body-sm ink-variant">
+                  Declared by the professional. Practice areas are self-declared
+                  and appear here after the profile is claimed and completed.
+                </p>
+                <div className="row wrap gap-1">
+                  {declaredMatters.map((m) => (
+                    <Link
+                      key={m.id}
+                      href={m.domainSlug ? `/matters/${m.domainSlug}/${m.slug}` : `/search?legalMatter=${m.slug}`}
+                      className="chip chip-button chip-outline"
+                    >
+                      {m.name}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {profileResources.length > 0 && (
+              <section className="stack gap-3">
+                <div className="row gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h2 className="t-headline-md">Free documents for these matters</h2>
+                  <Link href="/resources" className="btn btn-secondary btn-sm">All resources</Link>
+                </div>
+                <p className="t-body-sm ink-variant">
+                  Ordinary starting points people ask an advocate about first — read
+                  a template here or open the official form at its own site, then
+                  come back and consult when you know what you are dealing with.
+                </p>
+                <div className="stack gap-3">
+                  {profileResources.map((r) => <ResourceCard key={r.id} card={r} />)}
+                </div>
+              </section>
+            )}
 
             {/* related */}
             {related.length > 0 && (

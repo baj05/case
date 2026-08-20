@@ -14,6 +14,16 @@ export function Footer() {
       ],
     },
     {
+      head: 'Legal matters',
+      links: [
+        { href: '/matters', label: 'Browse by legal matter' },
+        { href: '/forums', label: 'Forums and tribunals' },
+        { href: '/matters/electricity-power', label: 'Electricity disputes' },
+        { href: '/matters/family-personal', label: 'Family and personal' },
+        { href: '/matters/property-rent', label: 'Property and rent' },
+      ],
+    },
+    {
       head: 'Free resources',
       links: [
         { href: '/resources', label: 'Resource library' },
