@@ -201,9 +201,14 @@ export default async function HomePage() {
             <div className="block-row">
               {ILLUSTRATIVE_ADVOCATES.map((a, i) => (
                 <article key={a.name} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
-                  <div className="block-photo">
-                    <Image src={a.photo} alt="" width={380} height={440} sizes="380px" />
-                  </div>
+                  <Image
+                    src={a.photo}
+                    alt=""
+                    width={380}
+                    height={440}
+                    sizes="380px"
+                    className="block-photo"
+                  />
                   <div className="block-info">
                     <span className="block-name">{a.name}</span>
                     <span className="block-area">{a.area}</span>
