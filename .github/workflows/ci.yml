@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci || npm install
+      - name: Audit dependencies
+        # Fail on high or critical. Moderate findings are reported, not blocking.
+        run: npm audit --audit-level=high
+
+      - name: Typecheck (strict)
+        run: npm run typecheck
+
+      - name: Unit and relevance tests
+        run: npm test
+
+      - name: Initialise schema and reference data
+        run: |
+          node --input-type=module -e "
+            const { applySchema } = await import('./packages/db/src/client.ts');
+            const r = applySchema({ fresh: true });
+            console.log('migrations:', r.applied.join(', '));
+            const { seedReferenceData } = await import('./packages/db/src/repositories/reference.ts');
+            console.log('reference:', JSON.stringify(seedReferenceData()));
+          "
+        env:
+          DATABASE_PATH: ./data/ci.db
+
+      - name: Verify database integrity
+        run: |
+          node --input-type=module -e "
+            const { db } = await import('./packages/db/src/client.ts');
+            const fk = db().prepare('PRAGMA foreign_key_check').all();
+            if (fk.length) { console.error('FK violations:', fk.length); process.exit(1); }
+            const integrity = Object.values(db().prepare('PRAGMA integrity_check').get())[0];
+            if (integrity !== 'ok') { console.error('integrity:', integrity); process.exit(1); }
+            console.log('integrity ok, 0 FK violations');
+          "
+        env:
+          DATABASE_PATH: ./data/ci.db
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_PATH: ../../data/ci.db
+
+      - name: Smoke test the built app
+        run: |
+          DATABASE_PATH=./data/ci.db npm run start --workspace=@lexhall/web &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break
+            sleep 2
+          done
+          # An unseeded CI database is legitimately 'degraded'; the smoke suite
+          # accepts that and still asserts every route renders real content.
+          node scripts/smoke.mjs http://localhost:3000
+        env:
+          DATABASE_PATH: ./data/ci.db
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          load: true
+          tags: lexhall/web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke the container from a clean state
+        run: |
+          docker run -d --name lexhall-ci -p 3000:3000 lexhall/web:ci
+          for i in $(seq 1 40); do
+            s=$(docker inspect --format='{{.State.Health.Status}}' lexhall-ci 2>/dev/null || echo starting)
+            [ "$s" = "healthy" ] && break
+            [ "$s" = "unhealthy" ] && { docker logs lexhall-ci; exit 1; }
+            sleep 3
+          done
+          docker logs lexhall-ci | grep entrypoint || true
+          # A fresh container has no corpus, so 'degraded' is the correct state.
+          curl -fsS http://localhost:3000/api/health | grep -qE '"status":"(ok|degraded)"'
+          node scripts/smoke.mjs http://localhost:3000

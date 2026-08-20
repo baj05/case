@@ -19,6 +19,39 @@ npm run ingest      # crawls the Bar Council of India register (~2 min, polite, 
 npm run dev         # http://localhost:3000
 ```
 
+### Or with Docker
+
+```bash
+docker compose build web
+docker compose up -d web            # http://localhost:3100
+```
+
+A fresh container applies its migrations and seeds reference data on boot, then
+reports `degraded` until it has a corpus — an empty instance cannot pretend to be
+healthy. Populate it either by crawling:
+
+```bash
+docker compose run --rm ingest
+```
+
+or, preferably, from a reviewed snapshot — crawling on every deploy is impolite
+and the render service rate-limits:
+
+```bash
+npm run db:export                   # data/snapshot.db from your local database
+npm run db:verify data/snapshot.db  # integrity + row counts
+```
+
+### Verify it
+
+```bash
+npm run typecheck   # strict TypeScript across the workspace
+npm test            # 20 domain and search-relevance tests
+npm run smoke       # 48 content assertions across 17 routes (needs a running server)
+npm run ci          # typecheck + test + build
+curl -s localhost:3100/api/health | python3 -m json.tool
+```
+
 `npm run ingest` builds the database, seeds reference data, crawls all 24 State Bar Councils, downloads official
 portraits and builds the search index. Re-running it is safe and incremental — unchanged records are skipped by
 content hash.

@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.next
+**/.next
+.git
+data
+*.log
+for inspiration
+WHAT WE HAVE NEEDED (HIGH PRIORITY)
+docs/*.md
+!docs/DESIGN.md

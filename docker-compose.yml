@@ -1,0 +1,47 @@
+services:
+  web:
+    build:
+      context: .
+      target: runtime
+    image: lexhall/web:local
+    container_name: lexhall-web
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /app/data/lexhall.db
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      # Compliance gates. Off by default; see docs/COMPLIANCE_MATRIX.md.
+      FEATURE_REVIEWS: "false"
+      FEATURE_PAYMENTS: "false"
+      FEATURE_REFERRALS: "false"
+      FEATURE_PAID_RANKING: "false"
+      FEATURE_AI_INTAKE: "true"
+    volumes:
+      # Named volume so the ingested corpus survives container replacement.
+      - lexhall_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health | grep -qE '\"status\":\"(ok|degraded)\"' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 25s
+
+  # One-shot ingestion. `docker compose run --rm ingest` populates the shared
+  # volume; it is not part of `up` because crawling on every boot would be
+  # impolite to the source.
+  ingest:
+    build:
+      context: .
+      target: build
+    image: lexhall/ingest:local
+    profiles: ["tools"]
+    environment:
+      DATABASE_PATH: /app/data/lexhall.db
+    volumes:
+      - lexhall_data:/app/data
+    command: ["sh", "-lc", "npm run ingest && npm run ingest:judges && npm run db:demo"]
+
+volumes:
+  lexhall_data:

@@ -24,6 +24,11 @@
     "test": "npm run test --workspace=@lexhall/core",
     "db:demo": "npm run demo --workspace=@lexhall/db",
     "ingest:judges": "npm run ingest --workspace=@lexhall/ingestion -- --judges",
-    "assets:sync": "node scripts/sync-assets.mjs"
+    "assets:sync": "node scripts/sync-assets.mjs",
+    "db:export": "node scripts/db-snapshot.mjs export",
+    "db:import": "node scripts/db-snapshot.mjs import",
+    "db:verify": "node scripts/db-snapshot.mjs verify",
+    "smoke": "node scripts/smoke.mjs",
+    "ci": "npm run typecheck && npm test && npm run build"
   }
 }

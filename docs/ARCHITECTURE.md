@@ -109,3 +109,40 @@ Fluid `clamp()` type and `auto-fit` grids mean no layout breaks 320 → 1920 px 
 are self-hosted by `next/font` (three families, six weights, zero runtime third-party requests). Advocate
 portraits are downloaded at ingestion and served from our own origin. Wide tables scroll inside their own
 container; the page body never scrolls horizontally. Measured search latency 12–25 ms.
+
+## Deployment
+
+Multi-stage Docker image: `deps → build → runtime`. The runtime stage carries no
+compiler and no dev dependencies, runs as a non-root user, and exposes a
+healthcheck. The database is a file on a named volume, so the ingested corpus
+survives container replacement.
+
+```
+docker compose build web
+docker compose up -d web        # :3100
+docker compose run --rm ingest  # one-shot; not part of `up`, because crawling
+                                # on every boot would be impolite to the source
+```
+
+`docker-entrypoint.sh` applies migrations (additive and idempotent) and seeds
+reference data before starting the server. Consequence: a fresh container is
+`degraded` — schema present, corpus empty, pages render and say "run ingest" —
+rather than `error`. The liveness probe accepts `degraded` deliberately, because
+a probe that rejects it makes the container impossible to seed.
+
+### Health contract
+
+`GET /api/health` returns three distinct states, because "up" and "usable" are
+not the same thing:
+
+| Status | Meaning | HTTP |
+|---|---|---|
+| `ok` | Database reachable, corpus populated, index built | 200 |
+| `degraded` | Schema present, corpus empty | 200 |
+| `error` | Database unreachable or uninitialised | 503 |
+
+### CI
+
+`.github/workflows/ci.yml`: audit (fail on high) → typecheck → test → migrate →
+integrity check (`foreign_key_check`, `integrity_check`) → build → smoke. A
+second job builds the image and smoke-tests a container from a clean state.
