@@ -8,6 +8,15 @@ import { formatNumber, relativeDate, searchHref } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
+/** Placeholder-only stock portraits for the featured-advocates row — see the
+ * disclosure printed beneath that section. Never used anywhere a photo is
+ * asserted to belong to the named professional. */
+const STOCK_PHOTOS: readonly [string, string, string] = [
+  '/img/figures/stock-advocate-1.jpg',
+  '/img/figures/stock-advocate-2.jpg',
+  '/img/figures/stock-advocate-3.jpg',
+];
+
 const EXAMPLES = [
   'Labour lawyer for a PF dispute',
   'Advocate for Jabalpur High Court',
@@ -51,7 +60,7 @@ export default async function HomePage() {
   const highCourts = getCourts(2).filter((c) => c.isBench === 0);
   const councils = getBarCouncils();
   const topAreas = areas.filter((a) => a.parentId === null);
-  const featured = getFeaturedWithPhotos(10);
+  const featured = getFeaturedWithPhotos(3);
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
@@ -178,50 +187,46 @@ export default async function HomePage() {
               <Link href="/search?accepting=1" className="btn btn-secondary btn-pill">See everyone available</Link>
             </div>
 
-            {/* Auto-scrolling marquee: the track is the real list rendered twice
-                back to back, then translated exactly -50% in a seamless loop, so
-                it reads as a continuous ribbon rather than a jump-cut. Paused on
-                hover/focus and under prefers-reduced-motion (see globals.css). */}
-            <div className="block-marquee">
-              <div className="block-track">
-                {[...featured, ...featured].map((f, i) => (
-                  <article key={`${f.slug}-${i}`} className={`block-card block-${['blue', 'orange', 'lime', 'coral'][i % 4]}`}>
-                    {f.photoUrl && (
-                      <div className="block-photo">
-                        <Image
-                          src={f.photoUrl}
-                          alt={`Photograph of ${f.displayName}, published by their Bar Council`}
-                          width={380}
-                          height={440}
-                          sizes="380px"
-                        />
-                      </div>
-                    )}
-                    <div className="block-info">
-                      <span className="block-name">{f.displayName}</span>
-                      {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
-                      <span className="block-meta">
-                        {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
+            {/* Static 3-card row. Data (name, practice area, years, location,
+                fee, and the "Book a time" link) is real — pulled from
+                getFeaturedWithPhotos, unchanged. Only the portrait is a stock
+                placeholder photo, disclosed as such below, standing in until
+                each professional's own photograph is used here. */}
+            <div className="block-row">
+              {featured.map((f, i) => (
+                <article key={f.slug} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
+                  <div className="block-photo">
+                    <Image
+                      src={STOCK_PHOTOS[i % STOCK_PHOTOS.length]!}
+                      alt=""
+                      width={380}
+                      height={440}
+                      sizes="380px"
+                    />
+                  </div>
+                  <div className="block-info">
+                    <span className="block-name">{f.displayName}</span>
+                    {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
+                    <span className="block-meta">
+                      {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
+                    </span>
+                    {f.minConsultMinor !== null && (
+                      <span className="block-fee">
+                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
+                        <span className="block-fee-sub"> first consultation</span>
                       </span>
-                      {f.minConsultMinor !== null && (
-                        <span className="block-fee">
-                          {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
-                          <span className="block-fee-sub"> first consultation</span>
-                        </span>
-                      )}
-                      <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
-                        Book a time
-                      </Link>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    )}
+                    <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
+                      Book a time
+                    </Link>
+                  </div>
+                </article>
+              ))}
             </div>
             <p className="t-caption">
-              Real records from the Bar Council register, with their official photographs. Fees are
-              declared by the professional; ordering here is by verification level, never by payment.
-              Their photograph is the one published on the official register — we do not have a
-              higher-resolution version to show and do not substitute one.
+              Names, practice areas, experience, fees and every "Book a time" link are real, from the
+              Bar Council register. Portraits above are placeholder stock photography, not the
+              professional's own photograph — replaced with their real photo once uploaded.
             </p>
           </div>
         </section>

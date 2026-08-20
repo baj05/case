@@ -1600,32 +1600,6 @@ details[open] > .filter-summary::after { content: '–'; }
   filter: drop-shadow(0 22px 34px rgba(15, 23, 42, 0.26));
 }
 
-/* --- auto-scrolling marquee for the featured-advocate ribbon ------------ */
-.block-marquee {
-  overflow: hidden;
-  padding-bottom: 8px;
-}
-.block-track {
-  display: flex;
-  gap: 24px;
-  width: max-content;
-  animation: block-scroll 46s linear infinite;
-}
-.block-marquee:hover .block-track,
-.block-marquee:focus-within .block-track {
-  animation-play-state: paused;
-}
-@keyframes block-scroll {
-  from { transform: translateX(0); }
-  /* Exactly -50%: the track holds the list twice, so this lands precisely on
-     the seam between the two copies with no visible jump. */
-  to { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .block-track { animation: none; }
-  .block-marquee { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
-
 /* --- colour-block advocate cards ----------------------------------------
    These are real advocates' official Bar Council register photographs, not
    stock imagery — a full silhouette cutout was tested and rejected: at their
@@ -1634,12 +1608,13 @@ details[open] > .filter-summary::after { content: '–'; }
    tearing a hole through the neck, and the edge is visibly jagged when
    scaled up. A circular frame gets the reference's "breaks the boundary,
    overlaps the info panel" depth without altering a real person's photo. */
+.block-row {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
 .block-card {
   position: relative;
-  flex: none;
-  /* Sized so the section shows two full cards and a third cut by the
-     container edge, as asked — not a dense row of four-plus. */
-  width: 460px;
   height: 440px;
   border-radius: var(--r-2xl, 28px);
   overflow: hidden;
@@ -1700,7 +1675,7 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
 @media (max-width: 480px) {
-  .block-card { width: 300px; height: 380px; }
+  .block-card { height: 380px; }
 }
 
 /* --- scannable fact strip on listing cards (Practo model) -------------- */
