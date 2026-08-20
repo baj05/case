@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
 import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
-import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, getFeaturedWithPhotos, getLocalAssets, databaseReady } from '@/lib/data';
+import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, getFeaturedWithPhotos, databaseReady } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -52,85 +52,66 @@ export default async function HomePage() {
   const councils = getBarCouncils();
   const topAreas = areas.filter((a) => a.parentId === null);
   const featured = getFeaturedWithPhotos(3);
-  const assets = await getLocalAssets();
-  // Prefer a hand-supplied cut-out figure; fall back to licensed court
-  // photography so a missing file never breaks the hero.
-  const heroFigure = assets.hero.find((h) => h.name === 'advocate')?.file ?? assets.hero[0]?.file ?? null;
-
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
 
   return (
     <>
-      {/* ==================================================== HERO (split) */}
-      <section className="wash section-tight">
-        <div className="container hero-split">
-          <div className="stack gap-5">
-            <span className="chip chip-outline" style={{ alignSelf: 'flex-start' }}>
-              <span aria-hidden="true" style={{ color: 'var(--action-orange)' }}>●</span>
-              Built on official Bar Council registers
-            </span>
+      {/* ============================================== HERO (centered) */}
+      <section className="hero-mesh">
+        <div className="container hero-center">
+          <span className="chip chip-outline hero-badge">
+            <span aria-hidden="true" style={{ color: 'var(--action-orange)' }}>●</span>
+            Built on official Bar Council registers
+          </span>
 
-            <h1 className="t-display-xl" style={{ maxWidth: '17ch' }}>
-              Find the right advocate for <span className="hl">your matter</span>.
-            </h1>
+          <h1 className="t-display-xl hero-headline">
+            Find the right advocate for <span className="hl">your matter</span>,{' '}
+            fast and with confidence.
+          </h1>
 
-            <p className="t-body-lg ink-variant measure-tight">
-              Describe the problem in your own words. We work out the practice area, the jurisdiction
-              and the court — no legal terminology needed.
-            </p>
+          <p className="t-body-lg ink-variant hero-subhead">
+            Describe the problem in your own words. We work out the practice area, the jurisdiction
+            and the court — no legal terminology needed.
+          </p>
 
-            <div className="stack gap-3" style={{ maxWidth: 560 }}>
-              <DualSearch />
-              <HeroDescribeLink />
-            </div>
-            <div className="row wrap gap-4">
-              <div className="row gap-3">
-                <span className="avatar-cluster" aria-hidden="true">
-                  <span className="mono-av">BCI</span>
-                  <span className="mono-av" style={{ background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }}>SC</span>
-                  <span className="mono-av" style={{ background: 'var(--electric-lime)', color: 'var(--on-lime)' }}>HC</span>
-                  <span className="mono-av" style={{ background: 'var(--surface-highest)', color: 'var(--on-surface)' }}>+{corpus.courts - 3}</span>
-                </span>
-                <span className="stack" style={{ gap: 0 }}>
-                  <strong style={{ fontFamily: 'var(--font-display)' }}>{formatNumber(corpus.courts)} courts</strong>
-                  <span className="t-caption">mapped across {corpus.states} states and UTs</span>
-                </span>
-              </div>
+          <div className="hero-cta-row">
+            <div className="hero-search-wrap"><DualSearch /></div>
+          </div>
+
+          <div className="hero-trust-row">
+            <HeroDescribeLink />
+            <div className="row gap-3">
+              <span className="avatar-cluster" aria-hidden="true">
+                <span className="mono-av">BCI</span>
+                <span className="mono-av" style={{ background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }}>SC</span>
+                <span className="mono-av" style={{ background: 'var(--electric-lime)', color: 'var(--on-lime)' }}>HC</span>
+                <span className="mono-av" style={{ background: 'var(--surface-highest)', color: 'var(--on-surface)' }}>+{corpus.courts - 3}</span>
+              </span>
+              <span className="stack" style={{ gap: 0 }}>
+                <strong style={{ fontFamily: 'var(--font-display)' }}>{formatNumber(corpus.courts)} courts</strong>
+                <span className="t-caption">mapped across {corpus.states} states and UTs</span>
+              </span>
             </div>
           </div>
 
-          {/* Photo stage with floating real-data cards — the reference kit's
-              hero composition, using a photograph of an actual court this
-              platform indexes rather than a stock figure. */}
-          <div className={heroFigure ? 'photo-stage figure-stage' : 'photo-stage'}>
-            {heroFigure ? (
-              <Image
-                src={heroFigure}
-                alt=""
-                width={1120}
-                height={1400}
-                priority
-                sizes="(max-width: 940px) 88vw, 460px"
-                className="hero-figure"
-              />
-            ) : (
-              <>
-                <Image
-                  src="/img/courts/hero-madras-hc-towers.jpg"
-                  alt="The Madras High Court, Chennai"
-                  width={1120}
-                  height={1400}
-                  priority
-                  sizes="(max-width: 940px) 92vw, 520px"
-                  className="photo-stage-img"
-                />
-                <span className="photo-stage-caption">Madras High Court, Chennai</span>
-              </>
-            )}
+          {/* Central cut-out subject with floating glass data cards, styled after
+              the Countesia reference: one dominant figure, three supporting cards
+              layered around it rather than a rectangular photo card. */}
+          <div className="hero-stage">
+            <Image
+              src="/img/hero/advocate-cutout.png"
+              alt=""
+              width={832}
+              height={1700}
+              priority
+              sizes="(max-width: 640px) 220px, (max-width: 1024px) 300px, 380px"
+              className="hero-subject"
+            />
 
-            <div className="float-card float-tl">
+            <div className="glass-card gcard-left">
+              <span className="gcard-icon" aria-hidden="true">⚖</span>
               <span className="float-label">Register coverage</span>
               <span className="float-value">{councilsWithRecords}/{corpus.bodies}</span>
               <span className="t-caption">State Bar Councils ingested</span>
@@ -141,22 +122,26 @@ export default async function HomePage() {
               </span>
             </div>
 
-            <div className="float-card float-br">
-              <span className="row gap-2" style={{ marginBottom: 4 }}>
-                <span className="verif verif-3" style={{ fontSize: '0.6875rem' }}>
-                  <span aria-hidden="true">✓</span> Traceable
+            <div className="glass-card gcard-top-right">
+              <span className="row gap-2" style={{ alignItems: 'flex-start' }}>
+                <span className="gcard-avatar" aria-hidden="true">✓</span>
+                <span className="stack" style={{ gap: 2 }}>
+                  <span className="t-title-sm" style={{ fontSize: '0.875rem' }}>Register checked</span>
+                  <span className="t-body-sm ink-variant">
+                    {corpus.lastIngestAt ? relativeDate(corpus.lastIngestAt) : 'up to date'} — every record traceable
+                    to its source.
+                  </span>
                 </span>
+              </span>
+            </div>
+
+            <div className="glass-card gcard-bottom-right">
+              <span className="row gap-2" style={{ justifyContent: 'space-between' }}>
+                <span className="gcard-icon gcard-icon-sm" aria-hidden="true">✓</span>
               </span>
               <span className="float-label">Records published</span>
               <span className="float-value">{formatNumber(corpus.professionals)}</span>
               <span className="t-caption">each with source, capture date and last check</span>
-            </div>
-
-            <div className="float-card float-ml" style={{ maxWidth: 186 }}>
-              <span className="float-label">Register checked</span>
-              <span className="float-value" style={{ fontSize: '1.0625rem' }}>
-                {corpus.lastIngestAt ? relativeDate(corpus.lastIngestAt) : '—'}
-              </span>
             </div>
           </div>
         </div>
