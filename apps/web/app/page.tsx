@@ -171,7 +171,7 @@ export default async function HomePage() {
             <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div className="stack gap-2">
                 <p className="t-label-mono ink-variant">Taking bookings now</p>
-                <h2 className="t-headline-lg" style={{ maxWidth: '22ch' }}>
+                <h2 className="t-headline-lg" style={{ maxWidth: '22ch', fontWeight: 800, letterSpacing: '-0.03em' }}>
                   Advocates you can book <span className="hl">today</span>.
                 </h2>
               </div>
@@ -185,20 +185,18 @@ export default async function HomePage() {
             <div className="block-marquee">
               <div className="block-track">
                 {[...featured, ...featured].map((f, i) => (
-                  <article key={`${f.slug}-${i}`} className="block-card">
-                    <div className={`block-color block-${['blue', 'orange', 'lime', 'coral'][i % 4]}`}>
-                      {f.photoUrl && (
-                        <div className="block-photo-cascade">
-                          <Image
-                            src={f.photoUrl}
-                            alt={`Photograph of ${f.displayName}, published by their Bar Council`}
-                            width={320}
-                            height={400}
-                            sizes="240px"
-                          />
-                        </div>
-                      )}
-                    </div>
+                  <article key={`${f.slug}-${i}`} className={`block-card block-${['blue', 'orange', 'lime', 'coral'][i % 4]}`}>
+                    {f.photoUrl && (
+                      <div className="block-photo">
+                        <Image
+                          src={f.photoUrl}
+                          alt={`Photograph of ${f.displayName}, published by their Bar Council`}
+                          width={380}
+                          height={440}
+                          sizes="380px"
+                        />
+                      </div>
+                    )}
                     <div className="block-info">
                       <span className="block-name">{f.displayName}</span>
                       {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
