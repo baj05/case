@@ -1600,53 +1600,88 @@ details[open] > .filter-summary::after { content: '–'; }
   filter: drop-shadow(0 22px 34px rgba(15, 23, 42, 0.26));
 }
 
-/* --- colour-block advocate cards (reference row) ----------------------- */
+/* --- colour-block advocate cards ----------------------------------------
+   These are real advocates' official Bar Council register photographs, not
+   stock imagery — a full silhouette cutout was tested and rejected: at their
+   source resolution (~150x220px) the same threshold that removes the studio
+   backdrop also eats the light-coloured court band every advocate wears,
+   tearing a hole through the neck, and the edge is visibly jagged when
+   scaled up. A circular frame gets the reference's "breaks the boundary,
+   overlaps the info panel" depth without altering a real person's photo. */
 .block-row {
   display: grid;
-  gap: 16px;
+  gap: 20px 16px;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  /* Room above each card for the portrait to break its top edge. */
+  padding-top: 60px;
 }
 .block-card {
   position: relative;
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 340px;
+  border-radius: var(--r-2xl, 28px);
+  overflow: visible;
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
-.block-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.block-card:hover { transform: translateY(-6px); }
+.block-card:hover .block-photo-ring { transform: translate(-50%, 0) scale(1.05); }
+
+.block-color {
+  border-radius: inherit;
+  padding-top: 74px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow: var(--shadow-md);
+}
+.block-card:hover .block-color { box-shadow: var(--shadow-lg); }
 .block-blue { background: linear-gradient(165deg, #8fd6fb 0%, #b9e6fd 100%); }
 .block-orange { background: linear-gradient(165deg, var(--action-orange) 0%, #ff9b6f 100%); }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
 
-.block-photo {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-top: 18px;
-  min-height: 150px;
+/* The portrait: a circular frame with a white ring (stands in for the
+   cutout's "pop"), centred on the card's top edge so roughly half of it
+   breaks above the colour block. */
+.block-photo-ring {
+  position: absolute;
+  /* Negative so the ring genuinely breaks above the card's top edge instead
+     of merely sitting flush with it — this was the bug: `top: 0` put the
+     ring's top at the SAME y as the card's top, so nothing ever crossed the
+     boundary; verified via getBoundingClientRect before and after. */
+  top: -48px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  z-index: 3;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  padding: 4px;
+  background: var(--surface-lowest);
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.28);
+  transition: transform var(--t) var(--ease);
 }
-.block-photo img {
-  width: auto;
-  max-width: 78%;
-  max-height: 190px;
-  object-fit: contain;
-  border-radius: var(--r-md);
-  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.22));
+.block-photo-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
-/* Inner white card, as the reference overlays on its colour blocks. */
+/* Inner white card, floating at the bottom — pulled up so the ring's lower
+   half overlaps it, matching the reference's layered depth. */
 .block-info {
-  margin: 12px;
-  padding: 14px 16px;
+  position: relative;
+  z-index: 2;
+  margin: 0 12px 12px;
+  margin-top: -22px;
+  padding: 34px 16px 16px;
   background: var(--surface-lowest);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   display: flex;
   flex-direction: column;
   gap: 3px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  text-align: center;
 }
 .block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
 .block-area { font-size: 0.8125rem; color: var(--primary); font-weight: 600; }
@@ -1656,6 +1691,9 @@ details[open] > .filter-summary::after { content: '–'; }
   letter-spacing: -0.02em; margin-top: 4px;
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
+@media (max-width: 480px) {
+  .block-photo-ring { width: 92px; height: 92px; }
+}
 
 /* --- scannable fact strip on listing cards (Practo model) -------------- */
 .fact-strip {

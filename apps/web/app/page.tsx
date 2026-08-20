@@ -180,35 +180,37 @@ export default async function HomePage() {
 
             <div className="block-row">
               {featured.map((f, i) => (
-                <article key={f.slug} className={`block-card block-${['blue', 'orange', 'lime'][i % 3]}`}>
-                  <div className="block-photo">
-                    {f.photoUrl && (
+                <article key={f.slug} className="block-card">
+                  <div className={`block-color block-${['blue', 'orange', 'lime'][i % 3]}`}>
+                    <div className="block-info">
+                      <span className="block-name">{f.displayName}</span>
+                      {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
+                      <span className="block-meta">
+                        {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
+                      </span>
+                      {f.minConsultMinor !== null && (
+                        <span className="block-fee">
+                          {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
+                          <span className="block-fee-sub"> first consultation</span>
+                        </span>
+                      )}
+                      <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
+                        Book a time
+                      </Link>
+                    </div>
+                  </div>
+
+                  {f.photoUrl && (
+                    <div className="block-photo-ring">
                       <Image
                         src={f.photoUrl}
                         alt={`Photograph of ${f.displayName}, published by their Bar Council`}
-                        width={320}
-                        height={400}
-                        sizes="(max-width: 760px) 90vw, 300px"
+                        width={112}
+                        height={112}
+                        sizes="112px"
                       />
-                    )}
-                  </div>
-
-                  <div className="block-info">
-                    <span className="block-name">{f.displayName}</span>
-                    {f.primaryArea && <span className="block-area">{f.primaryArea}</span>}
-                    <span className="block-meta">
-                      {[f.yearsExperience ? `${f.yearsExperience} yrs` : null, f.locationName].filter(Boolean).join(' · ')}
-                    </span>
-                    {f.minConsultMinor !== null && (
-                      <span className="block-fee">
-                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: f.currencyCode ?? 'INR', maximumFractionDigits: 0 }).format(f.minConsultMinor / 100)}
-                        <span className="block-fee-sub"> first consultation</span>
-                      </span>
-                    )}
-                    <Link href={`/advocates/${f.slug}/book`} className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
-                      Book a time
-                    </Link>
-                  </div>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
