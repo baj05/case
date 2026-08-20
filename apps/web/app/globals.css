@@ -1608,47 +1608,63 @@ details[open] > .filter-summary::after { content: '–'; }
    tearing a hole through the neck, and the edge is visibly jagged when
    scaled up. A circular frame gets the reference's "breaks the boundary,
    overlaps the info panel" depth without altering a real person's photo. */
-/* Plain, non-scrolling row: cards are wide enough (460px) that a typical
-   container shows two in full and cuts the third at its edge, per spec —
-   `overflow: hidden` on the row does the cutting, nothing animates. */
+/* Non-scrolling row: cards are wide enough that a typical container shows
+   two in full and cuts the third at its edge. `overflow-x: hidden` paired
+   with `overflow-y: visible` does NOT work for that — per the CSS Overflow
+   spec, pairing 'hidden' on one axis forces the other away from 'visible'
+   into 'auto', which silently creates a vertical scroll container and clips
+   (verified: it did — getBoundingClientRect showed the photo's rect
+   escaping the row's box, but rowScrollHeight > rowClientHeight confirmed a
+   real scrollable clip was hiding that escape). `clip` is exempt from that
+   forcing rule, so overflow-x: clip cuts horizontally while overflow-y
+   genuinely stays visible. margin-top reserves room for the head's breakout. */
 .block-row {
   display: flex;
   gap: 20px;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+  margin-top: 56px;
 }
 /* Four-layer stacking per the reference: (1) the colour card itself is the
-   relative anchor with overflow:hidden so the colour forms a clean rounded
-   rectangle; (2) the white info panel sits absolute on the LEFT at z-10;
-   (3) the transparent cutout sits absolute on the RIGHT at z-20, so its left
-   edge (torso/arm) visibly overlaps and paints on top of the white card's
-   right edge — that overlap is the point, not a bug, because the cutout is
-   transparent everywhere the person isn't. */
+   relative anchor — overflow: visible, so the cutout can break its top and
+   bottom edges; (2) the white info panel sits absolute on the LEFT at z-10;
+   (3) the transparent cutout sits absolute on the RIGHT at z-20, so its
+   head/hands physically cross the card's boundary and its torso overlaps
+   and paints on top of the white card's right edge — the cutout is
+   transparent everywhere the person isn't, so the overlap never hides text. */
 .block-card {
   position: relative;
   flex: none;
-  width: 460px;
-  height: 420px;
+  width: 540px;
+  height: 460px;
   border-radius: var(--r-2xl, 28px);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-md);
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .block-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 .block-card:hover .block-photo { transform: scale(1.04); }
+/* A gradient set directly on .block-card still respects its own
+   border-radius regardless of overflow — overflow only governs whether
+   CHILDREN extending past the box get clipped, so switching to
+   overflow: visible above does not affect the colour's rounded corners. */
 .block-blue { background: linear-gradient(165deg, #8fd6fb 0%, #b9e6fd 100%); }
 .block-orange { background: linear-gradient(165deg, var(--action-orange) 0%, #ff9b6f 100%); }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
 .block-coral { background: linear-gradient(165deg, #ff6b6b 0%, #ffab91 100%); }
 
-/* Layer 3: the cutout, anchored bottom-right, full card height, cropped to
-   at most 62% of the card's width so the left-hand info panel always has
+/* Layer 3: the cutout. Anchored bottom-right but taller than the card and
+   pushed past its bottom edge, so the extra height breaks the head above
+   the top edge AND the hands below the bottom edge — the card itself no
+   longer clips (overflow: visible), so both are actually visible. Cropped
+   to at most 62% of the card's width so the left-hand info panel always has
    room. z-index 20 — the front layer. */
 .block-photo {
   position: absolute;
-  right: -6px;
-  bottom: 0;
+  right: -10px;
+  bottom: -20px;
   z-index: 20;
-  height: 100%;
+  height: 116%;
   width: auto;
   max-width: 62%;
   object-fit: cover;
