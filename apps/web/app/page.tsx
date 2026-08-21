@@ -190,8 +190,7 @@ export default async function HomePage() {
                 Advocates you can book <span className="hl">today</span>.
               </h2>
               <p className="t-body ink-variant" style={{ maxWidth: '52ch' }}>
-                A sense of what a booking looks like — real advocates, real fees and real
-                availability are one search away.
+                Real advocates, real fees, and real availability — one click away.
               </p>
               <Link href="/search?accepting=1" className="btn btn-secondary btn-pill" style={{ marginTop: 6 }}>
                 See everyone available
@@ -210,15 +209,17 @@ export default async function HomePage() {
                     className="block-photo"
                   />
                   <div className="block-info">
-                    <span className="block-icon" aria-hidden="true">{['⚖', '₹', '📄'][i % 3]}</span>
+                    <span className="block-tag">
+                      <span className="block-tag-icon" aria-hidden="true">{['⚖', '₹', '📄'][i % 3]}</span>
+                      {a.area}
+                    </span>
                     <span className="block-name">{a.name}</span>
-                    <span className="block-area">{a.area}</span>
                     <span className="block-meta">{a.years} yrs · {a.location}</span>
                     <span className="block-fee">
                       {a.fee}
                       <span className="block-fee-sub"> first consultation</span>
                     </span>
-                    <Link href="/search?accepting=1" className="btn btn-navy btn-sm btn-block" style={{ marginTop: 6 }}>
+                    <Link href="/search?accepting=1" className="btn btn-navy btn-sm btn-block">
                       Book a time
                     </Link>
                   </div>

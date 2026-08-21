@@ -1622,23 +1622,21 @@ details[open] > .filter-summary::after { content: '–'; }
   display: flex;
   gap: 20px;
   overflow-x: clip;
-  overflow-y: visible;
-  margin-top: 56px;
 }
-/* Four-layer stacking per the reference: (1) the colour card itself is the
-   relative anchor — overflow: visible, so the cutout can break its top and
-   bottom edges; (2) the white info panel sits absolute on the LEFT at z-10;
-   (3) the transparent cutout sits absolute on the RIGHT at z-20, so its
-   head/hands physically cross the card's boundary and its torso overlaps
-   and paints on top of the white card's right edge — the cutout is
-   transparent everywhere the person isn't, so the overlap never hides text. */
+/* Landscape (~4:3) card, matching the reference proportions rather than the
+   tall near-square block this replaced. The colour card is the frame: it
+   clips its own children (overflow: hidden), so the cutout is guaranteed to
+   end at the card's rounded corners — it can no longer spill onto the page
+   background below the card. White info panel sits absolute on the LEFT at
+   z-10; the cutout sits absolute on the RIGHT at z-20, on top of the panel's
+   right edge, transparent everywhere the person isn't. */
 .block-card {
   position: relative;
   flex: none;
-  width: 540px;
-  height: 460px;
+  width: 460px;
+  height: 340px;
   border-radius: var(--r-2xl, 28px);
-  overflow: visible;
+  overflow: hidden;
   box-shadow: var(--shadow-md);
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
@@ -1653,20 +1651,19 @@ details[open] > .filter-summary::after { content: '–'; }
 .block-lime { background: linear-gradient(165deg, var(--electric-lime) 0%, #eafcc4 100%); }
 .block-coral { background: linear-gradient(165deg, #ff6b6b 0%, #ffab91 100%); }
 
-/* Layer 3: the cutout. Anchored bottom-right but taller than the card and
-   pushed past its bottom edge, so the extra height breaks the head above
-   the top edge AND the hands below the bottom edge — the card itself no
-   longer clips (overflow: visible), so both are actually visible. Cropped
-   to at most 62% of the card's width so the left-hand info panel always has
+/* Layer 3: the cutout. Anchored bottom-right, filling the card's full
+   height so it reaches both edges — but the card's own overflow: hidden is
+   what actually guarantees the clean cut, not this sizing. Cropped to at
+   most 58% of the card's width so the left-hand info panel always has
    room. z-index 20 — the front layer. */
 .block-photo {
   position: absolute;
-  right: -10px;
-  bottom: -20px;
+  right: 0;
+  bottom: 0;
   z-index: 20;
-  height: 116%;
+  height: 100%;
   width: auto;
-  max-width: 62%;
+  max-width: 58%;
   object-fit: cover;
   object-position: top center;
   pointer-events: none;
@@ -1677,44 +1674,53 @@ details[open] > .filter-summary::after { content: '–'; }
    z-index 10 — behind the cutout, in front of the colour. */
 .block-info {
   position: absolute;
-  left: 18px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  width: 58%;
-  padding: 20px 18px;
+  width: 60%;
+  padding: 16px;
   background: var(--surface-lowest);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
   text-align: left;
 }
-.block-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+/* Icon + practice area collapsed into one small pill — a single scannable
+   badge instead of two separate rows, so the card reads as a highlight
+   rather than a filled-out form. */
+.block-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
   background: var(--electric-lime);
   color: var(--on-lime);
-  font-size: 0.9rem;
-  margin-bottom: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
-.block-area { font-size: 0.8125rem; color: var(--primary); font-weight: 600; }
+.block-tag-icon { font-size: 0.8125rem; line-height: 1; flex: none; }
+.block-name { font-family: var(--font-display); font-weight: 700; font-size: 1.1875rem; letter-spacing: -0.01em; line-height: 1.15; }
 .block-meta { font-size: 0.75rem; color: var(--on-surface-variant); }
 .block-fee {
   font-family: var(--font-display); font-weight: 800; font-size: 1.125rem;
-  letter-spacing: -0.02em; margin-top: 4px;
+  letter-spacing: -0.02em;
 }
 .block-fee-sub { font-family: var(--font-body); font-weight: 400; font-size: 0.6875rem; color: var(--on-surface-variant); }
 /* Below 600px there is no room for a side-by-side split — fall back to the
    plain stacked layout (photo on top, panel filling the width below it)
    rather than crushing either into an unreadable sliver. */
 @media (max-width: 600px) {
-  .block-card { width: 88vw; height: auto; display: flex; flex-direction: column; }
+  .block-card { width: 88vw; height: auto; display: flex; flex-direction: column; overflow: hidden; }
   .block-photo {
     position: static;
     width: 100%;
@@ -1727,6 +1733,7 @@ details[open] > .filter-summary::after { content: '–'; }
     width: 100%;
     text-align: center;
   }
+  .block-tag { align-self: center; }
 }
 
 /* --- scannable fact strip on listing cards (Practo model) -------------- */
