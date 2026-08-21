@@ -8,6 +8,7 @@ import { formatNumber } from '@/lib/format';
 import { Notice } from '@/components/States';
 import { ResourceSearch } from '@/components/ResourceSearch';
 import { ResourceCard } from '@/components/ResourceCard';
+import { StateEmblemTicker } from '@/components/StateEmblemTicker';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,11 @@ export default function ResourcesPage() {
             <span className="stat"><span className="stat-num">{formatNumber(stats.previewable)}</span><span className="stat-label">Readable in the browser</span></span>
             <span className="stat"><span className="stat-num">{formatNumber(stats.states)}</span><span className="stat-label">States covered</span></span>
             <span className="stat"><span className="stat-num">{formatNumber(stats.authorities)}</span><span className="stat-label">Authorities</span></span>
+          </div>
+
+          <div className="stack gap-2">
+            <p className="t-label-mono ink-variant">Documents on this page come from these governments' own portals</p>
+            <StateEmblemTicker />
           </div>
         </div>
       </section>

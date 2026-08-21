@@ -221,6 +221,27 @@ const RERAS: ReraSeed[] = [
   { state: 'IN-RJ', name: 'Rajasthan Real Estate Regulatory Authority', url: 'https://rera.rajasthan.gov.in/', confirmed: true },
   { state: 'IN-HR', name: 'Haryana Real Estate Regulatory Authority', url: 'https://haryanarera.gov.in/', confirmed: true },
   { state: 'IN-HP', name: 'Himachal Pradesh Real Estate Regulatory Authority', url: 'https://www.hprera.in/', confirmed: true },
+  { state: 'IN-UP', name: 'Uttar Pradesh Real Estate Regulatory Authority', url: 'https://up-rera.in/', confirmed: true },
+  { state: 'IN-GJ', name: 'Gujarat Real Estate Regulatory Authority', url: 'https://gujrera.gujarat.gov.in/', confirmed: true },
+  { state: 'IN-MP', name: 'Madhya Pradesh Real Estate Regulatory Authority', url: 'https://rera.mp.gov.in/', confirmed: true },
+  { state: 'IN-PB', name: 'Punjab Real Estate Regulatory Authority', url: 'https://rera.punjab.gov.in/', confirmed: true },
+  { state: 'IN-OR', name: 'Odisha Real Estate Regulatory Authority', url: 'https://rera.odisha.gov.in/', confirmed: true },
+  { state: 'IN-BR', name: 'Bihar Real Estate Regulatory Authority', url: 'https://rera.bihar.gov.in/', confirmed: true },
+  { state: 'IN-CT', name: 'Chhattisgarh Real Estate Regulatory Authority', url: 'https://rera.cgstate.gov.in/', confirmed: true },
+  { state: 'IN-UK', name: 'Uttarakhand Real Estate Regulatory Authority', url: 'https://ukrera.uk.gov.in/', confirmed: true },
+  { state: 'IN-GA', name: 'Goa Real Estate Regulatory Authority', url: 'https://rera.goa.gov.in/', confirmed: true },
+  { state: 'IN-AS', name: 'Assam Real Estate Regulatory Authority', url: 'https://rera.assam.gov.in/', confirmed: true },
+  { state: 'IN-AP', name: 'Andhra Pradesh Real Estate Regulatory Authority', url: 'https://rera.ap.gov.in/', confirmed: true },
+  // Not confirmed reachable from this network at authoring time (2026-08-21).
+  { state: 'IN-WB', name: 'West Bengal Housing Industry Regulatory Authority (WBHIRA)', url: 'https://wbhira.in/', confirmed: false },
+  { state: 'IN-TN', name: 'Tamil Nadu Real Estate Regulatory Authority', url: 'https://tnrera.in/', confirmed: false },
+  { state: 'IN-JH', name: 'Jharkhand Real Estate Regulatory Authority', url: 'https://rera.jharkhand.gov.in/', confirmed: false },
+  { state: 'IN-CH', name: 'Chandigarh Real Estate Regulatory Authority', url: 'https://rera.chd.gov.in/', confirmed: false },
+  { state: 'IN-DL', name: 'Delhi Real Estate Regulatory Authority', url: 'https://rera.delhi.gov.in/', confirmed: false },
+  { state: 'IN-JK', name: 'Jammu and Kashmir Real Estate Regulatory Authority', url: 'https://jkrera.jk.gov.in/', confirmed: false },
+  // Domain resolves but returned HTTP 503 (server error) at authoring time —
+  // held rather than treated as confirmed on a server error response.
+  { state: 'IN-KL', name: 'Kerala Real Estate Regulatory Authority', url: 'https://rera.kerala.gov.in/', confirmed: false },
 ];
 
 const RERA_RESOURCES: ResourceCatalogSeed[] = RERAS.map((r) => ({
@@ -290,6 +311,29 @@ const REGISTRATION_DEPARTMENTS: RegistrationSeed[] = [
   { state: 'IN-BR', name: 'Registration Department, Bihar (Nibandhan)', url: 'https://nibandhan.bihar.gov.in/', onNgdrs: true, confirmed: true },
   { state: 'IN-HR', name: 'Revenue Department, Haryana (Jamabandi)', url: 'https://jamabandi.nic.in/', onNgdrs: false, confirmed: true },
   { state: 'IN-KL', name: 'Registration Department, Kerala', url: 'https://registration.kerala.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-MP', name: 'Madhya Pradesh Registration and Stamps Department (MPIGR/SAMPADA)', url: 'https://mpigr.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-AP', name: 'Registration and Stamps Department, Andhra Pradesh', url: 'https://registration.ap.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-HP', name: 'Government of Himachal Pradesh (Revenue Department)', url: 'https://himachal.nic.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-UK', name: 'Registration Department, Uttarakhand', url: 'https://registration.uk.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-CH', name: 'Chandigarh Administration (Estate Office)', url: 'https://chandigarh.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-SK', name: 'Government of Sikkim (Land Revenue and Disaster Management Department)', url: 'https://sikkim.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-TR', name: 'Government of Tripura (Revenue Department)', url: 'https://tripura.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-MN', name: 'Government of Manipur (Revenue Department)', url: 'https://manipur.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-ML', name: 'Government of Meghalaya (Revenue and Disaster Management Department)', url: 'https://meghalaya.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-MZ', name: 'Government of Mizoram (Land Revenue and Settlement Department)', url: 'https://mizoram.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-AR', name: 'Government of Arunachal Pradesh (Land Management Department)', url: 'https://arunachalpradesh.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-LA', name: 'UT Administration of Ladakh (Revenue Department)', url: 'https://ladakh.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-DH', name: 'UT Administration of Dadra and Nagar Haveli and Daman and Diu', url: 'https://ddd.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-NL', name: 'Government of Nagaland (Revenue Department)', url: 'https://nagaland.gov.in/', onNgdrs: false, confirmed: true },
+  // Not confirmed reachable from this network at authoring time (2026-08-21) —
+  // real, well-known government domains, held for a link check rather than
+  // dropped or published on faith.
+  { state: 'IN-AS', name: 'Revenue and Disaster Management Department, Assam', url: 'https://revenueassam.nic.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-CT', name: 'Registration Department, Chhattisgarh', url: 'https://cgregistration.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-GA', name: 'Inspector General of Registration, Goa', url: 'https://igr.goa.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-JK', name: 'UT Administration of Jammu and Kashmir (Revenue Department)', url: 'https://jk.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-PY', name: 'Registration Department, Puducherry', url: 'https://reg.py.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-AN', name: 'UT Administration of Andaman and Nicobar Islands (Revenue Department)', url: 'https://andaman.gov.in/', onNgdrs: false, confirmed: false },
 ];
 
 const REGISTRATION_RESOURCES: ResourceCatalogSeed[] = REGISTRATION_DEPARTMENTS.map((r) => ({

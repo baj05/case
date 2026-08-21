@@ -1957,3 +1957,60 @@ details[open] > .filter-summary::after { content: '–'; }
   .doc-page { padding: 18px 14px; }
   .doc-foot { padding: 8px 10px; }
 }
+
+/* --- state emblem ticker (resources hub) --------------------------------- */
+.emblem-ticker {
+  overflow-x: clip;
+  overflow-y: visible;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  padding-block: 4px;
+}
+.emblem-track {
+  display: flex;
+  gap: 36px;
+  width: max-content;
+  animation: emblem-scroll 60s linear infinite;
+}
+.emblem-ticker:hover .emblem-track,
+.emblem-ticker:focus-within .emblem-track {
+  animation-play-state: paused;
+}
+@keyframes emblem-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .emblem-track { animation: none; overflow-x: auto; }
+}
+.emblem-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  opacity: 0.82;
+  transition: opacity var(--t) var(--ease);
+}
+.emblem-item:hover { opacity: 1; }
+.emblem-mark {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex: none;
+  filter: saturate(0.85);
+}
+.emblem-mark-text {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-high);
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.emblem-label {
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
