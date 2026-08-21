@@ -80,15 +80,24 @@ export default function ResourcesPage() {
             <span className="stat"><span className="stat-num">{formatNumber(stats.states)}</span><span className="stat-label">States covered</span></span>
             <span className="stat"><span className="stat-num">{formatNumber(stats.authorities)}</span><span className="stat-label">Authorities</span></span>
           </div>
-
-          <div className="stack gap-2">
-            <p className="t-label-mono ink-variant">Documents on this page come from these governments' own portals</p>
-            <StateEmblemTicker />
-          </div>
         </div>
       </section>
 
-      <div className="container stack gap-8" style={{ paddingBottom: 'clamp(48px, 8vw, 96px)' }}>
+      {/* ---- state coverage, full width and dominant ------------------- */}
+      <section className="section-tight" style={{ background: 'var(--surface-low)' }}>
+        <div className="container stack gap-4">
+          <div className="stack gap-1" style={{ textAlign: 'center' }}>
+            <h2 className="t-headline-md">Every state and union territory</h2>
+            <p className="t-body ink-variant" style={{ maxWidth: '56ch', marginInline: 'auto' }}>
+              Documents on this page come from these governments' own portals — we link to their copy rather
+              than hosting one, so you always reach the current version.
+            </p>
+          </div>
+        </div>
+        <StateEmblemTicker />
+      </section>
+
+      <div className="container stack gap-8" style={{ paddingBottom: 'clamp(48px, 8vw, 96px)', paddingTop: 'clamp(32px, 5vw, 56px)' }}>
         {/* ---- what this is, said once and plainly ---------------------- */}
         <Notice tone="legal">
           <span>
