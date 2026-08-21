@@ -20,14 +20,14 @@ data and was exercised end-to-end in this pass, not because a page renders.
 | Paid booking (fee schedule, slots, confirmation) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE, `platform_fee_minor` structurally 0 | — | — |
 | **Authentication (signup, login, sessions, RBAC)** | ✓ | ✓ | ✓ | ✓ | ✓ | **LIVE — built this pass** | No password-reset flow; no MFA yet (schema supports it) | Add reset-by-email once an email sender exists |
 | `/admin` and `/dashboard` route guards | ✓ | ✓ | ✓ | ✓ | ✓ | **LIVE — built this pass** | `/admin/resources` write actions (publish/unpublish) still don't attribute to the acting admin | Wire those buttons through `requireUser()` too |
-| **Review Trust Engine** (multi-dimension ratings, verified/attributed/pseudonymous/anonymous, moderation, fraud scoring, helpful votes, right of reply, reporting, sample-size protection) | ✓ | ✓ (flagged) | ✓ | ✓ | ✓ | **LIVE, feature-flagged off — built this pass** | Off pending legal sign-off (C-09/C-10, see `REVIEW_COMPLIANCE_MATRIX.md`) | Flip `FEATURE_REVIEWS` only after counsel sign-off |
+| **Review Trust Engine** ("Legal Trust & Experience": multi-dimension ratings, star + satisfaction distribution, recommend %, "what people mention" themes, verified/attributed/pseudonymous/anonymous, moderation, fraud scoring, helpful votes, right of reply, reporting, sample-size banding, firm/LPO reviews) | ✓ | ✓ | ✓ | ✓ | ✓ | **LIVE — demonstrated end-to-end with dummy data, flag left off in production** | `FEATURE_REVIEWS` is switched **on in this local dev database only**, with `packages/db/scripts/seed-review-demo.ts` seeding 10 fictional demo advocates and 6 fictional demo organisations (never a real Bar Council record) so the full UI is visible — see `docs/REVIEW_TEST_PLAN.md` for exactly what was clicked through. Production still requires the C-09/C-10 sign-off in `REVIEW_COMPLIANCE_MATRIX.md` before this flag is enabled for real | Get counsel sign-off, then flip `FEATURE_REVIEWS` in production and run the seed script's inverse (`--clear`) or simply never run it there |
 | Judges (factual only, no rating) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
 | Judgments | ✓ | ✓ | · | · | · | PARTIAL | Schema present, corpus thin | Ingest a real judgment corpus (s.52(1)(q) permits reproduction) |
 | Lawyer-to-lawyer referral | ✓ (schema) | ✗ | ✗ | ✗ | ✗ | **BLOCKED, no longer on auth — now blocked on C-11 sign-off** | No fee/commission column by design; UI not built | Build referral UI once C-11 is signed off |
 | Legal resource library (templates, official forms, kits, centres, state rent regimes) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE (37 templates, 146 official links, 9 kits, 6 centres) | — | — |
 | State/UT emblem ticker on resources page | ✓ | ✓ | ✓ | ✓ | — | LIVE | — | — |
-| **Law firms** as a distinct entity | ✓ (schema: `organisation.kind='law_firm'`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No firm page, no team roster, no firm-level reviews | Build `/firms/[slug]`: roster, aggregated team reviews, services |
-| **LPO firms** (PF/ESI/labour process outsourcing) | ✓ (schema: `organisation.kind='lpo'`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No LPO listing, no project/SLA workflow | Needs its own workflow model (project → scope → tasks → delivery → billing) — not a relabelled advocate profile |
+| **Law firms** as a distinct entity | ✓ | ✓ | ✓ | · | ✓ | **PARTIAL — review-only profile built this pass** | `/firms` and `/firms/[slug]` exist and show the same Legal Trust & Experience section as an advocate profile, verified via matching email domain rather than a booking. No team roster, no service listing, no firm-level booking/consultation | Build roster + services when that becomes the priority; the review half is done |
+| **LPO firms** (PF/ESI/labour process outsourcing) | ✓ | ✓ | ✓ | · | ✓ | **PARTIAL — review-only profile built this pass** | `/lpo` and `/lpo/[slug]` exist with the same review section. No project/SLA workflow, no PF/ESI/labour-specific service listing | Needs its own workflow model (project → scope → tasks → delivery → billing) — not a relabelled advocate profile; the review half is done |
 | **Corporate accounts** | ✓ (schema: `organisation.kind='corporate'`, `org_member`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No org creation flow, no legal-request intake, no external-counsel management | Real scope of work; needs its own design pass |
 | **Payments** (consultation fee capture on-platform) | ✓ (ledger schema, `settlement_mode='gateway'` reserved) | ✗ | ✗ | ✗ | ✗ | **DELIBERATELY NOT BUILT** | `platform_fee_minor` CHECK-constrained to 0; gateway mode blocked | Gated on C-12 (fee-sharing/PA-PSP legal analysis) — build only after sign-off |
 | **Mediation** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | Taxonomy label only, no workflow, no schema | Genuinely Phase 3 scope: party management, secure session, scheduling, settlement record |
@@ -48,20 +48,25 @@ data and was exercised end-to-end in this pass, not because a page renders.
    `platform_admin` role gate protects `/admin`. Verified live in-browser: signed-out access to
    `/dashboard` redirects to `/login?next=/dashboard`; the created admin account reaches `/admin`
    after signing in.
-2. **Review Trust Engine** — built in full per the product brief's own detailed spec (multi-
-   dimension ratings, verified/attributed/pseudonymous/anonymous display, moderation queue,
-   internal fraud scoring never exposed publicly, one-review-per-verified-experience enforced at
-   the database level, edit history retained, helpful votes, right of reply, reporting, sample-
-   size-protected aggregates). It is feature-complete and was exercised end-to-end in the browser
-   (submit → moderate → publish → display, with pseudonymous masking and the "too few reviews"
-   protection both firing correctly) — see `REVIEW_COMPLIANCE_MATRIX.md` for why it stays off by
-   default.
-3. Everything in the table marked MISSING above (firms, LPO, corporate, mediation, arbitration,
-   contract review, contract-management SaaS, payments, social integration) was **not** stub-
-   coded in this pass. Each is a real, separate product with its own data model and workflow —
-   building an empty shell for each would satisfy a checklist and nothing else. They are
-   deliberately left as documented gaps with a next action, consistent with how this repository
-   has always drawn that line (see `docs/PLAN_PRACTO.md` "Not in this pass, and why").
+2. **Review Trust Engine, rebranded "Legal Trust & Experience"** — extended in a follow-up pass
+   with a star distribution, a plain-language satisfaction distribution, "what people mention"
+   themes drawn only from real published text, and four-level sample-size banding
+   (none/new/early/established) instead of a single threshold. Reviews now also work for law
+   firms and LPO providers (`organisation_id` added to the schema; verified via matching email
+   domain rather than a booking, since no org-level booking model exists). Demonstrated live with
+   realistic, varied dummy data (10 fictional advocates, 6 fictional organisations, scores
+   ranging 3.9–4.6, not a wall of 5.0s) via `packages/db/scripts/seed-review-demo.ts` — see
+   `REVIEW_TEST_PLAN.md` for the exact journeys clicked through, and `REVIEW_COMPLIANCE_MATRIX.md`
+   for why `FEATURE_REVIEWS` stays off in production regardless.
+3. **Firm and LPO profile pages** (`/firms`, `/firms/[slug]`, `/lpo`, `/lpo/[slug]`) — built as a
+   real, working review surface for organisations, not a stub. Team rosters and service listings
+   remain unbuilt, honestly.
+4. Everything else marked MISSING above (corporate accounts, mediation, arbitration, contract
+   review, contract-management SaaS, payments, social integration) was **not** stub-coded in this
+   pass. Each is a real, separate product with its own data model and workflow — building an
+   empty shell for each would satisfy a checklist and nothing else. They are deliberately left as
+   documented gaps with a next action, consistent with how this repository has always drawn that
+   line (see `docs/PLAN_PRACTO.md` "Not in this pass, and why").
 
 ## Reading this table correctly
 

@@ -20,6 +20,7 @@ const {
   createReview, editReview, withdrawReview, respondToReview, voteHelpful,
   reportReview, listModerationQueue, moderateReview, listReviewsForProfessional,
   getProfessionalReviewSummary, eligibleExperiences,
+  createOrganisationReview, getOrganisationReviewSummary, listReviewsForOrganisation,
 } = await import('@lexhall/db');
 
 let pass = 0;
@@ -174,6 +175,60 @@ check('a report on a published review sends it back to in_review', () => {
 });
 
 check('withdraw only works for the author', () => withdrawReview(review.id, admin.id) === false && withdrawReview(review.id, client.id) === true);
+
+// --- banding: 10 independent published reviews should move the professional
+// from 'new'/'early' to the 'established' band with a full breakdown.
+for (let i = 0; i < 10; i += 1) {
+  const u = createUser({ email: `band-${i}@example.com`, fullName: `Band Tester ${i}`, password: 'whatever-123' });
+  insertCompletedBooking(100 + i, `BK-BAND${i}`, u.id, `band-${i}@example.com`);
+  const r = createReview({
+    professionalId: 1, authorUserId: u.id, bookingId: 100 + i, displayMode: 'attributed', reviewerType: 'client',
+    ratings: { communication: 4, responsiveness: 5, professionalism: 5, processClarity: 4, overallSatisfaction: i % 3 === 0 ? 3 : 5 },
+    wouldRecommend: i % 4 === 0 ? 'no' : 'yes',
+    body: `Review number ${i}: communication was clear and the process was explained clearly throughout.`,
+  });
+  moderateReview(r.id, admin.id, 'published');
+}
+const established = getProfessionalReviewSummary(1);
+check('10 published reviews reach the established band with a dimension breakdown', () => established.band === 'established' && established.communication != null);
+check('star distribution sums to 100 percent', () => established.starDistribution.reduce((s, r) => s + r.percent, 0) === 100);
+check('satisfaction distribution has five levels', () => established.satisfactionDistribution.length === 5);
+check('a repeated theme across enough reviews is surfaced', () => established.themes.some((t) => t.theme === 'Clear communication'));
+check('recommend percent excludes "maybe" from the denominator', () => established.recommendPercent != null && established.recommendPercent < 100 && established.recommendPercent > 0);
+
+// --- organisation reviews (law firm / LPO) — verified via matching e-mail domain
+h.exec(`INSERT INTO organisation (id, kind, name, slug, country_id, email_domain, domain_verified_at, created_at, updated_at)
+  VALUES (1,'law_firm','Test Chambers','test-chambers',1,'clientco.example','${ts}','${ts}','${ts}')`);
+const corpUser = createUser({ email: 'legal@clientco.example', fullName: 'Corporate Counsel', password: 'whatever-123' });
+const outsiderUser = createUser({ email: 'someone@gmail.example', fullName: 'Outside Reviewer', password: 'whatever-123' });
+
+const verifiedOrgReview = createOrganisationReview({
+  organisationId: 1, authorUserId: corpUser.id, displayMode: 'attributed', reviewerType: 'corporate_legal_team',
+  experienceCategory: 'legal_matter', ratings: { overallSatisfaction: 5 }, wouldRecommend: 'yes',
+  body: 'Handled our cross-border matter with clear communication and strong documentation throughout.',
+});
+const unverifiedOrgReview = createOrganisationReview({
+  organisationId: 1, authorUserId: outsiderUser.id, displayMode: 'anonymous', reviewerType: 'client',
+  experienceCategory: 'consultation', ratings: { overallSatisfaction: 4 }, body: 'Good service overall, would use again for routine matters.',
+});
+check('a reviewer whose email domain matches the org\'s verified domain is basis=verified_engagement', () => {
+  const row = h.prepare(`SELECT basis FROM review WHERE id = ?`).get(verifiedOrgReview.id);
+  return row.basis === 'verified_engagement';
+});
+check('a reviewer with no domain match is basis=unverified', () => {
+  const row = h.prepare(`SELECT basis FROM review WHERE id = ?`).get(unverifiedOrgReview.id);
+  return row.basis === 'unverified';
+});
+moderateReview(verifiedOrgReview.id, admin.id, 'published');
+moderateReview(unverifiedOrgReview.id, admin.id, 'published');
+const orgSummary = getOrganisationReviewSummary(1);
+check('organisation review summary counts both published reviews', () => orgSummary.count === 2);
+const orgReviews = listReviewsForOrganisation(1, { filter: 'all' });
+check('organisation review listing returns both reviews with correct verified flags', () => {
+  const v = orgReviews.find((r) => r.id === verifiedOrgReview.id);
+  const u = orgReviews.find((r) => r.id === unverifiedOrgReview.id);
+  return v?.verified === true && u?.verified === false && u?.displayName === 'Anonymous reviewer';
+});
 
 console.log(`\n${pass} passed, ${failures.length} failed`);
 for (const f of failures) console.log(`  ✗ ${f}`);

@@ -10,3 +10,4 @@ export * from './taxonomy.ts';
 export * from './resources.ts';
 export * from './auth.ts';
 export * from './reviews.ts';
+export * from './organisations.ts';

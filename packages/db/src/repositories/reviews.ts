@@ -44,8 +44,6 @@ export interface CreateReviewInput {
   body: string;
 }
 
-const SAMPLE_SIZE_THRESHOLD = 3;
-
 // --------------------------------------------------------------- eligibility
 
 /** Completed interactions between this user and this professional with no review yet. */
@@ -193,6 +191,64 @@ export function createReview(input: CreateReviewInput): { id: number; moderation
   });
 }
 
+export interface CreateOrganisationReviewInput {
+  organisationId: number;
+  authorUserId: number;
+  displayMode: DisplayMode;
+  reviewerType: ReviewerType;
+  experienceCategory: 'legal_matter' | 'appointment' | 'consultation' | 'booking';
+  ratings: RatingInput;
+  wouldRecommend?: WouldRecommend;
+  body: string;
+}
+
+/**
+ * Reviews of a law firm, chamber or LPO provider — `organisation`, not
+ * `professional`. There is no booking/consultation model at the
+ * organisation level yet (§ MISSING in docs/BOSS_REQUIREMENTS_AUDIT.md), so
+ * "verified" here means something narrower and honest: the reviewer's
+ * account email domain matches the organisation's own verified domain
+ * (`organisation.email_domain` + `domain_verified_at`) — the same signal G2
+ * uses (work email / LinkedIn) rather than a booking record. Anything else
+ * is 'unverified'. This is NOT the same strength of verification as a
+ * completed booking, and the UI must not blur that distinction.
+ */
+export function createOrganisationReview(input: CreateOrganisationReviewInput): { id: number; moderationStatus: string } {
+  return transaction(() => {
+    const h = db();
+    const author = h.prepare(`SELECT email FROM app_user WHERE id = ?`).get(input.authorUserId) as { email: string } | undefined;
+    if (!author) throw new Error('AUTHOR_NOT_FOUND');
+    const org = h.prepare(`SELECT email_domain AS emailDomain, domain_verified_at AS domainVerifiedAt FROM organisation WHERE id = ?`)
+      .get(input.organisationId) as { emailDomain: string | null; domainVerifiedAt: string | null } | undefined;
+    if (!org) throw new Error('ORGANISATION_NOT_FOUND');
+
+    const authorDomain = author.email.split('@')[1]?.toLowerCase();
+    const basis = org.domainVerifiedAt && org.emailDomain && authorDomain === org.emailDomain.toLowerCase()
+      ? 'verified_engagement' : 'unverified';
+
+    const risk = assessFraudRisk({ authorUserId: input.authorUserId, professionalId: input.organisationId, body: input.body, basis });
+    const privacyHits = detectPrivacyRisk(input.body);
+    const moderationStatus = privacyHits.length > 0 ? 'in_review' : risk.tier === 'high' ? 'auto_flagged' : 'pending';
+    const ts = now();
+
+    const result = h.prepare(
+      `INSERT INTO review (
+         organisation_id, author_user_id, basis, display_mode, reviewer_type, experience_category,
+         rating_communication, rating_responsiveness, rating_professionalism, rating_process_clarity,
+         overall_satisfaction, would_recommend, body,
+         moderation_status, trust_signals, trust_score, created_at, updated_at
+       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?,?,?,?)`,
+    ).run(
+      input.organisationId, input.authorUserId, basis, input.displayMode, input.reviewerType, input.experienceCategory,
+      input.ratings.communication ?? null, input.ratings.responsiveness ?? null,
+      input.ratings.professionalism ?? null, input.ratings.processClarity ?? null,
+      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(),
+      moderationStatus, toJson({ tier: risk.tier, signals: risk.signals, privacyHits }), risk.score, ts, ts,
+    );
+    return { id: Number(result.lastInsertRowid), moderationStatus };
+  });
+}
+
 export function editReview(reviewId: number, authorUserId: number, updates: { ratings?: RatingInput; wouldRecommend?: WouldRecommend; body?: string }): void {
   transaction(() => {
     const h = db();
@@ -285,17 +341,20 @@ export function listModerationQueue(status?: string) {
     SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.moderation_status AS moderationStatus,
            r.trust_score AS trustScore, r.trust_signals AS trustSignalsJson, r.created_at AS createdAt,
            r.experience_category AS experienceCategory, r.reviewer_type AS reviewerType,
-           p.display_name AS professionalName, p.slug AS professionalSlug,
+           COALESCE(p.display_name, o.name) AS professionalName,
+           COALESCE(p.slug, o.slug) AS professionalSlug,
+           CASE WHEN r.organisation_id IS NOT NULL THEN o.kind ELSE 'professional' END AS subjectKind,
            u.full_name AS authorName, u.email AS authorEmail
       FROM review r
-      JOIN professional p ON p.id = r.professional_id
+      LEFT JOIN professional p ON p.id = r.professional_id
+      LEFT JOIN organisation o ON o.id = r.organisation_id
       JOIN app_user u ON u.id = r.author_user_id
      ${status ? 'WHERE r.moderation_status = ?' : ''}
      ORDER BY r.created_at DESC LIMIT 100`;
   const rows = (status ? h.prepare(sql).all(status) : h.prepare(sql).all()) as Array<{
     id: number; body: string; basis: string; displayMode: string; moderationStatus: string;
     trustScore: number; trustSignalsJson: string | null; createdAt: string;
-    experienceCategory: string; reviewerType: string;
+    experienceCategory: string; reviewerType: string; subjectKind: string;
     professionalName: string; professionalSlug: string; authorName: string; authorEmail: string;
   }>;
   return rows.map((r) => {
@@ -304,7 +363,7 @@ export function listModerationQueue(status?: string) {
       id: r.id, body: r.body, basis: r.basis, displayMode: r.displayMode, moderationStatus: r.moderationStatus,
       trustScore: r.trustScore, createdAt: r.createdAt, experienceCategory: r.experienceCategory,
       reviewerType: r.reviewerType, professionalName: r.professionalName, professionalSlug: r.professionalSlug,
-      authorName: r.authorName, authorEmail: r.authorEmail,
+      subjectKind: r.subjectKind, authorName: r.authorName, authorEmail: r.authorEmail,
       trustTier: parsed.tier, trustSignals: parsed.signals,
     };
   });
@@ -334,14 +393,44 @@ function displayName(displayMode: string, fullName: string): string {
 export type ReviewFilter = 'all' | 'verified' | 'anonymous';
 export type ReviewSort = 'recent' | 'helpful' | 'highest' | 'lowest';
 
-export function listReviewsForProfessional(professionalId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }) {
+type ReviewSubject = 'professional_id' | 'organisation_id';
+
+export interface ReviewListItem {
+  id: number;
+  body: string;
+  verified: boolean;
+  displayName: string;
+  displayMode: string;
+  reviewerType: string;
+  experienceCategory: string;
+  ratings: {
+    communication: number | null; responsiveness: number | null; professionalism: number | null;
+    processClarity: number | null; overallSatisfaction: number | null;
+  };
+  wouldRecommend: string | null;
+  createdAt: string;
+  edited: boolean;
+  helpfulCount: number;
+  notHelpfulCount: number;
+  response: { body: string; createdAt: string } | null;
+}
+
+export function listReviewsForProfessional(professionalId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }): ReviewListItem[] {
+  return listReviewsForSubject('professional_id', professionalId, opts);
+}
+
+export function listReviewsForOrganisation(organisationId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }): ReviewListItem[] {
+  return listReviewsForSubject('organisation_id', organisationId, opts);
+}
+
+function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }): ReviewListItem[] {
   const h = db();
   const filter = opts?.filter ?? 'all';
   const sort = opts?.sort ?? 'recent';
   const limit = opts?.limit ?? 20;
   const offset = opts?.offset ?? 0;
 
-  const conditions = [`r.professional_id = ?`, `r.moderation_status = 'published'`, `r.deleted_at IS NULL`];
+  const conditions = [`r.${subject} = ?`, `r.moderation_status = 'published'`, `r.deleted_at IS NULL`];
   if (filter === 'verified') conditions.push(`r.basis IN ('verified_consultation','verified_engagement')`);
   if (filter === 'anonymous') conditions.push(`r.display_mode = 'anonymous'`);
 
@@ -368,37 +457,73 @@ export function listReviewsForProfessional(professionalId: number, opts?: { filt
       WHERE ${conditions.join(' AND ')}
       ORDER BY ${orderBy}
       LIMIT ? OFFSET ?`,
-  ).all(professionalId, limit, offset) as Array<Record<string, string | number | null>>;
+  ).all(subjectId, limit, offset) as unknown as Array<Record<string, string | number | null>>;
 
   return rows.map((r) => ({
-    id: r.id,
-    body: r.body,
+    id: Number(r.id),
+    body: String(r.body),
     verified: r.basis === 'verified_consultation' || r.basis === 'verified_engagement',
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
-    displayMode: r.displayMode,
-    reviewerType: r.reviewerType,
-    experienceCategory: r.experienceCategory,
+    displayMode: String(r.displayMode),
+    reviewerType: String(r.reviewerType),
+    experienceCategory: String(r.experienceCategory),
     ratings: {
-      communication: r.communication, responsiveness: r.responsiveness,
-      professionalism: r.professionalism, processClarity: r.processClarity,
-      overallSatisfaction: r.overallSatisfaction,
+      communication: r.communication as number | null, responsiveness: r.responsiveness as number | null,
+      professionalism: r.professionalism as number | null, processClarity: r.processClarity as number | null,
+      overallSatisfaction: r.overallSatisfaction as number | null,
     },
-    wouldRecommend: r.wouldRecommend,
-    createdAt: r.createdAt,
+    wouldRecommend: r.wouldRecommend as string | null,
+    createdAt: String(r.createdAt),
     edited: r.editedAt != null,
-    helpfulCount: r.helpfulCount,
-    notHelpfulCount: r.notHelpfulCount,
-    response: r.responseBody ? { body: r.responseBody, createdAt: r.responseCreatedAt } : null,
+    helpfulCount: Number(r.helpfulCount),
+    notHelpfulCount: Number(r.notHelpfulCount),
+    response: r.responseBody ? { body: String(r.responseBody), createdAt: String(r.responseCreatedAt) } : null,
   }));
 }
 
 /**
- * Aggregate summary for a profile header. Sample-size protected (§28): a
- * breakdown only renders once there are at least SAMPLE_SIZE_THRESHOLD
- * published reviews — below that, callers get `insufficientSample: true`
- * and the raw count, nothing that reads as a confident average.
+ * "What people mention" — theme extraction over published review text.
+ * Deliberately dumb keyword matching, not an LLM: a theme is only surfaced
+ * when it appears in a meaningful share of reviews, and the words come
+ * straight from real published bodies — nothing here is generated or
+ * inferred (§18 "do not invent pros or cons"). Themes are experience-shaped
+ * (communication, responsiveness…), never a claim about legal competence.
  */
-export function getProfessionalReviewSummary(professionalId: number) {
+const THEME_KEYWORDS: Array<{ theme: string; pattern: RegExp; sentiment: 'positive' | 'watch' }> = [
+  { theme: 'Clear communication', pattern: /\bclear(ly)?\b.{0,30}\b(communicat|explain)|\b(communicat|explain)\w*.{0,30}\bclear(ly)?\b/i, sentiment: 'positive' },
+  { theme: 'Responsive', pattern: /\b(responsive|quick(ly)? to respond|replied? (quickly|promptly)|prompt response)\b/i, sentiment: 'positive' },
+  { theme: 'Professional approach', pattern: /\bprofessional(ism)?\b/i, sentiment: 'positive' },
+  { theme: 'Process explained well', pattern: /\bprocess\b.{0,25}\b(explain|clear|understood)/i, sentiment: 'positive' },
+  { theme: 'Well documented', pattern: /\b(documentation|paperwork|drafting)\b.{0,20}\b(clear|thorough|organi[sz]ed)/i, sentiment: 'positive' },
+  { theme: 'On time', pattern: /\b(on time|punctual|started on time)\b/i, sentiment: 'positive' },
+  { theme: 'Response delays', pattern: /\b(delay|slow to respond|took (a while|long)|did not respond|hard to reach)\b/i, sentiment: 'watch' },
+  { theme: 'Scheduling difficulty', pattern: /\b(reschedul|scheduling (issue|problem|difficult)|hard to book)\b/i, sentiment: 'watch' },
+];
+const THEME_MIN_MENTIONS = 3;
+
+function extractThemes(bodies: string[]): Array<{ theme: string; sentiment: 'positive' | 'watch'; mentions: number }> {
+  return THEME_KEYWORDS
+    .map(({ theme, pattern, sentiment }) => ({ theme, sentiment, mentions: bodies.filter((b) => pattern.test(b)).length }))
+    .filter((t) => t.mentions >= THEME_MIN_MENTIONS)
+    .sort((a, b) => b.mentions - a.mentions)
+    .slice(0, 6);
+}
+
+export type ReviewBand = 'none' | 'new' | 'early' | 'established';
+function bandFor(count: number): ReviewBand {
+  if (count === 0) return 'none';
+  if (count < 5) return 'new';
+  if (count < 10) return 'early';
+  return 'established';
+}
+
+interface SummaryRow {
+  n: number; communication: number | null; responsiveness: number | null; professionalism: number | null;
+  processClarity: number | null; overallSatisfaction: number | null; yesCount: number; recommendDenominator: number;
+  verifiedCount: number;
+}
+
+function summarizeSubject(subject: ReviewSubject, subjectId: number) {
   const h = db();
   const row = h.prepare(
     `SELECT count(*) AS n,
@@ -408,27 +533,78 @@ export function getProfessionalReviewSummary(professionalId: number) {
             sum(CASE WHEN would_recommend = 'yes' THEN 1 ELSE 0 END) AS yesCount,
             sum(CASE WHEN would_recommend IN ('yes','no') THEN 1 ELSE 0 END) AS recommendDenominator,
             sum(CASE WHEN basis IN ('verified_consultation','verified_engagement') THEN 1 ELSE 0 END) AS verifiedCount
-       FROM review WHERE professional_id = ? AND moderation_status = 'published' AND deleted_at IS NULL`,
-  ).get(professionalId) as {
-    n: number; communication: number | null; responsiveness: number | null; professionalism: number | null;
-    processClarity: number | null; overallSatisfaction: number | null; yesCount: number; recommendDenominator: number;
-    verifiedCount: number;
-  };
+       FROM review WHERE ${subject} = ? AND moderation_status = 'published' AND deleted_at IS NULL`,
+  ).get(subjectId) as unknown as SummaryRow;
 
-  if (row.n < SAMPLE_SIZE_THRESHOLD) {
-    return { count: row.n, insufficientSample: true as const, verifiedCount: row.verifiedCount };
+  const band = bandFor(row.n);
+  if (band === 'none' || band === 'new') {
+    return { count: row.n, band, insufficientSample: true as const, verifiedCount: row.verifiedCount };
   }
+
+  // Star distribution (overall_satisfaction rounded to 1..5) and a plain-
+  // language satisfaction distribution over the same ratings — two views of
+  // the same underlying numbers, per §17/§16 of the product brief.
+  const starRows = h.prepare(
+    `SELECT overall_satisfaction AS star, count(*) AS n FROM review
+      WHERE ${subject} = ? AND moderation_status = 'published' AND deleted_at IS NULL AND overall_satisfaction IS NOT NULL
+      GROUP BY overall_satisfaction`,
+  ).all(subjectId) as Array<{ star: number; n: number }>;
+  const starTotal = starRows.reduce((sum, r) => sum + r.n, 0);
+  const starDistribution = [5, 4, 3, 2, 1].map((star) => {
+    const found = starRows.find((r) => r.star === star);
+    const n = found?.n ?? 0;
+    return { star, count: n, percent: starTotal > 0 ? Math.round((n / starTotal) * 100) : 0 };
+  });
+  const satisfactionDistribution = [
+    { level: 'Very satisfied', stars: [5], ...pctFor(starRows, starTotal, [5]) },
+    { level: 'Satisfied', stars: [4], ...pctFor(starRows, starTotal, [4]) },
+    { level: 'Neutral', stars: [3], ...pctFor(starRows, starTotal, [3]) },
+    { level: 'Dissatisfied', stars: [2], ...pctFor(starRows, starTotal, [2]) },
+    { level: 'Very dissatisfied', stars: [1], ...pctFor(starRows, starTotal, [1]) },
+  ].map(({ level, count, percent }) => ({ level, count, percent }));
+
+  const bodies = (h.prepare(
+    `SELECT body FROM review WHERE ${subject} = ? AND moderation_status = 'published' AND deleted_at IS NULL`,
+  ).all(subjectId) as Array<{ body: string }>).map((r) => r.body);
 
   const round1 = (v: number | null) => (v == null ? null : Math.round(v * 10) / 10);
   return {
     count: row.n,
+    band,
     insufficientSample: false as const,
     verifiedCount: row.verifiedCount,
+    // Dimension breakdown only at the 'established' band (10+) — at 'early'
+    // (5-9) the caller shows overall + recommend but withholds the
+    // dimension table, per the brief's tiered-confidence banding.
     overallSatisfaction: round1(row.overallSatisfaction),
-    communication: round1(row.communication),
-    responsiveness: round1(row.responsiveness),
-    professionalism: round1(row.professionalism),
-    processClarity: round1(row.processClarity),
+    communication: band === 'established' ? round1(row.communication) : null,
+    responsiveness: band === 'established' ? round1(row.responsiveness) : null,
+    professionalism: band === 'established' ? round1(row.professionalism) : null,
+    processClarity: band === 'established' ? round1(row.processClarity) : null,
     recommendPercent: row.recommendDenominator > 0 ? Math.round((row.yesCount / row.recommendDenominator) * 100) : null,
+    starDistribution: band === 'established' ? starDistribution : null,
+    satisfactionDistribution: band === 'established' ? satisfactionDistribution : null,
+    themes: band === 'established' ? extractThemes(bodies) : [],
   };
+}
+
+function pctFor(starRows: Array<{ star: number; n: number }>, total: number, stars: number[]): { count: number; percent: number } {
+  const count = starRows.filter((r) => stars.includes(r.star)).reduce((sum, r) => sum + r.n, 0);
+  return { count, percent: total > 0 ? Math.round((count / total) * 100) : 0 };
+}
+
+/**
+ * Aggregate summary for a profile header. Sample-size protected (§28,
+ * §30/§31): the band gates what's shown — no numeric average below 5
+ * reviews, no dimension breakdown or distribution below 10 — never a
+ * confident-looking number from too little data.
+ */
+export type ReviewSummary = ReturnType<typeof summarizeSubject>;
+
+export function getProfessionalReviewSummary(professionalId: number): ReviewSummary {
+  return summarizeSubject('professional_id', professionalId);
+}
+
+export function getOrganisationReviewSummary(organisationId: number): ReviewSummary {
+  return summarizeSubject('organisation_id', organisationId);
 }

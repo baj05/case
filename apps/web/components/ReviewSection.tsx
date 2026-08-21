@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { getReviewSummary, getReviews } from '@/lib/data';
-import type { ReviewFilter, ReviewSort } from '@lexhall/db';
+import type { ReviewFilter, ReviewSort, ReviewListItem, ReviewSummary } from '@lexhall/db';
 import { relativeDate } from '@/lib/format';
 import { VoteHelpfulForm, ReportReviewForm, RespondToReviewForm } from './ReviewActions';
 
@@ -15,48 +14,121 @@ const DIMENSIONS: Array<{ key: 'communication' | 'responsiveness' | 'professiona
   { key: 'processClarity', label: 'Process clarity' },
 ];
 
-export function ReviewSection({
-  professionalId, slug, currentUserId, isAdmin, filter, sort,
-}: {
-  professionalId: number; slug: string; currentUserId?: number; isAdmin: boolean;
-  filter: ReviewFilter; sort: ReviewSort;
-}) {
-  const summary = getReviewSummary(professionalId);
-  const reviews = getReviews(professionalId, { filter, sort, limit: 20 });
+/** Qualitative label for the overall score — never just a bare number. */
+function experienceLabel(score: number | null): string {
+  if (score == null) return '';
+  if (score >= 4.6) return 'Excellent experience';
+  if (score >= 4.0) return 'Very good experience';
+  if (score >= 3.0) return 'Good experience';
+  if (score >= 2.0) return 'Mixed experience';
+  return 'Needs attention';
+}
 
-  const filterLink = (f: ReviewFilter) => `/advocates/${slug}?reviewFilter=${f}&reviewSort=${sort}#reviews`;
-  const sortLink = (s: ReviewSort) => `/advocates/${slug}?reviewFilter=${filter}&reviewSort=${s}#reviews`;
+export function ReviewSection({
+  basePath, slug, summary, reviews, currentUserId, isAdmin, filter, sort,
+}: {
+  basePath: string; slug: string; summary: ReviewSummary; reviews: ReviewListItem[];
+  currentUserId?: number; isAdmin: boolean; filter: ReviewFilter; sort: ReviewSort;
+}) {
+  const filterLink = (f: ReviewFilter) => `${basePath}/${slug}?reviewFilter=${f}&reviewSort=${sort}#reviews`;
+  const sortLink = (s: ReviewSort) => `${basePath}/${slug}?reviewFilter=${filter}&reviewSort=${s}#reviews`;
 
   return (
-    <div id="reviews" className="stack gap-4">
-      {summary.insufficientSample ? (
+    <div id="reviews" className="stack gap-5">
+      <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h2 className="t-headline-md">Legal Trust &amp; Experience</h2>
+        <Link href="/trust/reviews" className="t-caption" style={{ textDecoration: 'underline' }}>How is this calculated?</Link>
+      </div>
+
+      {summary.band === 'none' && (
+        <p className="t-body ink-variant">No experiences shared yet — be the first to share yours.</p>
+      )}
+      {summary.band === 'new' && (
         <p className="t-body ink-variant">
-          {summary.count === 0
-            ? 'No reviews have been published for this professional yet.'
-            : `Based on ${summary.count} review${summary.count === 1 ? '' : 's'} — too few yet for a reliable breakdown.`}
+          New profile — {summary.count} experience{summary.count === 1 ? '' : 's'} shared so far, too few yet for a
+          reliable score.
         </p>
-      ) : (
-        <div className="stack gap-3">
-          <div className="row wrap gap-4" style={{ alignItems: 'baseline' }}>
+      )}
+
+      {(summary.band === 'early' || summary.band === 'established') && (
+        <div className="stack gap-4">
+          <div className="row wrap gap-5" style={{ alignItems: 'baseline' }}>
             <span className="row gap-2" style={{ alignItems: 'baseline' }}>
-              <strong style={{ fontSize: '1.75rem', fontFamily: 'var(--font-display)' }}>{summary.overallSatisfaction}</strong>
-              <span className="t-body ink-variant">/ 5 overall · {summary.count} reviews</span>
+              <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+                {summary.overallSatisfaction ?? '—'}
+              </strong>
+              <span className="t-body ink-variant">/ 5</span>
+            </span>
+            <span className="stack" style={{ gap: 0 }}>
+              <strong className="t-title-sm">{experienceLabel(summary.overallSatisfaction ?? null)}</strong>
+              <span className="t-caption">
+                {summary.count} experience{summary.count === 1 ? '' : 's'}
+                {summary.band === 'early' && ' · early feedback'}
+              </span>
             </span>
             {summary.recommendPercent != null && (
-              <span className="t-body ink-variant">{summary.recommendPercent}% would recommend</span>
+              <span className="stack" style={{ gap: 0 }}>
+                <strong className="t-title-sm">{summary.recommendPercent}%</strong>
+                <span className="t-caption">would recommend</span>
+              </span>
             )}
             <span className="t-caption">{summary.verifiedCount} verified experience{summary.verifiedCount === 1 ? '' : 's'}</span>
           </div>
-          <div className="row wrap gap-4">
-            {([
-              ['Communication', summary.communication], ['Responsiveness', summary.responsiveness],
-              ['Professionalism', summary.professionalism], ['Process clarity', summary.processClarity],
-            ] as const).map(([label, value]) => (
-              <span key={label} className="t-body-sm">
-                <span className="ink-variant">{label}</span> <strong>{value}</strong>
-              </span>
-            ))}
-          </div>
+
+          {summary.band === 'established' && summary.communication != null && (
+            <div className="row wrap gap-4">
+              {([
+                ['Communication', summary.communication], ['Responsiveness', summary.responsiveness],
+                ['Professionalism', summary.professionalism], ['Process clarity', summary.processClarity],
+              ] as const).map(([label, value]) => (
+                <span key={label} className="t-body-sm">
+                  <span className="ink-variant">{label}</span> <strong>{value}</strong>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {summary.band === 'established' && summary.starDistribution && (
+            <div className="stack gap-1" style={{ maxWidth: 360 }}>
+              {summary.starDistribution.map((row) => (
+                <div key={row.star} className="row gap-2" style={{ alignItems: 'center' }}>
+                  <span className="t-caption mono" style={{ width: 28 }}>{row.star}★</span>
+                  <span style={{ flex: 1, height: 6, borderRadius: 4, background: 'var(--surface-high)', overflow: 'hidden' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${row.percent}%`, background: 'var(--action-orange)' }} />
+                  </span>
+                  <span className="t-caption mono" style={{ width: 36, textAlign: 'right' }}>{row.percent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {summary.band === 'established' && summary.satisfactionDistribution && (
+            <div className="stack gap-1" style={{ maxWidth: 420 }}>
+              {summary.satisfactionDistribution.map((row) => (
+                <div key={row.level} className="row gap-2" style={{ alignItems: 'center' }}>
+                  <span className="t-caption" style={{ width: 130 }}>{row.level}</span>
+                  <span style={{ flex: 1, height: 6, borderRadius: 4, background: 'var(--surface-high)', overflow: 'hidden' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${row.percent}%`, background: 'var(--primary)' }} />
+                  </span>
+                  <span className="t-caption mono" style={{ width: 36, textAlign: 'right' }}>{row.percent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {summary.band === 'established' && summary.themes && summary.themes.length > 0 && (
+            <div className="stack gap-2">
+              <span className="t-caption" style={{ fontWeight: 700 }}>What people mention</span>
+              <div className="row wrap gap-1">
+                {summary.themes.map((t) => (
+                  <span key={t.theme} className={`chip ${t.sentiment === 'positive' ? 'chip-lime' : 'chip-outline'}`}>
+                    {t.sentiment === 'positive' ? '✓' : '·'} {t.theme}
+                  </span>
+                ))}
+              </div>
+              <p className="t-caption">Based on {summary.count} published experience{summary.count === 1 ? '' : 's'}.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -81,7 +153,7 @@ export function ReviewSection({
 
       <div className="stack gap-3">
         {reviews.map((r) => (
-          <article key={r.id} className="card stack gap-2" style={{ padding: 16 }}>
+          <article key={String(r.id)} className="card stack gap-2" style={{ padding: 16 }}>
             <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span className="row gap-2" style={{ alignItems: 'baseline' }}>
                 <strong>{r.displayName}</strong>
@@ -117,7 +189,7 @@ export function ReviewSection({
         ))}
       </div>
 
-      <Link href={`/advocates/${slug}/review`} className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
+      <Link href={`${basePath}/${slug}/review`} className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
         Write a review
       </Link>
     </div>

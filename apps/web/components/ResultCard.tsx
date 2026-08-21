@@ -4,6 +4,7 @@ import { VerificationBadge, KindChip } from './Badges';
 import { MatchScore } from './MatchScore';
 import { relativeDate } from '@/lib/format';
 import { feeSummary, formatMinor } from '@lexhall/db';
+import { getFlags, getReviewSummary } from '@/lib/data';
 import type { SearchHit } from '@lexhall/core';
 
 /**
@@ -21,6 +22,8 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
   const fees = feeSummary(p.id);
   const years = p.yearsExperience
     ?? (p.enrolmentYear ? new Date().getFullYear() - p.enrolmentYear : null);
+  const flags = getFlags();
+  const reviewSummary = flags.FEATURE_REVIEWS ? getReviewSummary(p.id) : null;
 
   return (
     <article className="result-card lift">
@@ -89,6 +92,14 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
             <span className="fact-item">
               <span className="fact-label">Filing charges</span>
               <span className="fact-value">Published</span>
+            </span>
+          )}
+          {reviewSummary && !reviewSummary.insufficientSample && (
+            <span className="fact-item">
+              <span className="fact-label">Client rated</span>
+              <span className="fact-value">
+                {reviewSummary.overallSatisfaction} · {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}
+              </span>
             </span>
           )}
         </div>

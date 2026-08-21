@@ -22,7 +22,8 @@ import {
   recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
-  listModerationQueue,
+  listModerationQueue, getOrganisationReviewSummary, listReviewsForOrganisation,
+  getOrganisationBySlug, listOrganisations,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
 
@@ -53,6 +54,13 @@ export function getEligibleExperiences(userId: number, professionalId: number) {
 export function getModerationQueue(status?: string) {
   return listModerationQueue(status);
 }
+
+export const getOrgReviewSummary = cache((organisationId: number) => getOrganisationReviewSummary(organisationId));
+export function getOrgReviews(organisationId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }) {
+  return listReviewsForOrganisation(organisationId, opts);
+}
+export const getOrganisation = cache((slug: string) => getOrganisationBySlug(slug));
+export const getOrganisations = cache((kind?: 'law_firm' | 'chamber' | 'lpo') => listOrganisations(kind));
 
 export function runSearch(filters: SearchFilters) {
   return searchProfessionals(filters);

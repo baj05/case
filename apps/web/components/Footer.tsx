@@ -7,6 +7,8 @@ export function Footer() {
       head: 'Find',
       links: [
         { href: '/search', label: 'Search professionals' },
+        { href: '/firms', label: 'Law firms & chambers' },
+        { href: '/lpo', label: 'LPO providers' },
         { href: '/practice-areas', label: 'Practice areas' },
         { href: '/courts', label: 'Courts and tribunals' },
         { href: '/judges', label: 'Supreme Court judges' },

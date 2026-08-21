@@ -14,6 +14,7 @@ import {
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview,
+  createOrganisationReview, getOrganisationBySlug,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 
@@ -362,6 +363,40 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
   }
   revalidatePath(`/advocates/${slug}`);
   redirect(`/advocates/${slug}?reviewed=1`);
+}
+
+export async function submitOrganisationReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in to leave a review.' };
+
+  const slug = str(form, 'slug', 120);
+  const basePath = str(form, 'basePath', 20) as '/firms' | '/lpo';
+  const displayMode = (str(form, 'displayMode') || 'attributed') as 'attributed' | 'pseudonymous' | 'anonymous';
+  const reviewerType = (str(form, 'reviewerType') || 'corporate_legal_team') as never;
+  const experienceCategory = (str(form, 'experienceCategory') || 'legal_matter') as never;
+  const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
+  const body = str(form, 'body', 4000);
+  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
+
+  const org = getOrganisationBySlug(slug);
+  if (!org) return { ok: false, message: 'That organisation is no longer available.' };
+  if (body.trim().length < 15) return { ok: false, message: 'Please write a little more about your experience (at least 15 characters).' };
+
+  try {
+    createOrganisationReview({
+      organisationId: org.id, authorUserId: user.id, displayMode, reviewerType, experienceCategory,
+      ratings: {
+        communication: rating('communication'), responsiveness: rating('responsiveness'),
+        professionalism: rating('professionalism'), processClarity: rating('processClarity'),
+        overallSatisfaction: rating('overallSatisfaction'),
+      },
+      wouldRecommend, body,
+    });
+  } catch {
+    return { ok: false, message: 'We could not submit your review. Please try again.' };
+  }
+  revalidatePath(`${basePath}/${slug}`);
+  redirect(`${basePath}/${slug}?reviewed=1`);
 }
 
 export async function editReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {

@@ -6,7 +6,7 @@ import { VerificationBadge, KindChip, ClaimChip, EvidenceChip } from '@/componen
 import { ResultCard } from '@/components/ResultCard';
 import { ResourceCard } from '@/components/ResourceCard';
 import { Notice } from '@/components/States';
-import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter } from '@/lib/data';
+import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter, getReviewSummary, getReviews } from '@/lib/data';
 import { listFees, feeSummary, formatMinor, generateSlots } from '@lexhall/db';
 import type { ReviewFilter, ReviewSort } from '@lexhall/db';
 import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/format';
@@ -327,18 +327,22 @@ export default async function ProfilePage({
 
             {/* reviews — gated by FEATURE_REVIEWS (C-09) */}
             <section className="stack gap-3">
-              <h2 className="t-headline-md">Reviews</h2>
               {flags.FEATURE_REVIEWS ? (
                 <ReviewSection
-                  professionalId={p.id} slug={p.slug} currentUserId={user?.id} isAdmin={user?.platformRole === 'platform_admin'}
+                  basePath="/advocates" slug={p.slug}
+                  summary={getReviewSummary(p.id)} reviews={getReviews(p.id, { filter: reviewFilter, sort: reviewSort, limit: 20 })}
+                  currentUserId={user?.id} isAdmin={user?.platformRole === 'platform_admin'}
                   filter={reviewFilter} sort={reviewSort}
                 />
               ) : (
+                <>
+                <h2 className="t-headline-md">Reviews</h2>
                 <Notice tone="legal" title="Reviews are not published yet">
                   {LEGAL_COPY.reviewsGated} The review system is built and schema-complete, but stays
                   switched off until a professional-conduct and data-protection review is signed off.
                   {' '}<Link href="/how-it-works#reviews" style={{ textDecoration: 'underline' }}>Why</Link>.
                 </Notice>
+                </>
               )}
             </section>
 
