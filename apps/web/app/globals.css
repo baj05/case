@@ -1959,31 +1959,44 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 
 /* --- state emblem ticker (resources hub) ---------------------------------
-   Full-bleed, hard-edged marquee band — the "logo ipsum" pattern: a solid
-   colour strip the full width of the section, items flowing edge to edge
-   with no per-item card, border or shadow, no blurred fade at the ends.
-   Dimensions follow the reference measured directly in Chrome DevTools
-   (div.marquee ~1164x168px, padding: 32px 0, img.marquee-image 218x40). */
+   Two full-bleed, hard-edged marquee bands — the "logo ipsum" pattern: a
+   solid colour strip the full width of the section, items flowing edge to
+   edge with no per-item card, border or shadow, no blurred fade at the
+   ends. The two bands move opposite directions so they read as independent
+   counter-moving strips rather than one repeated row: seals on top moving
+   right, "Government of X" labels below moving left, each near enough to
+   its band's own height to feel dominant rather than decorative. */
+.emblem-bands {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .emblem-ticker {
   position: relative;
   overflow-x: clip;
   background: var(--action-orange);
-  padding-block: 32px;
 }
+.emblem-ticker-logos { padding-block: 26px; }
+.emblem-ticker-text { padding-block: 8px; }
+
 .emblem-track {
   display: flex;
   align-items: center;
-  gap: 56px;
   width: max-content;
-  animation: emblem-scroll 60s linear infinite;
 }
+.emblem-track-left { animation: emblem-scroll-left 70s linear infinite; }
+.emblem-track-right { animation: emblem-scroll-right 70s linear infinite; }
 .emblem-ticker:hover .emblem-track,
 .emblem-ticker:focus-within .emblem-track {
   animation-play-state: paused;
 }
-@keyframes emblem-scroll {
+@keyframes emblem-scroll-left {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+@keyframes emblem-scroll-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .emblem-track { animation: none; overflow-x: auto; }
@@ -1992,25 +2005,29 @@ details[open] > .filter-summary::after { content: '–'; }
 .emblem-item {
   display: flex;
   align-items: center;
-  gap: 16px;
   flex: none;
+  padding-inline: 32px;
 }
 .emblem-mark {
-  width: 56px;
-  height: 56px;
+  width: 140px;
+  height: 140px;
   object-fit: contain;
   flex: none;
 }
-.emblem-label {
-  font-size: 1.375rem;
+.emblem-label-huge {
+  font-size: 5.5rem;
+  line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: #131313;
   white-space: nowrap;
+  padding-inline: 32px;
+  flex: none;
 }
 @media (max-width: 600px) {
-  .emblem-ticker { padding-block: 22px; }
-  .emblem-track { gap: 36px; }
-  .emblem-mark { width: 40px; height: 40px; }
-  .emblem-label { font-size: 1rem; }
+  .emblem-ticker-logos { padding-block: 16px; }
+  .emblem-ticker-text { padding-block: 4px; }
+  .emblem-item { padding-inline: 18px; }
+  .emblem-mark { width: 84px; height: 84px; }
+  .emblem-label-huge { font-size: 2.5rem; padding-inline: 18px; }
 }
