@@ -8,9 +8,12 @@ import { ResourceCard } from '@/components/ResourceCard';
 import { Notice } from '@/components/States';
 import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter } from '@/lib/data';
 import { listFees, feeSummary, formatMinor, generateSlots } from '@lexhall/db';
+import type { ReviewFilter, ReviewSort } from '@lexhall/db';
 import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/format';
 import { LEGAL_COPY } from '@/lib/brand';
 import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexhall/core';
+import { ReviewSection } from '@/components/ReviewSection';
+import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,13 +32,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProfilePage({
+  params, searchParams,
+}: { params: Promise<{ slug: string }>; searchParams: Promise<{ reviewFilter?: string; reviewSort?: string }> }) {
   const { slug } = await params;
+  const { reviewFilter: reviewFilterRaw, reviewSort: reviewSortRaw } = await searchParams;
+  const reviewFilter = (['all', 'verified', 'anonymous'].includes(reviewFilterRaw ?? '') ? reviewFilterRaw : 'all') as ReviewFilter;
+  const reviewSort = (['recent', 'helpful', 'highest', 'lowest'].includes(reviewSortRaw ?? '') ? reviewSortRaw : 'recent') as ReviewSort;
   const p = getProfessional(slug);
   if (!p) notFound();
 
   const detail = getDetail(slug);
   const related = getRelated(p.id, 4);
+  const user = await currentUser();
 
   // Free resources for the matters this professional has declared.
   // Deduplicated by resource id, capped at 4 so it stays supporting content
@@ -316,11 +325,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ slug: 
               )}
             </section>
 
-            {/* reviews — gated */}
+            {/* reviews — gated by FEATURE_REVIEWS (C-09) */}
             <section className="stack gap-3">
               <h2 className="t-headline-md">Reviews</h2>
               {flags.FEATURE_REVIEWS ? (
-                <p className="t-body ink-variant">No reviews have been published for this professional yet.</p>
+                <ReviewSection
+                  professionalId={p.id} slug={p.slug} currentUserId={user?.id} isAdmin={user?.platformRole === 'platform_admin'}
+                  filter={reviewFilter} sort={reviewSort}
+                />
               ) : (
                 <Notice tone="legal" title="Reviews are not published yet">
                   {LEGAL_COPY.reviewsGated} The review system is built and schema-complete, but stays

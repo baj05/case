@@ -6,19 +6,18 @@ import {
   listFeatureFlags, zeroResultQueries, getCorpus, databaseReady,
 } from '@/lib/data';
 import { formatDate, relativeDate, formatNumber } from '@/lib/format';
+import { requireUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Admin — data workbench', robots: { index: false, follow: false } };
 
 /**
- * Admin control centre.
- *
- * PROTOTYPE SCOPE: this route is intentionally unauthenticated so the ingestion
- * and QC machinery is inspectable without seeding an account. It is listed as a
- * release blocker in docs/PROJECT_AUDIT.md — in production every panel here
- * sits behind platform_admin RBAC plus an audit log entry per action.
+ * Admin control centre. Gated behind platform_admin (RT-011) — bootstrap the
+ * first admin account with `npm run create-admin --workspace=@lexhall/db --
+ * --email you@x.com --name "You" --password "..."`.
  */
-export default function AdminPage() {
+export default async function AdminPage() {
+  await requireUser('platform_admin', '/admin');
   if (!databaseReady()) {
     return (
       <div className="container section">

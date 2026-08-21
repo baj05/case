@@ -12,7 +12,10 @@ import {
   createConsultationRequest, createClaim, createDataRequest,
   getProfessionalBySlug, createBooking, getBooking, setBookingStatus,
   saveIntakeSession,
+  createUser, authenticate, createSession, deleteSession, AuthError,
+  createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview,
 } from '@lexhall/db';
+import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 
 export interface ActionResult {
   ok: boolean;
@@ -269,6 +272,164 @@ export async function cancelBooking(_prev: ActionResult | null, form: FormData):
   if (!done) return { ok: false, message: 'That booking can no longer be cancelled.' };
   revalidatePath(`/bookings/${reference}`);
   return { ok: true, message: 'Your booking has been cancelled and the slot released.' };
+}
+
+// ------------------------------------------------------------------------ auth
+export async function signupAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const values = keep(form, ['fullName', 'email', 'password', 'next'] as const);
+  const fieldErrors: Record<string, string> = {};
+
+  if (values.fullName.length < 2) fieldErrors.fullName = 'Enter your name.';
+  if (!EMAIL_RE.test(values.email)) fieldErrors.email = 'Enter a valid email address.';
+  if (values.password.length < 8) fieldErrors.password = 'Use at least 8 characters.';
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
+  }
+
+  try {
+    const user = createUser({ email: values.email, fullName: values.fullName, password: values.password });
+    const session = createSession(user.id);
+    await setSessionCookie(session.id, session.expiresAt);
+  } catch (error) {
+    if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
+      return { ok: false, values, fieldErrors: { email: 'An account with this email already exists.' }, message: 'Please correct the highlighted fields.' };
+    }
+    return { ok: false, values, message: 'We could not create your account. Please try again.' };
+  }
+  redirect(values.next || '/dashboard');
+}
+
+export async function loginAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const values = keep(form, ['email', 'password', 'next'] as const);
+  try {
+    const user = authenticate(values.email, values.password);
+    const session = createSession(user.id);
+    await setSessionCookie(session.id, session.expiresAt);
+  } catch (error) {
+    if (error instanceof AuthError && error.code === 'ACCOUNT_LOCKED') {
+      return { ok: false, values, message: 'Too many failed attempts. Try again in 15 minutes.' };
+    }
+    return { ok: false, values, message: 'Incorrect email or password.' };
+  }
+  redirect(values.next || '/dashboard');
+}
+
+export async function logoutAction(): Promise<void> {
+  const sessionId = await sessionCookieValue();
+  if (sessionId) deleteSession(sessionId);
+  await clearSessionCookie();
+  redirect('/');
+}
+
+// ---------------------------------------------------------------------- reviews
+/** Every review action re-derives the author from the session cookie — never
+ * from a hidden form field — so a signed-out or wrong-account request cannot
+ * submit, edit or vote as someone else. */
+export async function submitReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in to leave a review.' };
+
+  const slug = str(form, 'slug', 120);
+  const bookingId = Number(form.get('bookingId')) || undefined;
+  const consultationRequestId = Number(form.get('consultationRequestId')) || undefined;
+  const displayMode = (str(form, 'displayMode') || 'attributed') as 'attributed' | 'pseudonymous' | 'anonymous';
+  const reviewerType = (str(form, 'reviewerType') || 'client') as never;
+  const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
+  const body = str(form, 'body', 4000);
+  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
+
+  const professional = getProfessionalBySlug(slug);
+  if (!professional) return { ok: false, message: 'That profile is no longer available.' };
+  if (body.trim().length < 15) return { ok: false, message: 'Please write a little more about your experience (at least 15 characters).' };
+
+  try {
+    createReview({
+      professionalId: professional.id, authorUserId: user.id,
+      bookingId, consultationRequestId, displayMode, reviewerType,
+      ratings: {
+        communication: rating('communication'), responsiveness: rating('responsiveness'),
+        professionalism: rating('professionalism'), processClarity: rating('processClarity'),
+        overallSatisfaction: rating('overallSatisfaction'),
+      },
+      wouldRecommend, body,
+    });
+  } catch (error) {
+    const code = (error as Error).message;
+    if (code === 'REVIEW_REQUIRES_EXACTLY_ONE_INTERACTION' || code === 'INELIGIBLE_INTERACTION') {
+      return { ok: false, message: 'We could not verify a completed experience with this professional to review.' };
+    }
+    return { ok: false, message: 'You have already reviewed this experience.' };
+  }
+  revalidatePath(`/advocates/${slug}`);
+  redirect(`/advocates/${slug}?reviewed=1`);
+}
+
+export async function editReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in.' };
+  const reviewId = Number(form.get('reviewId'));
+  const slug = str(form, 'slug', 120);
+  const body = str(form, 'body', 4000);
+  if (body.trim().length < 15) return { ok: false, message: 'Please write a little more about your experience.' };
+  try {
+    editReview(reviewId, user.id, { body });
+  } catch {
+    return { ok: false, message: 'We could not update that review.' };
+  }
+  revalidatePath(`/advocates/${slug}`);
+  return { ok: true, message: 'Your review has been updated and will be re-moderated before it republishes.' };
+}
+
+export async function withdrawReviewAction(form: FormData): Promise<void> {
+  const user = await currentUser();
+  const reviewId = Number(form.get('reviewId'));
+  const slug = str(form, 'slug', 120);
+  if (user) withdrawReview(reviewId, user.id);
+  revalidatePath(`/advocates/${slug}`);
+}
+
+export async function respondToReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in as the professional to respond.' };
+  const reviewId = Number(form.get('reviewId'));
+  const slug = str(form, 'slug', 120);
+  const body = str(form, 'body', 2000);
+  if (body.trim().length < 5) return { ok: false, message: 'Write a short response.' };
+  respondToReview(reviewId, user.id, body);
+  revalidatePath(`/advocates/${slug}`);
+  return { ok: true, message: 'Your response has been submitted for moderation.' };
+}
+
+export async function voteReviewHelpfulAction(form: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+  const reviewId = Number(form.get('reviewId'));
+  const vote = Number(form.get('vote')) === -1 ? -1 : 1;
+  const slug = str(form, 'slug', 120);
+  voteHelpful(reviewId, user.id, vote);
+  revalidatePath(`/advocates/${slug}`);
+}
+
+export async function reportReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  const reviewId = Number(form.get('reviewId'));
+  const slug = str(form, 'slug', 120);
+  const reason = str(form, 'reason', 60) || 'other';
+  const detail = str(form, 'detail', 1000);
+  if (detail.trim().length < 5) return { ok: false, message: 'Tell us briefly what the issue is.' };
+  reportReview(reviewId, { reporterUserId: user?.id, reason, detail });
+  revalidatePath(`/advocates/${slug}`);
+  return { ok: true, message: 'Thank you — this review has been sent for moderation review.' };
+}
+
+export async function moderateReviewAction(form: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user || user.platformRole !== 'platform_admin') return;
+  const reviewId = Number(form.get('reviewId'));
+  const decision = str(form, 'decision') as 'published' | 'rejected' | 'in_review';
+  const note = str(form, 'note', 500);
+  moderateReview(reviewId, user.id, decision, note || undefined);
+  revalidatePath('/admin/reviews');
 }
 
 // ------------------------------------------------------------------- advo ai

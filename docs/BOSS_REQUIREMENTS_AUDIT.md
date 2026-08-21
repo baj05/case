@@ -1,0 +1,71 @@
+# BOSS_REQUIREMENTS_AUDIT
+
+Audits the management brief (advocate/law-firm/LPO discovery platform, Practo-shaped, with a
+Glassdoor/G2-grade review engine) against what actually exists in this repository today —
+21 Aug 2026. This supersedes nothing already in `docs/` (GAP_ANALYSIS.md, COMPLIANCE_MATRIX.md,
+IMPLEMENTATION_ROADMAP.md, RECTIFICATION_TASKS.md, PLAN_PRACTO.md already covered most of this
+ground); it restates their findings in the requested format and folds in what changed in this
+pass (authentication + the review trust engine).
+
+**Rule followed throughout:** a requirement is only marked Functional if it is wired to real
+data and was exercised end-to-end in this pass, not because a page renders.
+
+| Requirement | Present | Visible | Connected | Functional | Tested | Quality | Gap | Action |
+|---|---|---|---|---|---|---|---|---|
+| Search advocates (NL query, location, court, practice area, fee, experience, availability) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
+| Professional profile page, per advocate | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
+| Claim a profile | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | Claim does not create/link an `app_user` account yet | Link claim approval to the claimant's account once they've signed in |
+| Bar Council verification levels (0–5) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
+| Consultation request | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
+| Paid booking (fee schedule, slots, confirmation) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE, `platform_fee_minor` structurally 0 | — | — |
+| **Authentication (signup, login, sessions, RBAC)** | ✓ | ✓ | ✓ | ✓ | ✓ | **LIVE — built this pass** | No password-reset flow; no MFA yet (schema supports it) | Add reset-by-email once an email sender exists |
+| `/admin` and `/dashboard` route guards | ✓ | ✓ | ✓ | ✓ | ✓ | **LIVE — built this pass** | `/admin/resources` write actions (publish/unpublish) still don't attribute to the acting admin | Wire those buttons through `requireUser()` too |
+| **Review Trust Engine** (multi-dimension ratings, verified/attributed/pseudonymous/anonymous, moderation, fraud scoring, helpful votes, right of reply, reporting, sample-size protection) | ✓ | ✓ (flagged) | ✓ | ✓ | ✓ | **LIVE, feature-flagged off — built this pass** | Off pending legal sign-off (C-09/C-10, see `REVIEW_COMPLIANCE_MATRIX.md`) | Flip `FEATURE_REVIEWS` only after counsel sign-off |
+| Judges (factual only, no rating) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE | — | — |
+| Judgments | ✓ | ✓ | · | · | · | PARTIAL | Schema present, corpus thin | Ingest a real judgment corpus (s.52(1)(q) permits reproduction) |
+| Lawyer-to-lawyer referral | ✓ (schema) | ✗ | ✗ | ✗ | ✗ | **BLOCKED, no longer on auth — now blocked on C-11 sign-off** | No fee/commission column by design; UI not built | Build referral UI once C-11 is signed off |
+| Legal resource library (templates, official forms, kits, centres, state rent regimes) | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE (37 templates, 146 official links, 9 kits, 6 centres) | — | — |
+| State/UT emblem ticker on resources page | ✓ | ✓ | ✓ | ✓ | — | LIVE | — | — |
+| **Law firms** as a distinct entity | ✓ (schema: `organisation.kind='law_firm'`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No firm page, no team roster, no firm-level reviews | Build `/firms/[slug]`: roster, aggregated team reviews, services |
+| **LPO firms** (PF/ESI/labour process outsourcing) | ✓ (schema: `organisation.kind='lpo'`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No LPO listing, no project/SLA workflow | Needs its own workflow model (project → scope → tasks → delivery → billing) — not a relabelled advocate profile |
+| **Corporate accounts** | ✓ (schema: `organisation.kind='corporate'`, `org_member`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No org creation flow, no legal-request intake, no external-counsel management | Real scope of work; needs its own design pass |
+| **Payments** (consultation fee capture on-platform) | ✓ (ledger schema, `settlement_mode='gateway'` reserved) | ✗ | ✗ | ✗ | ✗ | **DELIBERATELY NOT BUILT** | `platform_fee_minor` CHECK-constrained to 0; gateway mode blocked | Gated on C-12 (fee-sharing/PA-PSP legal analysis) — build only after sign-off |
+| **Mediation** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | Taxonomy label only, no workflow, no schema | Genuinely Phase 3 scope: party management, secure session, scheduling, settlement record |
+| **Arbitration** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | Taxonomy label only, no workflow, no schema | Genuinely Phase 3 scope: arbitrator, hearing calendar, awards |
+| **Contract review (paid)** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | No upload/analysis pipeline of any kind | Real product surface — upload, issue detection, professional review, delivery |
+| **Contract management SaaS** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | No contract/template/renewal/obligation schema | Real product surface — needs its own data model and multi-tenant permissions |
+| **Social media integration** | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | None attempted | Lowest priority; needs a decision on what "integration" means (login vs. profile links) before building anything |
+| **SaaS billing** (plans, usage, invoices) | ✓ (schema: `plan`, `subscription`, `ledger_entry`) | ✗ | ✗ | ✗ | ✗ | MISSING product surface | No plan selection UI, no usage metering | Blocked on having an actual SaaS product (contract mgmt, LPO console) to sell first |
+| Data sourced from Bar Council registers | ✓ | ✓ | ✓ | ✓ | ✓ | LIVE, but narrow | Currently the *State Bar Council office-bearer directory* (~20–25 people/council), not full advocate rolls (~1M+) | Per-council roll adapters — 24 adapters, already scoped in `IMPLEMENTATION_ROADMAP.md` P1#9 |
+| Rate limiting on public endpoints | ✗ | ✗ | ✗ | ✗ | ✗ | MISSING | None | RT-012, independent of auth, can ship anytime |
+| Practo-style discovery journey (search → profile → consult/book → experience → review) | ✓ | ✓ | ✓ | ✓ (through booking) · (review now real, flagged) | ✓ | LIVE end-to-end except the review step is behind a legal-sign-off flag | Reviews are the one honest gap in the loop, and it's a legal gap, not an engineering one | Get counsel sign-off, flip the flag |
+
+## What changed in this pass specifically
+
+1. **Authentication** — real signup/login/logout, scrypt password hashing, session cookies
+   (httpOnly, 30-day expiry, revocable by deleting the row), account lockout after 5 failed
+   attempts. `/admin`, `/admin/resources` and `/dashboard` now actually require a session; a
+   `platform_admin` role gate protects `/admin`. Verified live in-browser: signed-out access to
+   `/dashboard` redirects to `/login?next=/dashboard`; the created admin account reaches `/admin`
+   after signing in.
+2. **Review Trust Engine** — built in full per the product brief's own detailed spec (multi-
+   dimension ratings, verified/attributed/pseudonymous/anonymous display, moderation queue,
+   internal fraud scoring never exposed publicly, one-review-per-verified-experience enforced at
+   the database level, edit history retained, helpful votes, right of reply, reporting, sample-
+   size-protected aggregates). It is feature-complete and was exercised end-to-end in the browser
+   (submit → moderate → publish → display, with pseudonymous masking and the "too few reviews"
+   protection both firing correctly) — see `REVIEW_COMPLIANCE_MATRIX.md` for why it stays off by
+   default.
+3. Everything in the table marked MISSING above (firms, LPO, corporate, mediation, arbitration,
+   contract review, contract-management SaaS, payments, social integration) was **not** stub-
+   coded in this pass. Each is a real, separate product with its own data model and workflow —
+   building an empty shell for each would satisfy a checklist and nothing else. They are
+   deliberately left as documented gaps with a next action, consistent with how this repository
+   has always drawn that line (see `docs/PLAN_PRACTO.md` "Not in this pass, and why").
+
+## Reading this table correctly
+
+"Present" means schema or code exists. "Functional" means it was exercised against real data,
+not that the code compiles. A row can be schema-Present and product-MISSING at the same time —
+that is not a contradiction, it's the difference between "the graph is coherent" (a deliberate
+architecture choice recorded in `003_platform.sql`'s own header comment) and "the feature ships."

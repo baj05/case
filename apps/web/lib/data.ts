@@ -21,8 +21,10 @@ import {
   listResourceCentres, getResourceCentre as getResourceCentreRepo,
   recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
+  getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
+  listModerationQueue,
 } from '@lexhall/db';
-import type { SearchFilters, ResourceSearchFilters } from '@lexhall/db';
+import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
 
 /** Guard so a missing database renders a helpful page, not a stack trace. */
 export function databaseReady(): boolean {
@@ -40,6 +42,17 @@ export const getFlags = cache(() => getFeatureFlags());
 export const getProfessional = cache((slug: string) => getProfessionalBySlug(slug));
 export const getDetail = cache((slug: string) => getProfileDetail(slug));
 export const getRelated = cache((id: number, limit?: number) => relatedProfessionals(id, limit));
+
+export const getReviewSummary = cache((professionalId: number) => getProfessionalReviewSummary(professionalId));
+export function getReviews(professionalId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }) {
+  return listReviewsForProfessional(professionalId, opts);
+}
+export function getEligibleExperiences(userId: number, professionalId: number) {
+  return eligibleExperiences(userId, professionalId);
+}
+export function getModerationQueue(status?: string) {
+  return listModerationQueue(status);
+}
 
 export function runSearch(filters: SearchFilters) {
   return searchProfessionals(filters);

@@ -3,32 +3,34 @@ import type { Metadata } from 'next';
 import { Notice } from '@/components/States';
 import { listClaims, databaseReady } from '@/lib/data';
 import { relativeDate } from '@/lib/format';
+import { requireUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Professional dashboard', robots: { index: false, follow: false } };
 
 /**
- * The professional dashboard is Phase 2 work: it requires authentication, which
- * this prototype does not implement. Rather than mock a dashboard full of
- * invented figures — the "static mockup software" the brief explicitly forbids —
- * this page states what exists and what does not, and shows the real claim
- * pipeline that gates it.
+ * Authentication now exists (RT-010) — this route requires a signed-in
+ * account. What it does NOT yet have is any real per-professional data: no
+ * signup flow assigns the 'professional' role, and claim approval does not
+ * link a professional record to an app_user account. So a signed-in user
+ * lands here honestly: real claim pipeline, no invented appointments.
  */
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await requireUser(undefined, '/dashboard');
   const claims = databaseReady() ? listClaims() : [];
 
   return (
     <div className="container section-tight stack gap-6" style={{ maxWidth: 860 }}>
       <div className="stack gap-2">
-        <p className="t-label-mono ink-variant">For professionals</p>
+        <p className="t-label-mono ink-variant">Signed in as {user.fullName}</p>
         <h1 className="t-headline-lg">Professional dashboard</h1>
       </div>
 
-      <Notice tone="info" title="Not built yet, and deliberately not faked">
-        The dashboard needs authenticated accounts, which this prototype does not implement. Rather
-        than show a screen of invented appointments and analytics, here is the honest position: the
-        claim pipeline that unlocks it is real and running, and the dashboard is the first item in
-        Phase 2 of the roadmap.
+      <Notice tone="info" title="Signed in — but not linked to a professional record yet">
+        Authentication is real (you are signed in), but nothing yet links your account to a specific
+        professional profile — claim approval does not do that step. Rather than show a screen of
+        invented appointments and analytics, here is the honest position: the claim pipeline that
+        unlocks a real per-professional dashboard is real and running, below.
       </Notice>
 
       <section className="stack gap-3">

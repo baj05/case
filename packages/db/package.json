@@ -12,7 +12,8 @@
     "seed": "node scripts/seed.ts",
     "reindex": "node scripts/reindex.ts",
     "stats": "node scripts/stats.ts",
-    "demo": "node scripts/demo-config.ts"
+    "demo": "node scripts/demo-config.ts",
+    "create-admin": "node scripts/create-admin.ts"
   },
   "dependencies": {
     "@lexhall/core": "*"

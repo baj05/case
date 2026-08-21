@@ -5,6 +5,7 @@ import { databaseReady, adminResourceDashboard, adminReviewQueue, getResourceCat
 import { formatNumber, relativeDate } from '@/lib/format';
 import { LINK_OUTCOME_META, RESOURCE_STATUS_META } from '@lexhall/core';
 import type { LinkOutcome, ResourceStatus } from '@lexhall/core';
+import { requireUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -13,19 +14,18 @@ export const metadata: Metadata = {
 };
 
 /**
- * Resource library workbench.
- *
- * PROTOTYPE SCOPE: unauthenticated, like the rest of /admin, and listed as a
- * release blocker in docs/PROJECT_AUDIT.md. In production every panel here sits
- * behind platform_admin RBAC with an audit entry per action.
+ * Resource library workbench. Gated behind platform_admin, like the rest of
+ * /admin (RT-011).
  *
  * This page is read-only on purpose. Publishing, unpublishing and withdrawing a
- * resource are consequential acts, and until there is an authenticated operator
- * to attribute them to, offering the buttons would produce an audit trail that
- * says "somebody". The operations exist as CLI commands, which at least records
- * that a person with shell access ran them.
+ * resource are consequential acts, and attributing them to the specific admin
+ * who acted (rather than "somebody") needs the write actions wired to
+ * `requireUser()` too — not done in this pass. The operations exist as CLI
+ * commands today, which at least records that a person with shell access ran
+ * them.
  */
-export default function AdminResourcesPage() {
+export default async function AdminResourcesPage() {
+  await requireUser('platform_admin', '/admin/resources');
   if (!databaseReady()) {
     return (
       <div className="container section">

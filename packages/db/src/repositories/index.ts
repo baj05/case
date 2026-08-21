@@ -8,3 +8,5 @@ export * from './fees.ts';
 export * from './shortlist.ts';
 export * from './taxonomy.ts';
 export * from './resources.ts';
+export * from './auth.ts';
+export * from './reviews.ts';
