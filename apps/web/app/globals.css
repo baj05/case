@@ -1959,52 +1959,23 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 
 /* --- state emblem ticker (resources hub) ---------------------------------
-   Rebuilt at real size after the first pass shipped too small to read: seals
-   are fine black line-art on a transparent background, and at 32px with
-   opacity:0.82 + saturate(0.85) they were nearly invisible — a display bug,
-   not a broken-asset one (checked every source PNG at full size first; all
-   32 are genuine, correct seals). Fixed by giving each one a real card with
-   a light, uniform, non-transparent background for contrast, at more than
-   double the previous size, and dropping the opacity/saturate dulling
-   entirely — the point of a card whose whole subject is "here is the seal"
-   is for the seal to be fully legible, not muted. */
+   Full-bleed, hard-edged marquee band — the "logo ipsum" pattern: a solid
+   colour strip the full width of the section, items flowing edge to edge
+   with no per-item card, border or shadow, no blurred fade at the ends.
+   Dimensions follow the reference measured directly in Chrome DevTools
+   (div.marquee ~1164x168px, padding: 32px 0, img.marquee-image 218x40). */
 .emblem-ticker {
   position: relative;
   overflow-x: clip;
-  overflow-y: visible;
-  padding-block: 12px;
-}
-/* Blurred entry/exit at each edge (cssscript.com's "logo carousel, blurred
-   entry/exit" pattern): a short strip of backdrop-blur over a matching fade,
-   so an item leaving the frame softens into blur before it disappears,
-   rather than the harder plain-opacity fade a mask alone gives you. */
-.emblem-ticker::before,
-.emblem-ticker::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0;
-  width: clamp(48px, 9vw, 120px);
-  z-index: 2;
-  pointer-events: none;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-.emblem-ticker::before {
-  left: 0;
-  background: linear-gradient(90deg, var(--surface-lowest) 15%, transparent);
-  mask-image: linear-gradient(90deg, #000, transparent);
-}
-.emblem-ticker::after {
-  right: 0;
-  background: linear-gradient(270deg, var(--surface-lowest) 15%, transparent);
-  mask-image: linear-gradient(270deg, #000, transparent);
+  background: var(--action-orange);
+  padding-block: 32px;
 }
 .emblem-track {
   display: flex;
-  align-items: stretch;
-  gap: 20px;
+  align-items: center;
+  gap: 56px;
   width: max-content;
-  animation: emblem-scroll 88s linear infinite;
+  animation: emblem-scroll 60s linear infinite;
 }
 .emblem-ticker:hover .emblem-track,
 .emblem-ticker:focus-within .emblem-track {
@@ -2018,52 +1989,28 @@ details[open] > .filter-summary::after { content: '–'; }
   .emblem-track { animation: none; overflow-x: auto; }
 }
 
-/* Each state is its own card, matching the "logo card in a strip" shape the
-   Webflow marquee reference and the video tutorial both use, rather than a
-   bare icon-plus-label row. */
 .emblem-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 16px;
   flex: none;
-  width: 148px;
-  padding: 18px 14px;
-  border-radius: var(--r-lg);
-  background: var(--surface-lowest);
-  border: 1px solid var(--outline-variant);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
-.emblem-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
 .emblem-mark {
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
   flex: none;
 }
-.emblem-mark-text {
-  display: inline-grid;
-  place-items: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--surface-high);
-  color: var(--on-surface-variant);
-  font-family: var(--font-mono);
-  font-size: 1.125rem;
-  font-weight: 700;
-}
 .emblem-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--on-surface);
-  text-align: center;
-  line-height: 1.25;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #131313;
+  white-space: nowrap;
 }
 @media (max-width: 600px) {
-  .emblem-item { width: 116px; padding: 14px 10px; }
-  .emblem-mark, .emblem-mark-text { width: 56px; height: 56px; }
-  .emblem-ticker::before, .emblem-ticker::after { width: 36px; }
+  .emblem-ticker { padding-block: 22px; }
+  .emblem-track { gap: 36px; }
+  .emblem-mark { width: 40px; height: 40px; }
+  .emblem-label { font-size: 1rem; }
 }

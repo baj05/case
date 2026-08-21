@@ -1,31 +1,31 @@
 /**
  * State/UT emblem ticker data.
  *
- * Emblems are the actual state seals, sourced from Wikimedia Commons via
+ * Most emblems are the actual state seals, sourced from Wikimedia Commons via
  * https://en.wikipedia.org/wiki/List_of_Indian_state_emblems (2026-08-21) and
- * saved under public/img/emblems/<jurisdiction-code>.png. Shown here purely
+ * saved under public/img/emblems/<jurisdiction-code>.png|jpg. Shown here purely
  * factually — next to the name of the state a document on this page actually
  * comes from — never as a certification, partnership or endorsement badge.
  *
- * Four entries have no image: per that Wikipedia page's own text, Arunachal
- * Pradesh, Goa, Nagaland and Lakshadweep use the National Emblem of India for
- * official purposes rather than a distinct state seal. That emblem is not
- * reproduced here — its use is more restricted than a state seal's, not
- * less — so these four render as a plain text badge instead of an image.
+ * Arunachal Pradesh, Goa and Nagaland have no distinct seal on that Wikipedia
+ * page, but each state's own official portal displays its own crest (pulled
+ * directly from arunachalpradesh.gov.in, goa.gov.in and nagaland.gov.in) — used
+ * here instead of a text fallback. Lakshadweep's own portal uses the plain
+ * National Emblem of India as its logo, so that is what is shown for it.
  */
 export interface StateEmblem {
   code: string;   // matches INDIA_STATES / jurisdiction code, e.g. 'IN-MH'
   name: string;
-  file: string | null; // filename under /img/emblems/, or null for text-only
+  file: string; // filename under /img/emblems/
 }
 
 export const STATE_EMBLEMS: StateEmblem[] = [
   { code: 'IN-AP', name: 'Andhra Pradesh', file: 'IN-AP.png' },
-  { code: 'IN-AR', name: 'Arunachal Pradesh', file: null },
+  { code: 'IN-AR', name: 'Arunachal Pradesh', file: 'IN-AR.png' },
   { code: 'IN-AS', name: 'Assam', file: 'IN-AS.png' },
   { code: 'IN-BR', name: 'Bihar', file: 'IN-BR.png' },
   { code: 'IN-CT', name: 'Chhattisgarh', file: 'IN-CT.png' },
-  { code: 'IN-GA', name: 'Goa', file: null },
+  { code: 'IN-GA', name: 'Goa', file: 'IN-GA.png' },
   { code: 'IN-GJ', name: 'Gujarat', file: 'IN-GJ.png' },
   { code: 'IN-HR', name: 'Haryana', file: 'IN-HR.png' },
   { code: 'IN-HP', name: 'Himachal Pradesh', file: 'IN-HP.png' },
@@ -37,7 +37,7 @@ export const STATE_EMBLEMS: StateEmblem[] = [
   { code: 'IN-MN', name: 'Manipur', file: 'IN-MN.png' },
   { code: 'IN-ML', name: 'Meghalaya', file: 'IN-ML.png' },
   { code: 'IN-MZ', name: 'Mizoram', file: 'IN-MZ.png' },
-  { code: 'IN-NL', name: 'Nagaland', file: null },
+  { code: 'IN-NL', name: 'Nagaland', file: 'IN-NL.png' },
   { code: 'IN-OR', name: 'Odisha', file: 'IN-OR.png' },
   { code: 'IN-PB', name: 'Punjab', file: 'IN-PB.png' },
   { code: 'IN-RJ', name: 'Rajasthan', file: 'IN-RJ.png' },
@@ -54,6 +54,6 @@ export const STATE_EMBLEMS: StateEmblem[] = [
   { code: 'IN-DL', name: 'Delhi', file: 'IN-DL.png' },
   { code: 'IN-JK', name: 'Jammu & Kashmir', file: 'IN-JK.png' },
   { code: 'IN-LA', name: 'Ladakh', file: 'IN-LA.png' },
-  { code: 'IN-LD', name: 'Lakshadweep', file: null },
+  { code: 'IN-LD', name: 'Lakshadweep', file: 'IN-LD.png' },
   { code: 'IN-PY', name: 'Puducherry', file: 'IN-PY.png' },
 ];
