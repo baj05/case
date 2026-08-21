@@ -953,6 +953,62 @@ const ELECTRICITY: ResourceCatalogSeed[] = [
   },
 ];
 
+// ===========================================================================
+// PROPERTY REGISTRATION AND E-STAMPING — the central, pan-India pieces.
+// The state-specific IGR/registration department portals are seeded
+// separately, in resource-catalog-states.ts, one per state.
+// ===========================================================================
+
+const PROPERTY_REGISTRATION: ResourceCatalogSeed[] = [
+  {
+    slug: 'shcil-estamping', title: 'e-Stamping (SHCIL) — pay stamp duty online',
+    description:
+      'Pay stamp duty and generate an e-stamp certificate online, in the states that have adopted e-stamping. '
+      + 'This is the government route to a genuine stamp certificate — not a template, an actual payment of duty.',
+    type: 'EXTERNAL_TOOL', officialStatus: 'OFFICIAL', category: 'RC_PROPERTY', subcategory: 'Sale & purchase',
+    source: 'SHCIL', authority: 'Stock Holding Corporation of India Ltd', url: 'https://www.shcilestamp.com/',
+    docFormat: 'portal', trustLevel: 1, matter: 'P_SALE_DEED', panIndia: true, confirmed: true,
+    keywords: ['e-stamp', 'stamp duty online', 'shcil', 'stamp paper', 'e-stamping'],
+    notes: [
+      'Not every state has adopted e-stamping through SHCIL — some still use physical stamp paper or a separate state treasury portal. Check which applies in your state before relying on this.',
+      'A downloaded template has no legal effect until it is executed on paper carrying the correct stamp duty. This is where that duty is actually paid.',
+      'This platform never issues, resells or intermediates stamp paper. This is a link to the government\'s own payment portal.',
+    ],
+  },
+  {
+    slug: 'ngdrs-document-registration', title: 'National Generic Document Registration System (NGDRS)',
+    description:
+      'The shared central platform a subset of states have adopted for document registration. Useful mainly to '
+      + 'check whether your state is on it, and to reach that state\'s specific registration flow if so.',
+    type: 'EXTERNAL_TOOL', officialStatus: 'OFFICIAL', category: 'RC_PROPERTY', subcategory: 'Sale & purchase',
+    source: 'NGDRS_SOURCE', authority: 'Department of Land Resources', url: 'https://ngdrs.gov.in/',
+    docFormat: 'portal', trustLevel: 1, matter: 'P_SALE_DEED', panIndia: true, confirmed: true,
+    keywords: ['ngdrs', 'document registration', 'sale deed online', 'model deed'],
+    notes: [
+      'NGDRS is a shared technical platform, not a universal template library — its own site hosts system documentation rather than a browsable set of state model deeds. Do not expect to find every state\'s forms listed here.',
+      'States not on NGDRS run entirely separate portals; see the state-wise registration department list for the one that actually applies to you.',
+    ],
+  },
+  {
+    slug: 'up-model-sale-deed-industrial', title: 'Model sale deed (industrial property) — Uttar Pradesh',
+    description:
+      'A real, official model sale deed drafted for industrial property transactions in Uttar Pradesh, published by '
+      + 'the state Stamp and Registration Department. Fetched and confirmed as a genuine .docx download.',
+    type: 'OFFICIAL_FORM', officialStatus: 'OFFICIAL', category: 'RC_PROPERTY', subcategory: 'Sale & purchase',
+    source: 'REGISTRATION', authority: 'Stamp and Registration Department, Uttar Pradesh (IGRSUP)',
+    url: 'https://igrsup.gov.in/prernadoc/model/model_eng/101%20Sale%20(Industrial).docx',
+    landingUrl: 'https://igrsup.gov.in/', docFormat: 'docx', trustLevel: 1, matter: 'P_SALE_DEED', panIndia: false,
+    stateCode: 'IN-UP', confirmed: true, language: 'en',
+    keywords: ['up sale deed', 'industrial property sale deed', 'model deed uttar pradesh', 'बैनामा'],
+    notes: [
+      'This is the department\'s own English-language model for industrial property specifically — residential and agricultural sale deeds follow a different model, not this one.',
+      'This deep link was found directly, not by browsing the department\'s site — IGRSUP does not publish a page listing all its model deeds, so this is the one confirmed so far. A Hindi residential equivalent is a real gap: it likely exists on the same department\'s server but was not located during this pass.',
+      'A model deed is a drafting aid, not a substitute for registration: it must still be executed on stamped paper and presented before the Sub-Registrar.',
+    ],
+  },
+];
+
 export const CATALOG_CENTRAL: ResourceCatalogSeed[] = [
   ...COURTS, ...LEGAL_AID, ...WORK, ...CONSUMER, ...MONEY, ...TAX, ...BUSINESS, ...PUBLIC, ...ELECTRICITY,
+  ...PROPERTY_REGISTRATION,
 ];

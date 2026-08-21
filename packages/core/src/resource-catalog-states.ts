@@ -252,6 +252,81 @@ const RERA_RESOURCES: ResourceCatalogSeed[] = RERAS.map((r) => ({
 }));
 
 // ---------------------------------------------------------------------------
+// State Registration and Stamps departments (IGR) — where a sale deed, gift
+// deed or a tenancy agreement above the registrable term is actually
+// registered, and where e-stamp duty is paid. This is the gap a user hits
+// immediately after drafting any of the property templates: the document
+// is worthless until it is stamped and, for most instruments, registered.
+//
+// Every url below was fetched directly from this environment on 2026-08-21 and
+// returned HTTP 200 unless noted. Two — Delhi Revenue and Karnataka Kaveri —
+// did not connect from this network even with a browser user agent; they are
+// well-known, real state portals, so they are seeded but held `confirmed:
+// false` rather than dropped, consistent with how the rest of this file
+// handles a source that could not be reached at authoring time.
+// ---------------------------------------------------------------------------
+
+interface RegistrationSeed {
+  state: string;
+  name: string;
+  url: string;
+  onNgdrs: boolean;
+  confirmed: boolean;
+}
+
+const REGISTRATION_DEPARTMENTS: RegistrationSeed[] = [
+  { state: 'IN-MH', name: 'Department of Registration and Stamps, Maharashtra (IGR Maharashtra)', url: 'https://igrmaharashtra.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-UP', name: 'Stamp and Registration Department, Uttar Pradesh (IGRSUP)', url: 'https://igrsup.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-JH', name: 'Registration Department, Jharkhand (Jharnibandhan)', url: 'https://jharnibandhan.gov.in/', onNgdrs: true, confirmed: true },
+  { state: 'IN-OR', name: 'Inspector General of Registration, Odisha', url: 'https://www.igrodisha.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-DL', name: 'Revenue Department, Government of Delhi', url: 'https://revenue.delhi.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-KA', name: 'Department of Stamps and Registration, Karnataka (Kaveri Online Services)', url: 'https://kaverionline.karnataka.gov.in/', onNgdrs: false, confirmed: false },
+  { state: 'IN-TN', name: 'Registration Department, Tamil Nadu (TNREGINET)', url: 'https://tnreginet.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-TG', name: 'Registration and Stamps Department, Telangana', url: 'https://registration.telangana.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-WB', name: 'Directorate of Registration and Stamp Revenue, West Bengal', url: 'https://wbregistration.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-PB', name: 'Punjab Land Records Society (registration and land records)', url: 'https://plrs.org.in/', onNgdrs: true, confirmed: true },
+  { state: 'IN-RJ', name: 'Inspector General of Registration and Stamps, Rajasthan', url: 'https://igrs.rajasthan.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-GJ', name: 'Revenue Department, Gujarat (Garvi)', url: 'https://garvi.gujarat.gov.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-BR', name: 'Registration Department, Bihar (Nibandhan)', url: 'https://nibandhan.bihar.gov.in/', onNgdrs: true, confirmed: true },
+  { state: 'IN-HR', name: 'Revenue Department, Haryana (Jamabandi)', url: 'https://jamabandi.nic.in/', onNgdrs: false, confirmed: true },
+  { state: 'IN-KL', name: 'Registration Department, Kerala', url: 'https://registration.kerala.gov.in/', onNgdrs: false, confirmed: true },
+];
+
+const REGISTRATION_RESOURCES: ResourceCatalogSeed[] = REGISTRATION_DEPARTMENTS.map((r) => ({
+  slug: `registration-${r.state.toLowerCase().replace('in-', '')}`,
+  title: `${r.name} — sale, gift and tenancy registration`,
+  description:
+    'Register a sale deed, gift deed or a tenancy agreement that requires registration, check the applicable stamp '
+    + 'duty, and search the property’s registered documents for this state.',
+  type: 'RESOURCE_LINK' as const,
+  officialStatus: 'OFFICIAL' as const,
+  category: 'RC_PROPERTY',
+  subcategory: 'Sale & purchase',
+  source: 'REGISTRATION',
+  authority: r.name,
+  url: r.url,
+  docFormat: 'portal' as const,
+  trustLevel: 1 as const,
+  matter: 'P_SALE_DEED',
+  panIndia: false,
+  stateCode: r.state,
+  confirmed: r.confirmed,
+  // Deliberately does NOT include "rent agreement" — a portal for registering a
+  // deed is not itself a rent agreement, and that phrase made this outrank the
+  // actual "Residential rent agreement" template for the query "rent agreement
+  // for Maharashtra", exactly the failure mode the relevance ranking exists to
+  // prevent (see the comment on relevanceRank in repositories/resources.ts).
+  keywords: ['sale deed registration', 'stamp duty', 'property registration', 'gift deed registration', 'tenancy registration', 'igr', 'sub registrar'],
+  notes: [
+    'Stamp duty and registration fees are set by this state and revised by notification — check the current rate here before you calculate what a transaction will cost.',
+    r.onNgdrs
+      ? 'This state runs on the shared National Generic Document Registration System (NGDRS), so the online flow follows the common NGDRS pattern.'
+      : 'This state runs its own registration platform rather than the shared NGDRS system.',
+    'A sale deed or a lease of a year or more is compulsorily registrable under section 17 of the Registration Act, 1908 — an unregistered one is not admissible to prove the transaction.',
+  ],
+}));
+
+// ---------------------------------------------------------------------------
 // State tenancy law. This is where the "generic national rent agreement" harm
 // is actually prevented: a specific note per state, attached to the templates.
 // ---------------------------------------------------------------------------
@@ -418,5 +493,5 @@ export function tenancyRegime(stateCode: string): TenancyRegimeSeed | undefined 
 }
 
 export const CATALOG_STATES: ResourceCatalogSeed[] = [
-  ...SLSA_RESOURCES, ...DISCOM_RESOURCES, ...SERC_RESOURCES, ...RERA_RESOURCES,
+  ...SLSA_RESOURCES, ...DISCOM_RESOURCES, ...SERC_RESOURCES, ...RERA_RESOURCES, ...REGISTRATION_RESOURCES,
 ];
