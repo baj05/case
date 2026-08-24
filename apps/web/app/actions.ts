@@ -13,7 +13,7 @@ import {
   getProfessionalBySlug, createBooking, getBooking, setBookingStatus,
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
-  createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview,
+  createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview, deleteReview,
   createOrganisationReview, getOrganisationBySlug, submitSiteFeedback, getReviewSubjectPath,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
@@ -337,6 +337,11 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
   const reviewerType = (str(form, 'reviewerType') || 'client') as never;
   const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
   const body = str(form, 'body', 4000);
+  // Not str() — a data-URL avatar can run to ~150k chars, and str() trims to
+  // a 2000-char default meant for text fields. createReview re-validates
+  // the exact shape server-side regardless (sanitizeAvatarUrl).
+  const avatarUrlRaw = form.get('avatarUrl');
+  const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
   const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
 
   const professional = getProfessionalBySlug(slug);
@@ -352,7 +357,7 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
         professionalism: rating('professionalism'), processClarity: rating('processClarity'),
         overallSatisfaction: rating('overallSatisfaction'),
       },
-      wouldRecommend, body,
+      wouldRecommend, body, avatarUrl,
     });
   } catch (error) {
     const code = (error as Error).message;
@@ -376,6 +381,8 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
   const experienceCategory = (str(form, 'experienceCategory') || 'legal_matter') as never;
   const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
   const body = str(form, 'body', 4000);
+  const avatarUrlRaw = form.get('avatarUrl');
+  const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
   const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
 
   const org = getOrganisationBySlug(slug);
@@ -390,7 +397,7 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
         professionalism: rating('professionalism'), processClarity: rating('processClarity'),
         overallSatisfaction: rating('overallSatisfaction'),
       },
-      wouldRecommend, body,
+      wouldRecommend, body, avatarUrl,
     });
   } catch (error) {
     if ((error as Error).message === 'ALREADY_REVIEWED') {
@@ -478,6 +485,22 @@ export async function moderateReviewAction(form: FormData): Promise<void> {
   const note = str(form, 'note', 500);
   moderateReview(reviewId, user.id, decision, note || undefined);
   revalidatePath('/admin/reviews');
+}
+
+/** Hard-removes a review — reserved for upheld reports, not routine
+ * moderation (that's moderateReviewAction's 'rejected' decision). Also
+ * revalidates the review's own subject page so the removal is immediate,
+ * not just in the admin queue. */
+export async function deleteReviewAction(form: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user || user.platformRole !== 'platform_admin') return;
+  const reviewId = Number(form.get('reviewId'));
+  const note = str(form, 'note', 500);
+  const path = getReviewSubjectPath(reviewId);
+  deleteReview(reviewId, user.id, note || undefined);
+  revalidatePath('/admin/reviews');
+  revalidatePath('/reviews');
+  if (path) revalidatePath(`${path.basePath}/${path.slug}`);
 }
 
 // -------------------------------------------------------------- site feedback

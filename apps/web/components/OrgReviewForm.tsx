@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { submitOrganisationReviewAction } from '@/app/actions';
 import { Field, FormError, SubmitButton, RatingRadios } from './Forms';
+import { AvatarPicker } from './AvatarPicker';
 
 const DIMENSIONS = [
   { key: 'communication', label: 'Communication' },
@@ -15,6 +16,7 @@ const DIMENSIONS = [
 export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath: '/firms' | '/lpo'; kind: string }) {
   const [state, formAction] = useActionState(submitOrganisationReviewAction, null);
   const isLpo = kind === 'lpo';
+  const [displayMode, setDisplayMode] = useState<'attributed' | 'pseudonymous' | 'anonymous'>('attributed');
 
   return (
     <form action={formAction} className="stack gap-5" noValidate>
@@ -52,7 +54,8 @@ export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath
       </Field>
 
       <Field name="displayMode" label="How should this appear?" required>
-        <select name="displayMode" id="displayMode" className="input" defaultValue="attributed">
+        <select name="displayMode" id="displayMode" className="input" defaultValue="attributed"
+          onChange={(e) => setDisplayMode(e.currentTarget.value as typeof displayMode)}>
           <option value="attributed">Full name</option>
           <option value="pseudonymous">First name + last initial</option>
           <option value="anonymous">Anonymous</option>
@@ -63,6 +66,8 @@ export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath
         verified engagement — otherwise it publishes as an unverified experience. Your identity is always
         retained internally for accountability, even when displayed anonymously.
       </p>
+
+      <AvatarPicker name="avatarUrl" disabled={displayMode === 'anonymous'} />
 
       <SubmitButton pendingLabel="Submitting…">Submit for moderation</SubmitButton>
     </form>

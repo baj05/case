@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReviewFilter, ReviewSort, ReviewListItem, ReviewSummary } from '@lexhall/db';
 import { relativeDate } from '@/lib/format';
+import { avatarSrc } from '@/lib/avatars';
 import { VoteHelpfulForm, ReportReviewForm, RespondToReviewForm } from './ReviewActions';
 
 const EXPERIENCE_LABEL: Record<string, string> = {
@@ -153,41 +154,44 @@ export function ReviewSection({
 
       <div className="stack gap-3">
         {reviews.map((r) => (
-          <article key={String(r.id)} className="card stack gap-2" style={{ padding: 16 }}>
-            <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span className="row gap-2" style={{ alignItems: 'baseline' }}>
-                <strong>{r.displayName}</strong>
-                {r.verified && (
-                  <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
-                    {r.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
-                  </span>
-                )}
-                <span className="t-caption">{EXPERIENCE_LABEL[String(r.experienceCategory)] ?? 'Experience'}</span>
-              </span>
-              <span className="t-caption">{relativeDate(String(r.createdAt))}{r.edited ? ' · edited' : ''}</span>
-            </div>
-
-            <p className="t-body">{r.body}</p>
-
-            <div className="row wrap gap-3 t-caption">
-              {DIMENSIONS.map(({ key, label }) => {
-                const value = r.ratings[key];
-                return value != null ? <span key={key}>{label}: {value}/5</span> : null;
-              })}
-              {r.wouldRecommend && <span>Would recommend: {r.wouldRecommend}</span>}
-            </div>
-
-            {r.response && (
-              <div className="stack gap-1" style={{ padding: 12, background: 'var(--surface-low)', borderRadius: 'var(--r-md)' }}>
-                <span className="t-caption" style={{ fontWeight: 700 }}>Response from the professional</span>
-                <p className="t-body-sm">{r.response.body}</p>
+          <article key={String(r.id)} className="review-post">
+            <img className="review-post-avatar" src={avatarSrc(String(r.displayMode), r.avatarUrl)} alt="" width={44} height={44} />
+            <div className="stack gap-2" style={{ minWidth: 0, flex: 1 }}>
+              <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span className="row wrap gap-2" style={{ alignItems: 'baseline' }}>
+                  <strong>{r.displayName}</strong>
+                  {r.verified && (
+                    <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
+                      {r.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
+                    </span>
+                  )}
+                  <span className="t-caption">{EXPERIENCE_LABEL[String(r.experienceCategory)] ?? 'Experience'}</span>
+                </span>
+                <span className="t-caption">{relativeDate(String(r.createdAt))}{r.edited ? ' · edited' : ''}</span>
               </div>
-            )}
 
-            <div className="row wrap gap-2">
-              {currentUserId && <VoteHelpfulForm reviewId={Number(r.id)} slug={slug} helpfulCount={Number(r.helpfulCount)} />}
-              {currentUserId && <ReportReviewForm reviewId={Number(r.id)} slug={slug} />}
-              {isAdmin && !r.response && <RespondToReviewForm reviewId={Number(r.id)} slug={slug} />}
+              <p className="t-body" style={{ wordBreak: 'break-word' }}>{r.body}</p>
+
+              <div className="row wrap gap-3 t-caption">
+                {DIMENSIONS.map(({ key, label }) => {
+                  const value = r.ratings[key];
+                  return value != null ? <span key={key}>{label}: {value}/5</span> : null;
+                })}
+                {r.wouldRecommend && <span>Would recommend: {r.wouldRecommend}</span>}
+              </div>
+
+              {r.response && (
+                <div className="stack gap-1" style={{ padding: 12, background: 'var(--surface-low)', borderRadius: 'var(--r-md)' }}>
+                  <span className="t-caption" style={{ fontWeight: 700 }}>Response from the professional</span>
+                  <p className="t-body-sm">{r.response.body}</p>
+                </div>
+              )}
+
+              <div className="row wrap gap-1 review-post-actions">
+                {currentUserId && <VoteHelpfulForm reviewId={Number(r.id)} slug={slug} helpfulCount={Number(r.helpfulCount)} />}
+                {currentUserId && <ReportReviewForm reviewId={Number(r.id)} slug={slug} />}
+                {isAdmin && !r.response && <RespondToReviewForm reviewId={Number(r.id)} slug={slug} />}
+              </div>
             </div>
           </article>
         ))}

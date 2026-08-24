@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { submitReviewAction } from '@/app/actions';
 import { Field, FormError, SubmitButton, RatingRadios } from './Forms';
+import { AvatarPicker } from './AvatarPicker';
 
 export interface EligibleExperience { id: number; reference: string; occurredAt: string | null; kind: 'booking' | 'consultation' }
 
@@ -17,6 +18,7 @@ const DIMENSIONS = [
 export function ReviewForm({ slug, experiences }: { slug: string; experiences: EligibleExperience[] }) {
   const [state, formAction] = useActionState(submitReviewAction, null);
   const single = experiences.length === 1 ? experiences[0] : undefined;
+  const [displayMode, setDisplayMode] = useState<'attributed' | 'pseudonymous' | 'anonymous'>('pseudonymous');
 
   return (
     <form action={formAction} className="stack gap-5" noValidate>
@@ -77,7 +79,8 @@ export function ReviewForm({ slug, experiences }: { slug: string; experiences: E
       </Field>
 
       <Field name="displayMode" label="How should this appear?" required>
-        <select name="displayMode" id="displayMode" className="input" defaultValue="pseudonymous">
+        <select name="displayMode" id="displayMode" className="input" defaultValue="pseudonymous"
+          onChange={(e) => setDisplayMode(e.currentTarget.value as typeof displayMode)}>
           <option value="attributed">Full name</option>
           <option value="pseudonymous">First name + last initial</option>
           <option value="anonymous">Anonymous</option>
@@ -87,6 +90,8 @@ export function ReviewForm({ slug, experiences }: { slug: string; experiences: E
         Your identity is always retained internally for accountability, fraud checks and lawful
         requests, even when displayed anonymously — see <a href="/how-it-works#reviews" style={{ textDecoration: 'underline' }}>how this works</a>.
       </p>
+
+      <AvatarPicker name="avatarUrl" disabled={displayMode === 'anonymous'} />
 
       <SubmitButton pendingLabel="Submitting…">Submit for moderation</SubmitButton>
     </form>

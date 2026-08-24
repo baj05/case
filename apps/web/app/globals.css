@@ -398,6 +398,9 @@ ul, ol { list-style: none; padding: 0; }
 }
 .btn-secondary:hover:not(:disabled) { border-color: var(--outline); background: var(--surface-low); }
 
+.btn-danger { background: var(--error); color: var(--on-error); }
+.btn-danger:hover:not(:disabled) { opacity: 0.9; }
+
 .btn-navy { background: var(--trust-navy); color: var(--surface-lowest); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .btn-navy { background: var(--surface-highest); color: var(--on-surface); }
@@ -2037,4 +2040,37 @@ details[open] > .filter-summary::after { content: '–'; }
   .emblem-item { padding-inline: 18px; }
   .emblem-mark { width: 84px; height: 84px; }
   .emblem-label-huge { font-size: 2.5rem; padding-inline: 18px; }
+}
+
+/* --- review post card (feed-style, not a boxed testimonial) --------------
+   Avatar + content side by side, like a social post: a photo/preset/anon
+   icon anchors the left edge, everything else — name, badges, body,
+   ratings, actions — reads as one continuous block to its right. The
+   action row (Helpful/Report/Respond) is deliberately understated until
+   hovered, matching how a social feed keeps its icon row quiet by default. */
+.review-post {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--t) var(--ease);
+}
+.review-post:hover { box-shadow: var(--shadow-md); }
+.review-post-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex: none;
+  object-fit: cover;
+  background: var(--surface-high);
+}
+.review-post-actions { opacity: 0.75; transition: opacity var(--t) var(--ease); }
+.review-post:hover .review-post-actions,
+.review-post:focus-within .review-post-actions { opacity: 1; }
+@media (max-width: 480px) {
+  .review-post { gap: 10px; padding: 14px; }
+  .review-post-avatar { width: 36px; height: 36px; }
 }

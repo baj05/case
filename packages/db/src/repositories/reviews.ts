@@ -42,6 +42,25 @@ export interface CreateReviewInput {
   ratings: RatingInput;
   wouldRecommend?: WouldRecommend;
   body: string;
+  avatarUrl?: string | null;
+}
+
+const PRESET_AVATAR_PATHS = new Set(Array.from({ length: 10 }, (_, i) => `/img/avatars/preset-${String(i + 1).padStart(2, '0')}.svg`));
+// Raster only — an uploaded SVG could carry an embedded <script>, so the
+// client-side compressor always re-encodes to JPEG; this is the matching
+// server-side check for a client that skips the UI and posts a raw value.
+const DATA_URL_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
+const MAX_AVATAR_DATA_URL_LENGTH = 200_000;
+
+/** Accepts only a known preset path or a well-formed, size-capped JPEG data
+ * URL — anything else (a javascript: URI, an SVG data URL, an oversized
+ * blob, arbitrary HTML) is silently dropped rather than stored. Reviews
+ * never fail to submit over a bad avatar value; they just publish without one. */
+function sanitizeAvatarUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (PRESET_AVATAR_PATHS.has(raw)) return raw;
+  if (raw.length <= MAX_AVATAR_DATA_URL_LENGTH && DATA_URL_RE.test(raw)) return raw;
+  return null;
 }
 
 // --------------------------------------------------------------- eligibility
@@ -172,21 +191,26 @@ export function createReview(input: CreateReviewInput): { id: number; moderation
     const moderationStatus = privacyHits.length > 0 ? 'in_review' : risk.tier === 'high' ? 'auto_flagged' : 'pending';
     const ts = now();
 
+    // Anonymous means anonymous — a photo would defeat the point, so no
+    // avatar is ever stored against an anonymous review regardless of what
+    // was submitted.
+    const avatarUrl = input.displayMode === 'anonymous' ? null : sanitizeAvatarUrl(input.avatarUrl);
+
     const result = h.prepare(
       `INSERT INTO review (
          professional_id, author_user_id, consultation_request_id, appointment_id, matter_id, booking_id,
          basis, display_mode, reviewer_type, experience_category,
          rating_communication, rating_responsiveness, rating_professionalism, rating_process_clarity,
-         overall_satisfaction, would_recommend, body,
+         overall_satisfaction, would_recommend, body, avatar_url,
          moderation_status, trust_signals, trust_score, created_at, updated_at
-       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?, ?,?,?,?,?)`,
+       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)`,
     ).run(
       input.professionalId, input.authorUserId,
       input.consultationRequestId ?? null, input.appointmentId ?? null, input.matterId ?? null, input.bookingId ?? null,
       basis, input.displayMode, input.reviewerType, experienceCategory,
       input.ratings.communication ?? null, input.ratings.responsiveness ?? null,
       input.ratings.professionalism ?? null, input.ratings.processClarity ?? null,
-      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(),
+      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl,
       moderationStatus,
       toJson({ tier: risk.tier, signals: risk.signals, privacyHits }), risk.score, ts, ts,
     );
@@ -204,6 +228,7 @@ export interface CreateOrganisationReviewInput {
   ratings: RatingInput;
   wouldRecommend?: WouldRecommend;
   body: string;
+  avatarUrl?: string | null;
 }
 
 /**
@@ -242,19 +267,20 @@ export function createOrganisationReview(input: CreateOrganisationReviewInput): 
     const privacyHits = detectPrivacyRisk(input.body);
     const moderationStatus = privacyHits.length > 0 ? 'in_review' : risk.tier === 'high' ? 'auto_flagged' : 'pending';
     const ts = now();
+    const avatarUrl = input.displayMode === 'anonymous' ? null : sanitizeAvatarUrl(input.avatarUrl);
 
     const result = h.prepare(
       `INSERT INTO review (
          organisation_id, author_user_id, basis, display_mode, reviewer_type, experience_category,
          rating_communication, rating_responsiveness, rating_professionalism, rating_process_clarity,
-         overall_satisfaction, would_recommend, body,
+         overall_satisfaction, would_recommend, body, avatar_url,
          moderation_status, trust_signals, trust_score, created_at, updated_at
-       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?, ?,?,?,?,?)`,
+       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)`,
     ).run(
       input.organisationId, input.authorUserId, basis, input.displayMode, input.reviewerType, input.experienceCategory,
       input.ratings.communication ?? null, input.ratings.responsiveness ?? null,
       input.ratings.professionalism ?? null, input.ratings.processClarity ?? null,
-      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(),
+      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl,
       moderationStatus, toJson({ tier: risk.tier, signals: risk.signals, privacyHits }), risk.score, ts, ts,
     );
     return { id: Number(result.lastInsertRowid), moderationStatus };
@@ -348,7 +374,7 @@ export function reportReview(reviewId: number, input: { reporterUserId?: number;
 // ------------------------------------------------------------ discovery feed
 
 export interface RecentReviewFeedItem {
-  id: number; body: string; verified: boolean; verifiedVia: 'booking' | 'domain'; displayName: string; experienceCategory: string;
+  id: number; body: string; verified: boolean; verifiedVia: 'booking' | 'domain'; displayName: string; avatarUrl: string | null; displayMode: string; experienceCategory: string;
   overallSatisfaction: number | null; createdAt: string;
   subjectName: string; subjectSlug: string;
   // 'organisation' alone isn't enough to build a link — a firm and an LPO
@@ -363,7 +389,7 @@ export interface RecentReviewFeedItem {
 export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedItem[] {
   const rows = db().prepare(
     `SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.experience_category AS experienceCategory,
-            r.overall_satisfaction AS overallSatisfaction, r.created_at AS createdAt,
+            r.overall_satisfaction AS overallSatisfaction, r.created_at AS createdAt, r.avatar_url AS avatarUrl,
             u.full_name AS authorFullName,
             COALESCE(p.display_name, o.name) AS subjectName,
             COALESCE(p.slug, o.slug) AS subjectSlug,
@@ -382,6 +408,8 @@ export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedIte
     verified: isVerifiedBasis(String(r.basis)),
     verifiedVia: verifiedVia(r.subjectKind !== 'professional'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
+    avatarUrl: r.displayMode === 'anonymous' ? null : (r.avatarUrl as string | null),
+    displayMode: String(r.displayMode),
     experienceCategory: String(r.experienceCategory),
     overallSatisfaction: r.overallSatisfaction as number | null,
     createdAt: String(r.createdAt),
@@ -398,7 +426,7 @@ export function listModerationQueue(status?: string) {
   const sql = `
     SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.moderation_status AS moderationStatus,
            r.trust_score AS trustScore, r.trust_signals AS trustSignalsJson, r.created_at AS createdAt,
-           r.experience_category AS experienceCategory, r.reviewer_type AS reviewerType,
+           r.experience_category AS experienceCategory, r.reviewer_type AS reviewerType, r.avatar_url AS avatarUrl,
            COALESCE(p.display_name, o.name) AS professionalName,
            COALESCE(p.slug, o.slug) AS professionalSlug,
            CASE WHEN r.organisation_id IS NOT NULL THEN o.kind ELSE 'professional' END AS subjectKind,
@@ -412,7 +440,7 @@ export function listModerationQueue(status?: string) {
   const rows = (status ? h.prepare(sql).all(status) : h.prepare(sql).all()) as Array<{
     id: number; body: string; basis: string; displayMode: string; moderationStatus: string;
     trustScore: number; trustSignalsJson: string | null; createdAt: string;
-    experienceCategory: string; reviewerType: string; subjectKind: string;
+    experienceCategory: string; reviewerType: string; subjectKind: string; avatarUrl: string | null;
     professionalName: string; professionalSlug: string; authorName: string; authorEmail: string;
   }>;
   return rows.map((r) => {
@@ -422,6 +450,7 @@ export function listModerationQueue(status?: string) {
       trustScore: r.trustScore, createdAt: r.createdAt, experienceCategory: r.experienceCategory,
       reviewerType: r.reviewerType, professionalName: r.professionalName, professionalSlug: r.professionalSlug,
       subjectKind: r.subjectKind, authorName: r.authorName, authorEmail: r.authorEmail,
+      avatarUrl: r.displayMode === 'anonymous' ? null : r.avatarUrl,
       trustTier: parsed.tier, trustSignals: parsed.signals,
     };
   });
@@ -454,6 +483,55 @@ export function moderateReview(reviewId: number, moderatorUserId: number, decisi
   db().prepare(
     `UPDATE review SET moderation_status = ?, moderation_note = ?, moderated_by_user_id = ?, moderated_at = ?, updated_at = ? WHERE id = ?`,
   ).run(decision, note ?? null, moderatorUserId, ts, ts, reviewId);
+}
+
+/** Reports awaiting a decision — a review with an open content_report row,
+ * joined with enough of the review itself for an admin to judge it without
+ * leaving the page. Resolving/deleting a review here also closes the report,
+ * so a report can't stay "open" forever after it's been acted on. */
+export interface ReportedReviewItem {
+  reportId: number; reason: string; detail: string; reportedAt: string;
+  reviewId: number; body: string; displayMode: string; avatarUrl: string | null;
+  moderationStatus: string; deletedAt: string | null;
+  professionalName: string; professionalSlug: string; subjectKind: string;
+  authorName: string; authorEmail: string;
+}
+export function listReportedReviews(): ReportedReviewItem[] {
+  const rows = db().prepare(
+    `SELECT cr.id AS reportId, cr.reason, cr.detail, cr.created_at AS reportedAt,
+            r.id AS reviewId, r.body, r.display_mode AS displayMode, r.avatar_url AS avatarUrl,
+            r.moderation_status AS moderationStatus, r.deleted_at AS deletedAt,
+            COALESCE(p.display_name, o.name) AS professionalName,
+            COALESCE(p.slug, o.slug) AS professionalSlug,
+            CASE WHEN r.organisation_id IS NOT NULL THEN o.kind ELSE 'professional' END AS subjectKind,
+            u.full_name AS authorName, u.email AS authorEmail
+       FROM content_report cr
+       JOIN review r ON r.id = cr.subject_id AND cr.subject_type = 'review'
+       LEFT JOIN professional p ON p.id = r.professional_id
+       LEFT JOIN organisation o ON o.id = r.organisation_id
+       JOIN app_user u ON u.id = r.author_user_id
+      WHERE cr.status = 'open'
+      ORDER BY cr.created_at DESC LIMIT 100`,
+  ).all() as unknown as ReportedReviewItem[];
+  return rows.map((r) => ({ ...r, avatarUrl: r.displayMode === 'anonymous' ? null : r.avatarUrl }));
+}
+
+/** Admin-only hard removal, reserved for reviews that shouldn't stay visible
+ * even in "rejected" form (e.g. upheld reports of harassment, doxxing, or
+ * defamatory content) — the row itself is retained (never physically
+ * deleted, so an author dispute or legal request can still be traced back
+ * to it) but every public listing already filters on deleted_at IS NULL, so
+ * it disappears everywhere immediately. Also closes any open report on the
+ * same review so a resolved case doesn't linger in the reported queue. */
+export function deleteReview(reviewId: number, moderatorUserId: number, note?: string): void {
+  const ts = now();
+  const resolution = note ?? 'Removed by admin following a report.';
+  db().prepare(
+    `UPDATE review SET moderation_status = 'rejected', deleted_at = ?, moderation_note = ?, moderated_by_user_id = ?, moderated_at = ?, updated_at = ? WHERE id = ?`,
+  ).run(ts, resolution, moderatorUserId, ts, ts, reviewId);
+  db().prepare(
+    `UPDATE content_report SET status = 'resolved', handled_by_user_id = ?, resolved_at = ?, resolution_note = ? WHERE subject_type = 'review' AND subject_id = ? AND status = 'open'`,
+  ).run(moderatorUserId, ts, resolution, reviewId);
 }
 
 // ------------------------------------------------------------------- display
@@ -498,6 +576,7 @@ export interface ReviewListItem {
   verified: boolean;
   verifiedVia: 'booking' | 'domain';
   displayName: string;
+  avatarUrl: string | null;
   displayMode: string;
   reviewerType: string;
   experienceCategory: string;
@@ -545,6 +624,7 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
             r.rating_responsiveness AS responsiveness, r.rating_professionalism AS professionalism,
             r.rating_process_clarity AS processClarity, r.overall_satisfaction AS overallSatisfaction,
             r.would_recommend AS wouldRecommend, r.created_at AS createdAt, r.edited_at AS editedAt,
+            r.avatar_url AS avatarUrl,
             u.full_name AS authorFullName,
             (SELECT count(*) FROM review_vote v WHERE v.review_id = r.id AND v.vote = 1) AS helpfulCount,
             (SELECT count(*) FROM review_vote v WHERE v.review_id = r.id AND v.vote = -1) AS notHelpfulCount,
@@ -563,6 +643,10 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
     verified: isVerifiedBasis(String(r.basis)),
     verifiedVia: verifiedVia(subject === 'organisation_id'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
+    // Defense in depth: even if a row somehow carried an avatar_url with
+    // display_mode='anonymous' (it shouldn't — createReview/createOrganisationReview
+    // never store one), never surface it.
+    avatarUrl: r.displayMode === 'anonymous' ? null : (r.avatarUrl as string | null),
     displayMode: String(r.displayMode),
     reviewerType: String(r.reviewerType),
     experienceCategory: String(r.experienceCategory),

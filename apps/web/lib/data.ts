@@ -22,7 +22,7 @@ import {
   recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
-  listModerationQueue, getOrganisationReviewSummary, listReviewsForOrganisation,
+  listModerationQueue, listReportedReviews, getOrganisationReviewSummary, listReviewsForOrganisation,
   listRecentReviewsAcrossPlatform,
   getOrganisationBySlug, listOrganisations,
   getSiteFeedbackSummary, listSiteFeedback,
@@ -55,6 +55,9 @@ export function getEligibleExperiences(userId: number, professionalId: number) {
 }
 export function getModerationQueue(status?: string) {
   return listModerationQueue(status);
+}
+export function getReportedReviews() {
+  return listReportedReviews();
 }
 
 export const getOrgReviewSummary = cache((organisationId: number) => getOrganisationReviewSummary(organisationId));

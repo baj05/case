@@ -18,7 +18,7 @@ const {
   applySchema, db, now,
   createUser, authenticate, createSession, getSessionUser, AuthError,
   createReview, editReview, withdrawReview, respondToReview, voteHelpful,
-  reportReview, listModerationQueue, moderateReview, listReviewsForProfessional,
+  reportReview, listModerationQueue, moderateReview, deleteReview, listReportedReviews, listReviewsForProfessional,
   getProfessionalReviewSummary, eligibleExperiences,
   createOrganisationReview, getOrganisationReviewSummary, listReviewsForOrganisation,
   getReviewSubjectPath,
@@ -279,6 +279,87 @@ check('getReviewSubjectPath resolves an LPO organisation review to /lpo/<slug>, 
 check('getReviewSubjectPath resolves a law-firm organisation review to /firms/<slug>', () => {
   const path = getReviewSubjectPath(verifiedOrgReview.id);
   return path?.basePath === '/firms' && path?.slug === 'test-chambers';
+});
+
+// --- avatars: anonymous never carries one, a named reviewer's preset
+// round-trips, and a value outside the accepted preset/JPEG-data-URL shape
+// is silently dropped rather than stored.
+const avatarAnonUser = createUser({ email: 'avatar-anon@example.com', fullName: 'Avatar Anon', password: 'whatever-123' });
+insertCompletedBooking(200, 'BK-AVATAR-ANON', avatarAnonUser.id, 'avatar-anon@example.com');
+const avatarAnonReview = createReview({
+  professionalId: 1, authorUserId: avatarAnonUser.id, bookingId: 200, displayMode: 'anonymous',
+  reviewerType: 'client', ratings: { overallSatisfaction: 4 }, body: 'Solid experience overall, would consult again.',
+  avatarUrl: '/img/avatars/preset-03.svg',
+});
+check('an anonymous review never stores an avatar, even when one was submitted', () => {
+  const row = h.prepare(`SELECT avatar_url AS avatarUrl FROM review WHERE id = ?`).get(avatarAnonReview.id);
+  return row.avatarUrl === null;
+});
+
+const avatarNamedUser = createUser({ email: 'avatar-named@example.com', fullName: 'Avatar Named', password: 'whatever-123' });
+insertCompletedBooking(201, 'BK-AVATAR-NAMED', avatarNamedUser.id, 'avatar-named@example.com');
+const avatarNamedReview = createReview({
+  professionalId: 1, authorUserId: avatarNamedUser.id, bookingId: 201, displayMode: 'attributed',
+  reviewerType: 'client', ratings: { overallSatisfaction: 5 }, body: 'Chose a preset avatar and it should round-trip cleanly.',
+  avatarUrl: '/img/avatars/preset-03.svg',
+});
+check("a named reviewer's chosen preset avatar round-trips into the row and the public listing", () => {
+  const row = h.prepare(`SELECT avatar_url AS avatarUrl FROM review WHERE id = ?`).get(avatarNamedReview.id);
+  moderateReview(avatarNamedReview.id, admin.id, 'published');
+  const publicRow = listReviewsForProfessional(1, { filter: 'all' }).find((r) => r.id === avatarNamedReview.id);
+  return row.avatarUrl === '/img/avatars/preset-03.svg' && publicRow?.avatarUrl === '/img/avatars/preset-03.svg';
+});
+
+const avatarBadUser = createUser({ email: 'avatar-bad@example.com', fullName: 'Avatar Bad', password: 'whatever-123' });
+insertCompletedBooking(202, 'BK-AVATAR-BAD', avatarBadUser.id, 'avatar-bad@example.com');
+const avatarBadReview = createReview({
+  professionalId: 1, authorUserId: avatarBadUser.id, bookingId: 202, displayMode: 'attributed',
+  reviewerType: 'client', ratings: { overallSatisfaction: 5 }, body: 'Submitting a malformed avatar value should not break the review.',
+  avatarUrl: 'data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+',
+});
+check('a malformed avatar value (SVG data URL, not the accepted JPEG shape) is silently dropped, not stored', () => {
+  const row = h.prepare(`SELECT avatar_url AS avatarUrl FROM review WHERE id = ?`).get(avatarBadReview.id);
+  return row.avatarUrl === null;
+});
+const avatarOversizedUser = createUser({ email: 'avatar-oversized@example.com', fullName: 'Avatar Oversized', password: 'whatever-123' });
+insertCompletedBooking(203, 'BK-AVATAR-OVERSIZED', avatarOversizedUser.id, 'avatar-oversized@example.com');
+const avatarOversizedReview = createReview({
+  professionalId: 1, authorUserId: avatarOversizedUser.id, bookingId: 203, displayMode: 'attributed',
+  reviewerType: 'client', ratings: { overallSatisfaction: 5 }, body: 'An oversized data URL should also be dropped rather than stored.',
+  avatarUrl: `data:image/jpeg;base64,${'A'.repeat(200_001)}`,
+});
+check('an oversized avatar data URL is silently dropped, not stored', () => {
+  const row = h.prepare(`SELECT avatar_url AS avatarUrl FROM review WHERE id = ?`).get(avatarOversizedReview.id);
+  return row.avatarUrl === null;
+});
+
+// --- admin: reported reviews queue and hard removal. A published review
+// that gets reported must surface in listReportedReviews with the reporter's
+// reason/detail; deleting it must hide it from every public listing (via
+// deleted_at) and close the open report so it doesn't linger in the queue.
+const reportedFlowUser = createUser({ email: 'reported-flow@example.com', fullName: 'Reported Flow', password: 'whatever-123' });
+insertCompletedBooking(210, 'BK-REPORTED-FLOW', reportedFlowUser.id, 'reported-flow@example.com');
+const reportedFlowReview = createReview({
+  professionalId: 1, authorUserId: reportedFlowUser.id, bookingId: 210, displayMode: 'attributed',
+  reviewerType: 'client', ratings: { overallSatisfaction: 5 }, body: 'This review will be reported and then removed by an admin.',
+});
+moderateReview(reportedFlowReview.id, admin.id, 'published');
+reportReview(reportedFlowReview.id, { reporterEmail: 'concerned@example.com', reason: 'fake_review', detail: 'This does not read like a real client experience.' });
+
+check('a reported review surfaces in the admin reported-reviews queue with its reason and detail', () => {
+  const row = listReportedReviews().find((r) => r.reviewId === reportedFlowReview.id);
+  return row?.reason === 'fake_review' && row?.detail.includes('does not read like a real');
+});
+
+check('deleting a review removes it from the public listing', () => {
+  deleteReview(reportedFlowReview.id, admin.id, 'Confirmed not a genuine review.');
+  const publicRow = listReviewsForProfessional(1, { filter: 'all' }).find((r) => r.id === reportedFlowReview.id);
+  const row = h.prepare(`SELECT deleted_at AS deletedAt, moderation_status AS status FROM review WHERE id = ?`).get(reportedFlowReview.id);
+  return publicRow === undefined && row.deletedAt != null && row.status === 'rejected';
+});
+
+check('deleting a review also resolves its open report, so it drops out of the reported queue', () => {
+  return !listReportedReviews().some((r) => r.reviewId === reportedFlowReview.id);
 });
 
 console.log(`\n${pass} passed, ${failures.length} failed`);
