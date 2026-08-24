@@ -35,6 +35,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   openGraph: { type: 'website', siteName: BRAND.name, title: BRAND.name, description: BRAND.tagline },
   robots: { index: true, follow: true },
+  icons: {
+    icon: [
+      { url: '/brand/favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+    ],
+    apple: '/brand/apple-touch-icon.png',
+  },
+  manifest: '/brand/site.webmanifest',
 };
 
 export const viewport: Viewport = {

@@ -44,7 +44,8 @@ export function Header() {
     <header className="site-header" data-scrolled={scrolled}>
       <div className="container row" style={{ justifyContent: 'space-between', gap: 16 }}>
         <Link href="/" className="wordmark" aria-label={`${BRAND.name} home`}>
-          <span className="wordmark-mark" aria-hidden="true">{BRAND.mark}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/mark.png" alt="" width={32} height={32} className="wordmark-logo" aria-hidden="true" />
           <span>{BRAND.wordmark}</span>
         </Link>
 

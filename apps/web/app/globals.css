@@ -684,6 +684,11 @@ ul, ol { list-style: none; padding: 0; }
   color: var(--on-primary);
   font-size: 0.8125rem;
 }
+/* The real logo emblem (navy ink) — used where the header sits on a light
+   surface. Unlike .wordmark-mark it carries no background plate: the
+   emblem's own white rings already give it contrast, and a colored plate
+   behind a full-color mark would just look like a mistake. */
+.wordmark-logo { width: 32px; height: 32px; flex: none; object-fit: contain; }
 
 /* --- mobile drawer ---------------------------------------------------- */
 .drawer-backdrop {
