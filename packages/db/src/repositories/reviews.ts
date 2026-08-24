@@ -333,6 +333,47 @@ export function reportReview(reviewId: number, input: { reporterUserId?: number;
   return Number(result.lastInsertRowid);
 }
 
+// ------------------------------------------------------------ discovery feed
+
+export interface RecentReviewFeedItem {
+  id: number; body: string; verified: boolean; displayName: string; experienceCategory: string;
+  overallSatisfaction: number | null; createdAt: string;
+  subjectName: string; subjectSlug: string; subjectKind: 'professional' | 'organisation';
+}
+
+/** Most recent published reviews across every advocate, firm and LPO — the
+ * feed that makes the /reviews hub feel alive rather than a search form
+ * with nothing behind it. */
+export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedItem[] {
+  const rows = db().prepare(
+    `SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.experience_category AS experienceCategory,
+            r.overall_satisfaction AS overallSatisfaction, r.created_at AS createdAt,
+            u.full_name AS authorFullName,
+            COALESCE(p.display_name, o.name) AS subjectName,
+            COALESCE(p.slug, o.slug) AS subjectSlug,
+            CASE WHEN r.organisation_id IS NOT NULL THEN 'organisation' ELSE 'professional' END AS subjectKind
+       FROM review r
+       JOIN app_user u ON u.id = r.author_user_id
+       LEFT JOIN professional p ON p.id = r.professional_id
+       LEFT JOIN organisation o ON o.id = r.organisation_id
+      WHERE r.moderation_status = 'published' AND r.deleted_at IS NULL
+      ORDER BY r.created_at DESC LIMIT ?`,
+  ).all(limit) as Array<Record<string, string | number | null>>;
+
+  return rows.map((r) => ({
+    id: Number(r.id),
+    body: String(r.body),
+    verified: r.basis === 'verified_consultation' || r.basis === 'verified_engagement',
+    displayName: displayName(String(r.displayMode), String(r.authorFullName)),
+    experienceCategory: String(r.experienceCategory),
+    overallSatisfaction: r.overallSatisfaction as number | null,
+    createdAt: String(r.createdAt),
+    subjectName: String(r.subjectName),
+    subjectSlug: String(r.subjectSlug),
+    subjectKind: r.subjectKind as 'professional' | 'organisation',
+  }));
+}
+
 // --------------------------------------------------------------- moderation
 
 export function listModerationQueue(status?: string) {

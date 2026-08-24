@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
 import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
-import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady } from '@/lib/data';
+import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady, getFlags, getRecentReviewFeed } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +64,8 @@ export default async function HomePage() {
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
+  const flags = getFlags();
+  const recentReviews = flags.FEATURE_REVIEWS ? getRecentReviewFeed(3) : [];
 
   return (
     <>
@@ -234,6 +236,37 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* =========================================================== REVIEWS */}
+      <section className="container section-tight">
+        <div className="row wrap gap-4" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="stack gap-1">
+            <p className="t-label-mono ink-variant">Reviews</p>
+            <h2 className="t-headline-lg">See what people are saying.</h2>
+            <p className="t-body ink-variant" style={{ maxWidth: '48ch' }}>
+              Real, verified and anonymous experiences with advocates, law firms and LPO providers —
+              never a claim about who wins cases, always about the experience of working with them.
+            </p>
+          </div>
+          <div className="row wrap gap-2">
+            <Link href="/reviews" className="btn btn-primary">Browse reviews</Link>
+            <Link href="/rate-us" className="btn btn-secondary">Rate your experience</Link>
+          </div>
+        </div>
+        {recentReviews.length > 0 && (
+          <div className="row wrap gap-3" style={{ marginTop: 20 }}>
+            {recentReviews.map((r) => (
+              <div key={r.id} className="card stack gap-1" style={{ padding: 16, flex: '1 1 260px' }}>
+                <span className="row gap-2" style={{ alignItems: 'baseline' }}>
+                  <strong className="t-body-sm">{r.displayName}</strong>
+                  {r.verified && <span className="chip chip-lime" style={{ fontSize: '0.625rem' }}>Verified</span>}
+                </span>
+                <p className="t-body-sm clamp-3">{r.body}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* ========================================================== ADVO AI */}
       <section className="container section-tight">

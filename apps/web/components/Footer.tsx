@@ -16,6 +16,14 @@ export function Footer() {
       ],
     },
     {
+      head: 'Reviews',
+      links: [
+        { href: '/reviews', label: 'Browse reviews' },
+        { href: '/trust/reviews', label: 'How reviews work' },
+        { href: '/rate-us', label: 'Rate CaseADVO' },
+      ],
+    },
+    {
       head: 'Legal matters',
       links: [
         { href: '/matters', label: 'Browse by legal matter' },

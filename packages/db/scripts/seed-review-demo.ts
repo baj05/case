@@ -41,11 +41,14 @@ if (values.clear) {
         h.prepare(`DELETE FROM review_edit_history WHERE review_id IN (SELECT id FROM review WHERE professional_id = ?)`).run(id);
         h.prepare(`DELETE FROM review_vote WHERE review_id IN (SELECT id FROM review WHERE professional_id = ?)`).run(id);
         h.prepare(`DELETE FROM review_response WHERE review_id IN (SELECT id FROM review WHERE professional_id = ?)`).run(id);
-        h.prepare(`DELETE FROM booking WHERE professional_id = ?`).run(id);
         h.prepare(`DELETE FROM review WHERE professional_id = ?`).run(id);
+        h.prepare(`DELETE FROM booking WHERE professional_id = ?`).run(id);
       }
       h.prepare(`DELETE FROM professional WHERE source_id = ?`).run(src.id);
     }
+    h.prepare(`DELETE FROM review_edit_history WHERE review_id IN (SELECT id FROM review WHERE organisation_id IN (SELECT id FROM organisation WHERE slug LIKE 'demo-%'))`).run();
+    h.prepare(`DELETE FROM review_vote WHERE review_id IN (SELECT id FROM review WHERE organisation_id IN (SELECT id FROM organisation WHERE slug LIKE 'demo-%'))`).run();
+    h.prepare(`DELETE FROM review_response WHERE review_id IN (SELECT id FROM review WHERE organisation_id IN (SELECT id FROM organisation WHERE slug LIKE 'demo-%'))`).run();
     h.prepare(`DELETE FROM review WHERE organisation_id IN (SELECT id FROM organisation WHERE slug LIKE 'demo-%')`).run();
     h.prepare(`DELETE FROM organisation WHERE slug LIKE 'demo-%'`).run();
     h.prepare(`DELETE FROM app_user WHERE email LIKE '%@demo-reviewer.example'`).run();
@@ -133,6 +136,11 @@ const ADVOCATES: AdvocateSpec[] = [
   { name: 'Tara Nair', jurisdictionCode: 'IN-TN', practiceAreaSlug: 'workplace-harassment-posh', reviewCount: 3, qualityMix: [3, 0, 0] },
   { name: 'Aditya Rao', jurisdictionCode: 'IN-PB', practiceAreaSlug: 'corporate-commercial', reviewCount: 1, qualityMix: [1, 0, 0] },
   { name: 'Simran Kaur', jurisdictionCode: 'IN-HR', practiceAreaSlug: 'contracts', reviewCount: 0, qualityMix: [0, 0, 0] },
+  { name: 'Nikhil Bansal', jurisdictionCode: 'IN-DL', practiceAreaSlug: 'insolvency-bankruptcy', reviewCount: 13, qualityMix: [9, 3, 1] },
+  { name: 'Priya Deshmukh', jurisdictionCode: 'IN-MH', practiceAreaSlug: 'contracts', reviewCount: 10, qualityMix: [6, 3, 1] },
+  { name: 'Arnav Khanna', jurisdictionCode: 'IN-KA', practiceAreaSlug: 'labour-employment', reviewCount: 9, qualityMix: [5, 3, 1] },
+  { name: 'Fatima Sheikh', jurisdictionCode: 'IN-TG', practiceAreaSlug: 'workplace-harassment-posh', reviewCount: 7, qualityMix: [6, 1, 0] },
+  { name: 'Devansh Oberoi', jurisdictionCode: 'IN-RJ', practiceAreaSlug: 'provident-fund', reviewCount: 2, qualityMix: [2, 0, 0] },
 ];
 
 let reviewerCounter = 0;
@@ -229,6 +237,10 @@ const ORGS: OrgSpec[] = [
   { name: 'ClearPath Compliance Services', kind: 'lpo', reviewCount: 11, verifiedShare: 0.7 },
   { name: 'Vantage Legal Process Solutions', kind: 'lpo', reviewCount: 5, verifiedShare: 0.4 },
   { name: 'Anchorline LPO', kind: 'lpo', reviewCount: 0, verifiedShare: 0 },
+  { name: 'Fernhill Legal Group', kind: 'law_firm', reviewCount: 8, verifiedShare: 0.5 },
+  { name: 'Bellweather LPO Services', kind: 'lpo', reviewCount: 7, verifiedShare: 0.6 },
+  { name: 'Whitlock & Associates', kind: 'law_firm', reviewCount: 5, verifiedShare: 0.4 },
+  { name: 'Ridgeline Process Outsourcing', kind: 'lpo', reviewCount: 4, verifiedShare: 0.5 },
 ];
 
 let orgReviewCounter = 0;

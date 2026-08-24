@@ -7,6 +7,7 @@ import { BRAND } from '@/lib/brand';
 
 const NAV = [
   { href: '/search', label: 'Find a lawyer' },
+  { href: '/reviews', label: 'Reviews' },
   { href: '/matters', label: 'Legal matters' },
   { href: '/resources', label: 'Legal resources' },
   { href: '/for-professionals', label: 'For lawyers' },

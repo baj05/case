@@ -14,7 +14,7 @@ import {
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview,
-  createOrganisationReview, getOrganisationBySlug,
+  createOrganisationReview, getOrganisationBySlug, submitSiteFeedback,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 
@@ -465,6 +465,31 @@ export async function moderateReviewAction(form: FormData): Promise<void> {
   const note = str(form, 'note', 500);
   moderateReview(reviewId, user.id, decision, note || undefined);
   revalidatePath('/admin/reviews');
+}
+
+// -------------------------------------------------------------- site feedback
+/** "Rate CaseADVO" — deliberately independent of submitReviewAction/
+ * submitOrganisationReviewAction. Never mixes into the advocate/firm/LPO
+ * review dataset. Open to signed-out visitors, unlike a professional review. */
+export async function submitSiteFeedbackAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  const displayMode = (str(form, 'displayMode') || 'anonymous') as 'attributed' | 'anonymous';
+  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
+  const recommendRaw = form.get('recommendScore');
+  const recommendScore = recommendRaw != null && recommendRaw !== '' ? Number(recommendRaw) : undefined;
+  const improvementArea = (str(form, 'improvementArea') || undefined) as never;
+  const comment = str(form, 'comment', 2000);
+
+  submitSiteFeedback({
+    authorUserId: displayMode === 'attributed' ? user?.id : undefined,
+    displayMode,
+    ratings: {
+      website: rating('website'), search: rating('search'), discovery: rating('discovery'),
+      booking: rating('booking'), resources: rating('resources'), speed: rating('speed'), design: rating('design'),
+    },
+    recommendScore, improvementArea, comment,
+  });
+  return { ok: true, message: 'Thank you — your feedback helps us make CaseADVO better.' };
 }
 
 // ------------------------------------------------------------------- advo ai

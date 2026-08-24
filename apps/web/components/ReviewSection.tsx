@@ -134,14 +134,14 @@ export function ReviewSection({
 
       {reviews.length > 0 && (
         <div className="row wrap gap-2" style={{ justifyContent: 'space-between' }}>
-          <div className="row gap-1">
+          <div className="row wrap gap-1">
             {(['all', 'verified', 'anonymous'] as ReviewFilter[]).map((f) => (
               <Link key={f} href={filterLink(f)} className={`chip chip-button ${filter === f ? '' : 'chip-outline'}`}>
                 {f === 'all' ? 'All' : f === 'verified' ? 'Verified' : 'Anonymous'}
               </Link>
             ))}
           </div>
-          <div className="row gap-1">
+          <div className="row wrap gap-1">
             {(['recent', 'helpful', 'highest', 'lowest'] as ReviewSort[]).map((s) => (
               <Link key={s} href={sortLink(s)} className={`chip chip-button ${sort === s ? '' : 'chip-outline'}`}>
                 {s === 'recent' ? 'Newest' : s === 'helpful' ? 'Most helpful' : s === 'highest' ? 'Highest rated' : 'Lowest rated'}

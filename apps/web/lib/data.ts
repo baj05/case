@@ -23,7 +23,9 @@ import {
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
   listModerationQueue, getOrganisationReviewSummary, listReviewsForOrganisation,
+  listRecentReviewsAcrossPlatform,
   getOrganisationBySlug, listOrganisations,
+  getSiteFeedbackSummary, listSiteFeedback,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
 
@@ -61,6 +63,13 @@ export function getOrgReviews(organisationId: number, opts?: { filter?: ReviewFi
 }
 export const getOrganisation = cache((slug: string) => getOrganisationBySlug(slug));
 export const getOrganisations = cache((kind?: 'law_firm' | 'chamber' | 'lpo') => listOrganisations(kind));
+
+export const getRecentReviewFeed = cache((limit?: number) => listRecentReviewsAcrossPlatform(limit));
+
+export const getSiteFeedbackSummaryCached = cache(() => getSiteFeedbackSummary());
+export function getSiteFeedbackList(limit?: number) {
+  return listSiteFeedback(limit);
+}
 
 export function runSearch(filters: SearchFilters) {
   return searchProfessionals(filters);
