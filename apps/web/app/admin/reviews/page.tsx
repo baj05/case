@@ -72,7 +72,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
                     <strong>{r.authorName}</strong> → <Link href={`${subjectBasePath(r.subjectKind)}/${r.professionalSlug}`}>{r.professionalName}</Link>
                   </span>
                   <span className="row gap-2">
-                    <span className="chip chip-coral">{r.reason.replace(/_/g, ' ')}</span>
+                    <span className="chip chip-error">{r.reason.replace(/_/g, ' ')}</span>
                     <span className="t-caption">reported {relativeDate(r.reportedAt)}</span>
                   </span>
                 </div>
@@ -95,26 +95,26 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
             <article key={String(r.id)} className="card row gap-3" style={{ padding: 16, alignItems: 'flex-start' }}>
               <img src={avatarSrc(String(r.displayMode), r.avatarUrl as string | null)} alt="" width={36} height={36} style={{ borderRadius: '50%', flex: 'none' }} />
               <div className="stack gap-2" style={{ minWidth: 0, flex: 1 }}>
-              <div className="row wrap gap-2" style={{ justifyContent: 'space-between' }}>
-                <span>
-                  <strong>{String(r.authorName)}</strong> → <Link href={`${subjectBasePath(String(r.subjectKind))}/${r.professionalSlug}`}>{String(r.professionalName)}</Link>
-                </span>
-                <span className="row gap-2">
-                  <span className={`chip ${r.trustTier === 'high' ? 'chip-coral' : r.trustTier === 'medium' ? 'chip-outline' : 'chip-lime'}`}>
-                    {String(r.trustTier)} risk
+                <div className="row wrap gap-2" style={{ justifyContent: 'space-between' }}>
+                  <span>
+                    <strong>{String(r.authorName)}</strong> → <Link href={`${subjectBasePath(String(r.subjectKind))}/${r.professionalSlug}`}>{String(r.professionalName)}</Link>
                   </span>
-                  <span className="t-caption">{relativeDate(String(r.createdAt))}</span>
-                </span>
-              </div>
-              <p className="t-body">{String(r.body)}</p>
-              <div className="row wrap gap-2 t-caption">
-                <span>{String(r.experienceCategory)}</span>
-                <span>{String(r.displayMode)}</span>
-                <span>{String(r.basis)}</span>
-                {Array.isArray(r.trustSignals) && r.trustSignals.length > 0 && <span>signals: {(r.trustSignals as string[]).join(', ')}</span>}
-              </div>
-              <ModerateReviewForm reviewId={Number(r.id)} status={status ?? 'pending'} />
-              <DeleteReviewForm reviewId={Number(r.id)} />
+                  <span className="row gap-2">
+                    <span className={`chip ${r.trustTier === 'high' ? 'chip-error' : r.trustTier === 'medium' ? 'chip-outline' : 'chip-lime'}`}>
+                      {String(r.trustTier)} risk
+                    </span>
+                    <span className="t-caption">{relativeDate(String(r.createdAt))}</span>
+                  </span>
+                </div>
+                <p className="t-body">{String(r.body)}</p>
+                <div className="row wrap gap-2 t-caption">
+                  <span>{String(r.experienceCategory)}</span>
+                  <span>{String(r.displayMode)}</span>
+                  <span>{String(r.basis)}</span>
+                  {Array.isArray(r.trustSignals) && r.trustSignals.length > 0 && <span>signals: {(r.trustSignals as string[]).join(', ')}</span>}
+                </div>
+                <ModerateReviewForm reviewId={Number(r.id)} status={status ?? 'pending'} />
+                <DeleteReviewForm reviewId={Number(r.id)} />
               </div>
             </article>
           ))}

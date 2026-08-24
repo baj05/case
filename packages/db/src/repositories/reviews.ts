@@ -341,6 +341,27 @@ export function withdrawReview(reviewId: number, authorUserId: number): boolean 
 
 // -------------------------------------------------------------- response/vote
 
+/** Whether userId is entitled to post "the professional's" response to this
+ * review — the claimed owner of the professional profile, or a member of
+ * the organisation being reviewed. Callers still need to allow
+ * platform_admin separately; this only covers the subject's own side. */
+export function isAuthorizedToRespond(reviewId: number, userId: number): boolean {
+  const row = db().prepare(
+    `SELECT r.professional_id AS professionalId, r.organisation_id AS organisationId,
+            p.claimed_by_user_id AS claimedByUserId
+       FROM review r
+       LEFT JOIN professional p ON p.id = r.professional_id
+      WHERE r.id = ?`,
+  ).get(reviewId) as { professionalId: number | null; organisationId: number | null; claimedByUserId: number | null } | undefined;
+  if (!row) return false;
+  if (row.professionalId != null) return row.claimedByUserId === userId;
+  if (row.organisationId != null) {
+    const member = db().prepare(`SELECT 1 FROM org_member WHERE organisation_id = ? AND user_id = ?`).get(row.organisationId, userId);
+    return member != null;
+  }
+  return false;
+}
+
 export function respondToReview(reviewId: number, authorUserId: number, body: string): number {
   const ts = now();
   const result = db().prepare(

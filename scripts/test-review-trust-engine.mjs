@@ -18,7 +18,7 @@ const {
   applySchema, db, now,
   createUser, authenticate, createSession, getSessionUser, AuthError,
   createReview, editReview, withdrawReview, respondToReview, voteHelpful,
-  reportReview, listModerationQueue, moderateReview, deleteReview, listReportedReviews, listReviewsForProfessional,
+  reportReview, listModerationQueue, moderateReview, deleteReview, listReportedReviews, isAuthorizedToRespond, listReviewsForProfessional,
   getProfessionalReviewSummary, eligibleExperiences,
   createOrganisationReview, getOrganisationReviewSummary, listReviewsForOrganisation,
   getReviewSubjectPath,
@@ -361,6 +361,20 @@ check('deleting a review removes it from the public listing', () => {
 check('deleting a review also resolves its open report, so it drops out of the reported queue', () => {
   return !listReportedReviews().some((r) => r.reviewId === reportedFlowReview.id);
 });
+
+// --- authorization: only the professional who claimed a profile (or a
+// member of the reviewed organisation) may post "the professional's"
+// response — not just any signed-in user (the bug this check closes).
+const claimant = createUser({ email: 'claimant@example.com', fullName: 'Claimant Advocate', password: 'whatever-123' });
+h.exec(`UPDATE professional SET claimed_by_user_id = ${claimant.id} WHERE id = 1`);
+const randomUser = createUser({ email: 'random-user@example.com', fullName: 'Random User', password: 'whatever-123' });
+check('the advocate who claimed the profile is authorized to respond to its reviews', () => isAuthorizedToRespond(review.id, claimant.id) === true);
+check('a random signed-in user is not authorized to respond as the professional', () => isAuthorizedToRespond(review.id, randomUser.id) === false);
+
+const orgMemberUser = createUser({ email: 'org-member@example.com', fullName: 'Org Member', password: 'whatever-123' });
+h.exec(`INSERT INTO org_member (organisation_id, user_id, role, created_at) VALUES (1, ${orgMemberUser.id}, 'member', '${ts}')`);
+check('a member of the reviewed organisation is authorized to respond to its reviews', () => isAuthorizedToRespond(verifiedOrgReview.id, orgMemberUser.id) === true);
+check('a non-member is not authorized to respond to an organisation review', () => isAuthorizedToRespond(verifiedOrgReview.id, randomUser.id) === false);
 
 console.log(`\n${pass} passed, ${failures.length} failed`);
 for (const f of failures) console.log(`  ✗ ${f}`);

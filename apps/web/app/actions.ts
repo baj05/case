@@ -13,7 +13,7 @@ import {
   getProfessionalBySlug, createBooking, getBooking, setBookingStatus,
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
-  createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview, deleteReview,
+  createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview,
   createOrganisationReview, getOrganisationBySlug, submitSiteFeedback, getReviewSubjectPath,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
@@ -30,6 +30,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
 function str(form: FormData, key: string, max = 2000): string {
   const raw = form.get(key);
   return typeof raw === 'string' ? raw.trim().slice(0, max) : '';
+}
+
+/** A 1-5 star rating field, or undefined if absent/out of range — shared so
+ * the three review-submission actions can't drift on what counts as valid. */
+function rating(form: FormData, key: string): number | undefined {
+  const n = Number(form.get(key));
+  return n >= 1 && n <= 5 ? n : undefined;
 }
 
 /**
@@ -342,7 +349,6 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
   // the exact shape server-side regardless (sanitizeAvatarUrl).
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
-  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
 
   const professional = getProfessionalBySlug(slug);
   if (!professional) return { ok: false, message: 'That profile is no longer available.' };
@@ -353,9 +359,9 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
       professionalId: professional.id, authorUserId: user.id,
       bookingId, consultationRequestId, displayMode, reviewerType,
       ratings: {
-        communication: rating('communication'), responsiveness: rating('responsiveness'),
-        professionalism: rating('professionalism'), processClarity: rating('processClarity'),
-        overallSatisfaction: rating('overallSatisfaction'),
+        communication: rating(form, 'communication'), responsiveness: rating(form, 'responsiveness'),
+        professionalism: rating(form, 'professionalism'), processClarity: rating(form, 'processClarity'),
+        overallSatisfaction: rating(form, 'overallSatisfaction'),
       },
       wouldRecommend, body, avatarUrl,
     });
@@ -383,7 +389,6 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
   const body = str(form, 'body', 4000);
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
-  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
 
   const org = getOrganisationBySlug(slug);
   if (!org) return { ok: false, message: 'That organisation is no longer available.' };
@@ -393,9 +398,9 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
     createOrganisationReview({
       organisationId: org.id, authorUserId: user.id, displayMode, reviewerType, experienceCategory,
       ratings: {
-        communication: rating('communication'), responsiveness: rating('responsiveness'),
-        professionalism: rating('professionalism'), processClarity: rating('processClarity'),
-        overallSatisfaction: rating('overallSatisfaction'),
+        communication: rating(form, 'communication'), responsiveness: rating(form, 'responsiveness'),
+        professionalism: rating(form, 'professionalism'), processClarity: rating(form, 'processClarity'),
+        overallSatisfaction: rating(form, 'overallSatisfaction'),
       },
       wouldRecommend, body, avatarUrl,
     });
@@ -447,6 +452,9 @@ export async function respondToReviewAction(_prev: ActionResult | null, form: Fo
   const user = await currentUser();
   if (!user) return { ok: false, message: 'Please sign in as the professional to respond.' };
   const reviewId = Number(form.get('reviewId'));
+  if (user.platformRole !== 'platform_admin' && !isAuthorizedToRespond(reviewId, user.id)) {
+    return { ok: false, message: 'Only the reviewed professional or organisation can respond.' };
+  }
   const slug = str(form, 'slug', 120);
   const body = str(form, 'body', 2000);
   if (body.trim().length < 5) return { ok: false, message: 'Write a short response.' };
@@ -510,7 +518,6 @@ export async function deleteReviewAction(form: FormData): Promise<void> {
 export async function submitSiteFeedbackAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   const user = await currentUser();
   const displayMode = (str(form, 'displayMode') || 'anonymous') as 'attributed' | 'anonymous';
-  const rating = (key: string) => { const n = Number(form.get(key)); return n >= 1 && n <= 5 ? n : undefined; };
   const recommendRaw = form.get('recommendScore');
   const recommendScore = recommendRaw != null && recommendRaw !== '' ? Number(recommendRaw) : undefined;
   const improvementArea = (str(form, 'improvementArea') || undefined) as never;
@@ -520,8 +527,8 @@ export async function submitSiteFeedbackAction(_prev: ActionResult | null, form:
     authorUserId: displayMode === 'attributed' ? user?.id : undefined,
     displayMode,
     ratings: {
-      website: rating('website'), search: rating('search'), discovery: rating('discovery'),
-      booking: rating('booking'), resources: rating('resources'), speed: rating('speed'), design: rating('design'),
+      website: rating(form, 'website'), search: rating(form, 'search'), discovery: rating(form, 'discovery'),
+      booking: rating(form, 'booking'), resources: rating(form, 'resources'), speed: rating(form, 'speed'), design: rating(form, 'design'),
     },
     recommendScore, improvementArea, comment,
   });

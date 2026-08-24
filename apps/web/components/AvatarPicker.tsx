@@ -85,7 +85,7 @@ export function AvatarPicker({ name, disabled }: { name: string; disabled?: bool
             <img src={src} alt="" width={40} height={40} style={{ display: 'block', width: '100%', height: '100%' }} />
           </button>
         ))}
-        <span style={{ width: 1, height: 32, background: 'var(--outline-variant)', margin: '0 4px' }} aria-hidden="true" />
+        <span style={{ width: 1, height: 32, background: 'var(--outline-variant)' }} aria-hidden="true" />
         {selected && selected.startsWith('data:') && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={selected} alt="Your uploaded photo" width={40} height={40} style={{ borderRadius: '50%', border: '2px solid var(--action-orange)' }} />

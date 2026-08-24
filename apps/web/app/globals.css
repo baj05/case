@@ -295,6 +295,7 @@ ul, ol { list-style: none; padding: 0; }
 .gap-2 { gap: var(--u); }
 .gap-3 { gap: calc(var(--u) * 1.5); }
 .gap-4 { gap: calc(var(--u) * 2); }
+.gap-5 { gap: calc(var(--u) * 2.5); }
 .gap-6 { gap: calc(var(--u) * 3); }
 .gap-8 { gap: calc(var(--u) * 4); }
 
