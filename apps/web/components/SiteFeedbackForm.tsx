@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { submitSiteFeedbackAction } from '@/app/actions';
-import { FormError, SubmitButton } from './Forms';
+import { FormError, SubmitButton, RatingRadios } from './Forms';
 
 const CATEGORIES = [
   { key: 'website', label: 'Website experience' },
@@ -13,22 +13,6 @@ const CATEGORIES = [
   { key: 'speed', label: 'Speed' },
   { key: 'design', label: 'Design' },
 ] as const;
-
-function RatingRadios({ name, label }: { name: string; label: string }) {
-  return (
-    <div className="field">
-      <label className="label">{label}</label>
-      <div className="row gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
-            <input type="radio" name={name} value={n} />
-            <span className="t-caption">{n}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function SiteFeedbackForm() {
   const [state, formAction] = useActionState(submitSiteFeedbackAction, null);

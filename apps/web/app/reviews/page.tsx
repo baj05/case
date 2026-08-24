@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   description: 'Read real, verified and anonymous experiences before you decide who to contact.',
 };
 
+/** An organisation can be a firm, a chamber or an LPO — each lives under a
+ * different route, so 'organisation' alone was never enough to build a link. */
+function subjectBasePath(kind: string): string {
+  return kind === 'lpo' ? '/lpo' : kind === 'law_firm' || kind === 'chamber' ? '/firms' : '/advocates';
+}
+
 const CATEGORIES = [
   { href: '/search', label: 'Advocate reviews', description: 'Individual advocates, by practice area, court or city.' },
   { href: '/firms', label: 'Law firm reviews', description: 'Team-level client experience across a firm or chamber.' },
@@ -32,7 +38,8 @@ export default function ReviewsHubPage() {
             chose it, always clearly labelled as one or the other.
           </p>
           <form action="/search" className="row gap-2 wrap">
-            <input name="q" className="input" placeholder="Search advocates, law firms or legal services" style={{ flex: 1, minWidth: 240 }} />
+            <label htmlFor="reviews-hub-search" className="sr-only">Search advocates, law firms or legal services</label>
+            <input id="reviews-hub-search" name="q" className="input" placeholder="Search advocates, law firms or legal services…" autoComplete="off" style={{ flex: 1, minWidth: 240 }} />
             <button type="submit" className="btn btn-primary">Search</button>
           </form>
           <div className="row wrap gap-2">
@@ -77,9 +84,13 @@ export default function ReviewsHubPage() {
                   <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span className="row gap-2" style={{ alignItems: 'baseline' }}>
                       <strong>{r.displayName}</strong>
-                      {r.verified && <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>Verified experience</span>}
+                      {r.verified && (
+                        <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
+                          {r.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
+                        </span>
+                      )}
                       <span className="t-caption">on{' '}
-                        <Link href={`${r.subjectKind === 'organisation' ? '/firms' : '/advocates'}/${r.subjectSlug}#reviews`}>{r.subjectName}</Link>
+                        <Link href={`${subjectBasePath(r.subjectKind)}/${r.subjectSlug}#reviews`}>{r.subjectName}</Link>
                       </span>
                     </span>
                     <span className="t-caption">{relativeDate(r.createdAt)}</span>

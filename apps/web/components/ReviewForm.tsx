@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { submitReviewAction } from '@/app/actions';
-import { Field, FormError, SubmitButton } from './Forms';
+import { Field, FormError, SubmitButton, RatingRadios } from './Forms';
 
 export interface EligibleExperience { id: number; reference: string; occurredAt: string | null; kind: 'booking' | 'consultation' }
 
@@ -13,22 +13,6 @@ const DIMENSIONS = [
   { key: 'processClarity', label: 'Process clarity' },
   { key: 'overallSatisfaction', label: 'Overall satisfaction' },
 ] as const;
-
-function RatingRadios({ name, label }: { name: string; label: string }) {
-  return (
-    <div className="field">
-      <label className="label">{label}</label>
-      <div className="row gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
-            <input type="radio" name={name} value={n} required={name === 'overallSatisfaction'} />
-            <span className="t-caption">{n}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function ReviewForm({ slug, experiences }: { slug: string; experiences: EligibleExperience[] }) {
   const [state, formAction] = useActionState(submitReviewAction, null);
@@ -76,7 +60,7 @@ export function ReviewForm({ slug, experiences }: { slug: string; experiences: E
       </Field>
 
       <div className="grid-auto">
-        {DIMENSIONS.map((d) => <RatingRadios key={d.key} name={d.key} label={d.label} />)}
+        {DIMENSIONS.map((d) => <RatingRadios key={d.key} name={d.key} label={d.label} required={d.key === 'overallSatisfaction'} />)}
       </div>
 
       <Field name="wouldRecommend" label="Would you recommend this professional?">

@@ -157,7 +157,11 @@ export function ReviewSection({
             <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span className="row gap-2" style={{ alignItems: 'baseline' }}>
                 <strong>{r.displayName}</strong>
-                {r.verified && <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>Verified experience</span>}
+                {r.verified && (
+                  <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
+                    {r.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
+                  </span>
+                )}
                 <span className="t-caption">{EXPERIENCE_LABEL[String(r.experienceCategory)] ?? 'Experience'}</span>
               </span>
               <span className="t-caption">{relativeDate(String(r.createdAt))}{r.edited ? ' · edited' : ''}</span>

@@ -21,6 +21,7 @@ const {
   reportReview, listModerationQueue, moderateReview, listReviewsForProfessional,
   getProfessionalReviewSummary, eligibleExperiences,
   createOrganisationReview, getOrganisationReviewSummary, listReviewsForOrganisation,
+  getReviewSubjectPath,
 } = await import('@lexhall/db');
 
 let pass = 0;
@@ -228,6 +229,56 @@ check('organisation review listing returns both reviews with correct verified fl
   const v = orgReviews.find((r) => r.id === verifiedOrgReview.id);
   const u = orgReviews.find((r) => r.id === unverifiedOrgReview.id);
   return v?.verified === true && u?.verified === false && u?.displayName === 'Anonymous reviewer';
+});
+check('an organisation review\'s verification is labelled "domain", not conflated with a booking-verified advocate review', () => {
+  const orgReview = orgReviews.find((r) => r.id === verifiedOrgReview.id);
+  const advocateReviews = listReviewsForProfessional(1, { filter: 'verified' });
+  return orgReview?.verifiedVia === 'domain' && advocateReviews.every((r) => r.verifiedVia === 'booking');
+});
+
+// --- fix regression tests: one-review-per-author for orgs, correct fraud
+// column, and correct subject-path resolution for revalidation/routing.
+check('a second review by the same author for the same organisation is rejected', () => {
+  try {
+    createOrganisationReview({
+      organisationId: 1, authorUserId: corpUser.id, displayMode: 'attributed', reviewerType: 'corporate_legal_team',
+      experienceCategory: 'legal_matter', ratings: { overallSatisfaction: 5 }, body: 'Trying to review the same firm twice with different text.',
+    });
+    return false;
+  } catch (e) { return e.message === 'ALREADY_REVIEWED'; }
+});
+
+h.exec(`INSERT INTO organisation (id, kind, name, slug, country_id, created_at, updated_at)
+  VALUES (2,'lpo','Test LPO','test-lpo',1,'${ts}','${ts}')`);
+const lpoReviewer = createUser({ email: 'reviewer-lpo@example.com', fullName: 'LPO Reviewer', password: 'whatever-123' });
+const lpoReview = createOrganisationReview({
+  organisationId: 2, authorUserId: lpoReviewer.id, displayMode: 'attributed', reviewerType: 'client',
+  experienceCategory: 'legal_matter', ratings: { overallSatisfaction: 4 }, body: 'Turnaround was within the agreed SLA for this LPO engagement.',
+});
+check('an organisation review\'s duplicate-text fraud check uses organisation_id, not professional_id', () => {
+  // A second, textually-identical review against the SAME org from a
+  // different account should trip duplicate_text_30d — proving the check
+  // actually queries organisation_id (the bug queried professional_id,
+  // where this org's numeric id would never match).
+  const otherReviewer = createUser({ email: 'reviewer-lpo-2@example.com', fullName: 'LPO Reviewer 2', password: 'whatever-123' });
+  const dup = createOrganisationReview({
+    organisationId: 2, authorUserId: otherReviewer.id, displayMode: 'attributed', reviewerType: 'client',
+    experienceCategory: 'legal_matter', ratings: { overallSatisfaction: 4 }, body: 'Turnaround was within the agreed SLA for this LPO engagement.',
+  });
+  const row = h.prepare(`SELECT trust_signals AS s FROM review WHERE id = ?`).get(dup.id);
+  return JSON.parse(row.s).signals.includes('duplicate_text_30d');
+});
+check('getReviewSubjectPath resolves an advocate review to /advocates/<slug>', () => {
+  const path = getReviewSubjectPath(review.id);
+  return path?.basePath === '/advocates' && path?.slug === 'test-advocate';
+});
+check('getReviewSubjectPath resolves an LPO organisation review to /lpo/<slug>, not /firms', () => {
+  const path = getReviewSubjectPath(lpoReview.id);
+  return path?.basePath === '/lpo' && path?.slug === 'test-lpo';
+});
+check('getReviewSubjectPath resolves a law-firm organisation review to /firms/<slug>', () => {
+  const path = getReviewSubjectPath(verifiedOrgReview.id);
+  return path?.basePath === '/firms' && path?.slug === 'test-chambers';
 });
 
 console.log(`\n${pass} passed, ${failures.length} failed`);

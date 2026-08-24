@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { submitOrganisationReviewAction } from '@/app/actions';
-import { Field, FormError, SubmitButton } from './Forms';
+import { Field, FormError, SubmitButton, RatingRadios } from './Forms';
 
 const DIMENSIONS = [
   { key: 'communication', label: 'Communication' },
@@ -11,22 +11,6 @@ const DIMENSIONS = [
   { key: 'processClarity', label: 'Process / project management' },
   { key: 'overallSatisfaction', label: 'Overall satisfaction' },
 ] as const;
-
-function RatingRadios({ name, label }: { name: string; label: string }) {
-  return (
-    <div className="field">
-      <label className="label">{label}</label>
-      <div className="row gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
-            <input type="radio" name={name} value={n} required={name === 'overallSatisfaction'} />
-            <span className="t-caption">{n}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath: '/firms' | '/lpo'; kind: string }) {
   const [state, formAction] = useActionState(submitOrganisationReviewAction, null);
@@ -50,7 +34,7 @@ export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath
 
       <div className="grid-auto">
         {DIMENSIONS.map((d) => (
-          <RatingRadios key={d.key} name={d.key} label={isLpo && d.key === 'processClarity' ? 'Turnaround / SLA adherence' : d.label} />
+          <RatingRadios key={d.key} name={d.key} label={isLpo && d.key === 'processClarity' ? 'Turnaround / SLA adherence' : d.label} required={d.key === 'overallSatisfaction'} />
         ))}
       </div>
 

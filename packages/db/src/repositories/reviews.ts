@@ -94,7 +94,7 @@ function detectPrivacyRisk(body: string): string[] {
 
 interface FraudAssessment { score: number; tier: 'low' | 'medium' | 'high'; signals: string[] }
 
-function assessFraudRisk(input: { authorUserId: number; professionalId: number; body: string; basis: string }): FraudAssessment {
+function assessFraudRisk(input: { authorUserId: number; subject: ReviewSubject; subjectId: number; body: string; basis: string }): FraudAssessment {
   const h = db();
   const signals: string[] = [];
   let score = 0;
@@ -106,10 +106,14 @@ function assessFraudRisk(input: { authorUserId: number; professionalId: number; 
 
   const normalized = input.body.trim().toLowerCase().replace(/\s+/g, ' ');
   if (normalized.length > 0) {
+    // `subject` selects professional_id or organisation_id — a review's
+    // subject lives in one of two separate ID spaces, and checking the
+    // wrong column would compare against an unrelated row that merely
+    // shares the same numeric id.
     const dup = h.prepare(
       `SELECT count(*) AS n FROM review
-        WHERE professional_id = ? AND lower(trim(body)) = ? AND created_at > datetime('now','-30 day')`,
-    ).get(input.professionalId, normalized) as { n: number };
+        WHERE ${input.subject} = ? AND lower(trim(body)) = ? AND created_at > datetime('now','-30 day')`,
+    ).get(input.subjectId, normalized) as { n: number };
     if (dup.n > 0) { score += 30; signals.push('duplicate_text_30d'); }
   }
 
@@ -161,7 +165,7 @@ export function createReview(input: CreateReviewInput): { id: number; moderation
       basis = 'verified_engagement'; experienceCategory = 'legal_matter';
     }
 
-    const risk = assessFraudRisk({ authorUserId: input.authorUserId, professionalId: input.professionalId, body: input.body, basis });
+    const risk = assessFraudRisk({ authorUserId: input.authorUserId, subject: 'professional_id', subjectId: input.professionalId, body: input.body, basis });
     const privacyHits = detectPrivacyRisk(input.body);
     // A privacy hit always forces human review — it overrides the fraud tier
     // entirely, because the risk here is disclosure, not inauthenticity.
@@ -222,11 +226,19 @@ export function createOrganisationReview(input: CreateOrganisationReviewInput): 
       .get(input.organisationId) as { emailDomain: string | null; domainVerifiedAt: string | null } | undefined;
     if (!org) throw new Error('ORGANISATION_NOT_FOUND');
 
+    const existing = h.prepare(`SELECT 1 FROM review WHERE author_user_id = ? AND organisation_id = ?`)
+      .get(input.authorUserId, input.organisationId);
+    if (existing) throw new Error('ALREADY_REVIEWED');
+
     const authorDomain = author.email.split('@')[1]?.toLowerCase();
+    // 'verified_engagement' here means something weaker than the identical
+    // value on a professional review — a matching, platform-confirmed email
+    // domain, not a completed booking. See displayName()/the UI layer for
+    // where this distinction must stay visible rather than blurred.
     const basis = org.domainVerifiedAt && org.emailDomain && authorDomain === org.emailDomain.toLowerCase()
       ? 'verified_engagement' : 'unverified';
 
-    const risk = assessFraudRisk({ authorUserId: input.authorUserId, professionalId: input.organisationId, body: input.body, basis });
+    const risk = assessFraudRisk({ authorUserId: input.authorUserId, subject: 'organisation_id', subjectId: input.organisationId, body: input.body, basis });
     const privacyHits = detectPrivacyRisk(input.body);
     const moderationStatus = privacyHits.length > 0 ? 'in_review' : risk.tier === 'high' ? 'auto_flagged' : 'pending';
     const ts = now();
@@ -336,9 +348,13 @@ export function reportReview(reviewId: number, input: { reporterUserId?: number;
 // ------------------------------------------------------------ discovery feed
 
 export interface RecentReviewFeedItem {
-  id: number; body: string; verified: boolean; displayName: string; experienceCategory: string;
+  id: number; body: string; verified: boolean; verifiedVia: 'booking' | 'domain'; displayName: string; experienceCategory: string;
   overallSatisfaction: number | null; createdAt: string;
-  subjectName: string; subjectSlug: string; subjectKind: 'professional' | 'organisation';
+  subjectName: string; subjectSlug: string;
+  // 'organisation' alone isn't enough to build a link — a firm and an LPO
+  // live under different routes (/firms vs /lpo), so the org's own `kind`
+  // travels with it.
+  subjectKind: 'professional' | 'law_firm' | 'chamber' | 'lpo';
 }
 
 /** Most recent published reviews across every advocate, firm and LPO — the
@@ -351,7 +367,7 @@ export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedIte
             u.full_name AS authorFullName,
             COALESCE(p.display_name, o.name) AS subjectName,
             COALESCE(p.slug, o.slug) AS subjectSlug,
-            CASE WHEN r.organisation_id IS NOT NULL THEN 'organisation' ELSE 'professional' END AS subjectKind
+            CASE WHEN r.organisation_id IS NOT NULL THEN o.kind ELSE 'professional' END AS subjectKind
        FROM review r
        JOIN app_user u ON u.id = r.author_user_id
        LEFT JOIN professional p ON p.id = r.professional_id
@@ -363,14 +379,15 @@ export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedIte
   return rows.map((r) => ({
     id: Number(r.id),
     body: String(r.body),
-    verified: r.basis === 'verified_consultation' || r.basis === 'verified_engagement',
+    verified: isVerifiedBasis(String(r.basis)),
+    verifiedVia: verifiedVia(r.subjectKind !== 'professional'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
     experienceCategory: String(r.experienceCategory),
     overallSatisfaction: r.overallSatisfaction as number | null,
     createdAt: String(r.createdAt),
     subjectName: String(r.subjectName),
     subjectSlug: String(r.subjectSlug),
-    subjectKind: r.subjectKind as 'professional' | 'organisation',
+    subjectKind: r.subjectKind as 'professional' | 'law_firm' | 'chamber' | 'lpo',
   }));
 }
 
@@ -410,6 +427,28 @@ export function listModerationQueue(status?: string) {
   });
 }
 
+/**
+ * Where a review's subject actually lives — resolved from the review row
+ * itself rather than trusted from a client-supplied basePath, so a caller
+ * (e.g. a revalidatePath after voting/reporting/responding) can never point
+ * at the wrong route for an organisation review.
+ */
+export function getReviewSubjectPath(reviewId: number): { basePath: string; slug: string } | null {
+  const row = db().prepare(
+    `SELECT p.slug AS professionalSlug, o.slug AS organisationSlug, o.kind AS organisationKind
+       FROM review r
+       LEFT JOIN professional p ON p.id = r.professional_id
+       LEFT JOIN organisation o ON o.id = r.organisation_id
+      WHERE r.id = ?`,
+  ).get(reviewId) as { professionalSlug: string | null; organisationSlug: string | null; organisationKind: string | null } | undefined;
+  if (!row) return null;
+  if (row.professionalSlug) return { basePath: '/advocates', slug: row.professionalSlug };
+  if (row.organisationSlug) {
+    return { basePath: row.organisationKind === 'lpo' ? '/lpo' : '/firms', slug: row.organisationSlug };
+  }
+  return null;
+}
+
 export function moderateReview(reviewId: number, moderatorUserId: number, decision: 'published' | 'rejected' | 'in_review', note?: string): void {
   const ts = now();
   db().prepare(
@@ -418,6 +457,23 @@ export function moderateReview(reviewId: number, moderatorUserId: number, decisi
 }
 
 // ------------------------------------------------------------------- display
+
+export const VERIFIED_BASES = ['verified_consultation', 'verified_engagement'] as const;
+export function isVerifiedBasis(basis: string): boolean {
+  return (VERIFIED_BASES as readonly string[]).includes(basis);
+}
+
+/**
+ * A "verified" badge on a professional review and one on an organisation
+ * review currently mean different strengths of evidence: a completed
+ * booking/consultation/appointment/matter versus only a matching,
+ * platform-confirmed email domain (organisations have no booking model
+ * yet). Collapsing both into one "Verified experience" label would blur
+ * that distinction — the UI must say which kind it is.
+ */
+function verifiedVia(isOrganisationSubject: boolean): 'booking' | 'domain' {
+  return isOrganisationSubject ? 'domain' : 'booking';
+}
 
 function displayName(displayMode: string, fullName: string): string {
   if (displayMode === 'anonymous') return 'Anonymous reviewer';
@@ -440,6 +496,7 @@ export interface ReviewListItem {
   id: number;
   body: string;
   verified: boolean;
+  verifiedVia: 'booking' | 'domain';
   displayName: string;
   displayMode: string;
   reviewerType: string;
@@ -472,7 +529,7 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
   const offset = opts?.offset ?? 0;
 
   const conditions = [`r.${subject} = ?`, `r.moderation_status = 'published'`, `r.deleted_at IS NULL`];
-  if (filter === 'verified') conditions.push(`r.basis IN ('verified_consultation','verified_engagement')`);
+  if (filter === 'verified') conditions.push(`r.basis IN (${VERIFIED_BASES.map((b) => `'${b}'`).join(',')})`);
   if (filter === 'anonymous') conditions.push(`r.display_mode = 'anonymous'`);
 
   const orderBy = {
@@ -503,7 +560,8 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
   return rows.map((r) => ({
     id: Number(r.id),
     body: String(r.body),
-    verified: r.basis === 'verified_consultation' || r.basis === 'verified_engagement',
+    verified: isVerifiedBasis(String(r.basis)),
+    verifiedVia: verifiedVia(subject === 'organisation_id'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
     displayMode: String(r.displayMode),
     reviewerType: String(r.reviewerType),
@@ -573,7 +631,7 @@ function summarizeSubject(subject: ReviewSubject, subjectId: number) {
             avg(overall_satisfaction) AS overallSatisfaction,
             sum(CASE WHEN would_recommend = 'yes' THEN 1 ELSE 0 END) AS yesCount,
             sum(CASE WHEN would_recommend IN ('yes','no') THEN 1 ELSE 0 END) AS recommendDenominator,
-            sum(CASE WHEN basis IN ('verified_consultation','verified_engagement') THEN 1 ELSE 0 END) AS verifiedCount
+            sum(CASE WHEN basis IN (${VERIFIED_BASES.map((b) => `'${b}'`).join(',')}) THEN 1 ELSE 0 END) AS verifiedCount
        FROM review WHERE ${subject} = ? AND moderation_status = 'published' AND deleted_at IS NULL`,
   ).get(subjectId) as unknown as SummaryRow;
 

@@ -11,6 +11,13 @@ export const metadata: Metadata = { title: 'Admin — review moderation', robots
 
 const STATUS_TABS = ['pending', 'auto_flagged', 'in_review', 'published', 'rejected'] as const;
 
+/** An organisation can be a firm, a chamber or an LPO — each lives under a
+ * different route, so 'organisation'/subjectKind alone was never enough to
+ * build a link (the same gap fixed in apps/web/app/reviews/page.tsx). */
+function subjectBasePath(kind: string): string {
+  return kind === 'lpo' ? '/lpo' : kind === 'law_firm' || kind === 'chamber' ? '/firms' : '/advocates';
+}
+
 export default async function AdminReviewsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   await requireUser('platform_admin', '/admin/reviews');
   if (!databaseReady()) {
@@ -45,7 +52,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
           <article key={String(r.id)} className="card stack gap-2" style={{ padding: 16 }}>
             <div className="row wrap gap-2" style={{ justifyContent: 'space-between' }}>
               <span>
-                <strong>{String(r.authorName)}</strong> → <Link href={`/advocates/${r.professionalSlug}`}>{String(r.professionalName)}</Link>
+                <strong>{String(r.authorName)}</strong> → <Link href={`${subjectBasePath(String(r.subjectKind))}/${r.professionalSlug}`}>{String(r.professionalName)}</Link>
               </span>
               <span className="row gap-2">
                 <span className={`chip ${r.trustTier === 'high' ? 'chip-coral' : r.trustTier === 'medium' ? 'chip-outline' : 'chip-lime'}`}>

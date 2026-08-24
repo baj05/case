@@ -75,3 +75,22 @@ export function FormSuccess({ heading, message }: { heading?: string; message?: 
     </div>
   );
 }
+
+/** A 1..5 rating row of radio inputs with visible numeric labels — used by
+ * every review/feedback form (advocate, organisation, site feedback) so the
+ * markup lives in exactly one place. */
+export function RatingRadios({ name, label, required = false, scale = 5 }: { name: string; label: string; required?: boolean; scale?: number }) {
+  return (
+    <div className="field">
+      <label className="label">{label}</label>
+      <div className="row gap-2">
+        {Array.from({ length: scale }, (_, i) => i + 1).map((n) => (
+          <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
+            <input type="radio" name={name} value={n} required={required} />
+            <span className="t-caption">{n}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}

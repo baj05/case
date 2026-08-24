@@ -14,7 +14,7 @@ import {
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, voteHelpful, reportReview, moderateReview,
-  createOrganisationReview, getOrganisationBySlug, submitSiteFeedback,
+  createOrganisationReview, getOrganisationBySlug, submitSiteFeedback, getReviewSubjectPath,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 
@@ -392,11 +392,24 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
       },
       wouldRecommend, body,
     });
-  } catch {
+  } catch (error) {
+    if ((error as Error).message === 'ALREADY_REVIEWED') {
+      return { ok: false, message: 'You have already reviewed this organisation.' };
+    }
     return { ok: false, message: 'We could not submit your review. Please try again.' };
   }
   revalidatePath(`${basePath}/${slug}`);
   redirect(`${basePath}/${slug}?reviewed=1`);
+}
+
+/** Resolves from the review row itself which page to revalidate — a review
+ * can belong to an advocate, a firm or an LPO, and trusting a client-
+ * supplied slug/basePath here would revalidate the wrong (or a fabricated)
+ * path. Falls back to the advocate route with the caller's slug only if
+ * the review can't be resolved (e.g. it no longer exists). */
+function revalidateReviewSubject(reviewId: number, fallbackSlug: string): void {
+  const resolved = getReviewSubjectPath(reviewId);
+  revalidatePath(resolved ? `${resolved.basePath}/${resolved.slug}` : `/advocates/${fallbackSlug}`);
 }
 
 export async function editReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -411,7 +424,7 @@ export async function editReviewAction(_prev: ActionResult | null, form: FormDat
   } catch {
     return { ok: false, message: 'We could not update that review.' };
   }
-  revalidatePath(`/advocates/${slug}`);
+  revalidateReviewSubject(reviewId, slug);
   return { ok: true, message: 'Your review has been updated and will be re-moderated before it republishes.' };
 }
 
@@ -420,7 +433,7 @@ export async function withdrawReviewAction(form: FormData): Promise<void> {
   const reviewId = Number(form.get('reviewId'));
   const slug = str(form, 'slug', 120);
   if (user) withdrawReview(reviewId, user.id);
-  revalidatePath(`/advocates/${slug}`);
+  revalidateReviewSubject(reviewId, slug);
 }
 
 export async function respondToReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -431,7 +444,7 @@ export async function respondToReviewAction(_prev: ActionResult | null, form: Fo
   const body = str(form, 'body', 2000);
   if (body.trim().length < 5) return { ok: false, message: 'Write a short response.' };
   respondToReview(reviewId, user.id, body);
-  revalidatePath(`/advocates/${slug}`);
+  revalidateReviewSubject(reviewId, slug);
   return { ok: true, message: 'Your response has been submitted for moderation.' };
 }
 
@@ -442,7 +455,7 @@ export async function voteReviewHelpfulAction(form: FormData): Promise<void> {
   const vote = Number(form.get('vote')) === -1 ? -1 : 1;
   const slug = str(form, 'slug', 120);
   voteHelpful(reviewId, user.id, vote);
-  revalidatePath(`/advocates/${slug}`);
+  revalidateReviewSubject(reviewId, slug);
 }
 
 export async function reportReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -453,7 +466,7 @@ export async function reportReviewAction(_prev: ActionResult | null, form: FormD
   const detail = str(form, 'detail', 1000);
   if (detail.trim().length < 5) return { ok: false, message: 'Tell us briefly what the issue is.' };
   reportReview(reviewId, { reporterUserId: user?.id, reason, detail });
-  revalidatePath(`/advocates/${slug}`);
+  revalidateReviewSubject(reviewId, slug);
   return { ok: true, message: 'Thank you — this review has been sent for moderation review.' };
 }
 
