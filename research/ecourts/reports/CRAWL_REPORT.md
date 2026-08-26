@@ -49,7 +49,7 @@ Disallow: /
 | `njdg.ecourts.gov.in/hcnjdg_v2/` — NJDG High Courts | 200 | none present | **Yes** |
 | `ecourts.gov.in` | 200 | none present | Mapped only |
 | `www.sci.gov.in` — Supreme Court | 200 | only `/wp-admin/` disallowed | Not yet |
-| `scdg.sci.gov.in` — SC NJDG | — | — | Failed (proxy tunnel error), retry candidate |
+| `scdg.sci.gov.in` — SC NJDG | 200 | `sci.gov.in` disallows only `/wp-admin/` | **Yes** (direct fetch — Firecrawl's proxy could not tunnel) |
 | `judgments.ecourts.gov.in` | connection failure | — | Not reached |
 | `api.data.gov.in` | 400 without key | portal disallows crawling; **API is the sanctioned route** | Needs API key |
 
@@ -63,21 +63,22 @@ Publisher for all of the above: **National Informatics Centre (NIC), Ministry of
 
 - District Courts: total/civil/criminal pendency, five age bands, institution & disposal flow, cases listed today, filings by women and by senior citizens
 - High Courts: same pendency and age structure, plus 10 case-type splits and 4 recorded delay reasons
+- Supreme Court: pendency by **registration stage** (registered / unregistered / listed / under scrutiny) rather than by age, plus **coram-wise constitution-bench pendency** by bench size, and annual + monthly flow
 - Registry of all 25 High Courts
 - 36 states/UTs covered by the district grid
 
-Extract: [`../structured/judicial-statistics.json`](../structured/judicial-statistics.json) — 37 statistic rows + 25 courts.
+Extract: [`../structured/judicial-statistics.json`](../structured/judicial-statistics.json) — 52 statistic rows + 25 courts.
 
 ### Headline figures (retrieved 2026-08-24)
 
-| | District Courts | High Courts |
-|---|---|---|
-| Pending | 5,10,70,663 | 64,78,459 |
-| — civil | 1,12,74,334 | 45,12,720 |
-| — criminal | 3,97,96,329 | 19,65,739 |
-| Pending > 1 year | 62.09% | 72.54% |
-| Filed last month | 29,21,317 | 2,58,469 |
-| Disposed last month | 23,98,026 | 2,47,430 |
+| | Supreme Court | High Courts | District Courts |
+|---|---|---|---|
+| Pending | 94,032 | 64,78,459 | 5,10,70,663 |
+| — civil | 72,368 | 45,12,720 | 1,12,74,334 |
+| — criminal | 21,664 | 19,65,739 | 3,97,96,329 |
+| Pending > 1 year | — (reported by registration stage) | 72.54% | 62.09% |
+| Filed last month | 7,440 | 2,58,469 | 29,21,317 |
+| Disposed last month | 6,474 | 2,47,430 | 23,98,026 |
 
 ---
 
@@ -102,8 +103,8 @@ Crawling and importing are **separate steps by design**: the extract is reviewab
 ## 5. Known limitations
 
 1. **National totals only.** Per-state, per-district and per-High-Court drilldowns exist behind form POSTs and a CAPTCHA on NJDG; not attempted.
-2. **Point-in-time.** A single snapshot (`2026-08-24.1`). The schema versions rows so repeat ingests accumulate rather than overwrite, but no scheduler is wired up.
-3. **SC NJDG missing.** `scdg.sci.gov.in` failed with a proxy tunnel error — worth a retry; Supreme Court figures are absent until then.
+2. **Point-in-time.** A single snapshot (`2026-08-24.2`). The schema versions rows so repeat ingests accumulate rather than overwrite, but no scheduler is wired up.
+3. **One SC widget ignored deliberately.** The Supreme Court page renders a "delay reason" table whose figures are byte-identical to the High Court ones — a shared or stale component, not SC data. It was excluded rather than attributed to the wrong court.
 4. **No case-level data, deliberately.** Advocate→case→judge→order graphs would need case-level records; that requires its own privacy and licensing review, not an extension of this work.
 5. **`data.gov.in` needs an API key.** Its portal disallows crawling; the API is the sanctioned route and is unblocked by registration, not by scraping.
 

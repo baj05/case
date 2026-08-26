@@ -27,6 +27,8 @@ interface Extract {
   litigantProfile: Array<Record<string, unknown>>;
   highCourtCaseTypes: Array<Record<string, unknown>>;
   highCourtDelayReasons: Array<Record<string, unknown>>;
+  supremeCourtRegistration?: Array<Record<string, unknown>>;
+  supremeCourtCoram?: Array<Record<string, unknown>>;
   highCourts: string[];
 }
 
@@ -89,10 +91,16 @@ transaction(() => {
      ON CONFLICT(source_id, tier, metric_group, label, data_version) DO NOTHING`,
   );
 
-  /** District figures come from the district grid, High Court figures from
-   * the HC grid — attributing both to one source would misstate provenance. */
-  const sourceForTier = (tier: string) =>
-    sourceIds.get(tier === 'high_court' ? 'njdg-highcourt' : 'njdg-district')!;
+  /** Each tier is published by its own grid — attributing them all to one
+   * source would misstate provenance. */
+  const sourceForTier = (tier: string) => {
+    const code = tier === 'high_court' ? 'njdg-highcourt'
+      : tier === 'supreme_court' ? 'njdg-supremecourt'
+        : 'njdg-district';
+    const id = sourceIds.get(code);
+    if (!id) throw new Error(`no source registered for tier '${tier}' (expected ${code})`);
+    return id;
+  };
 
   function add(
     group: string,
@@ -118,6 +126,20 @@ transaction(() => {
   add('litigant_profile', data.litigantProfile, (r) => String(r.group), (r) => String(r.tier));
   add('case_type', data.highCourtCaseTypes, (r) => String(r.caseType), () => 'high_court');
   add('delay_reason', data.highCourtDelayReasons, (r) => String(r.reason), () => 'high_court');
+  add('registration', data.supremeCourtRegistration ?? [], (r) => String(r.label), () => 'supreme_court');
+
+  // Coram carries an extra "includes connected matters" figure that the
+  // generic shape has no column for; `percent` is unused for this group, so
+  // it is reused to carry it rather than adding a column for one dimension.
+  (data.supremeCourtCoram ?? []).forEach((r, i) => {
+    insertStat.run(
+      sourceForTier('supreme_court'), 'supreme_court', 'coram', String(r.bench),
+      (r.civil as number) ?? null, (r.criminal as number) ?? null,
+      (r.total as number) ?? null, (r.withConnected as number) ?? null,
+      i, data.dataVersion, data.retrievedAt, ts,
+    );
+    stats += 1;
+  });
 
   // Pendency rows carry extra fields the generic shape has no column for;
   // store them as their own labelled rows so nothing silently drops.

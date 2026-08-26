@@ -118,6 +118,91 @@ function TierPanel({ snap, tier, title, blurb }: {
   );
 }
 
+/**
+ * The Supreme Court grid reports a different shape from the other two: it
+ * breaks pendency down by registration state rather than by age (a filed
+ * matter is not pending in the same sense until registered and listed), and
+ * it publishes coram-wise pendency, which only exists where bench size is a
+ * constitutional question. Rendering it through TierPanel would have meant
+ * showing empty age bands and hiding the two things that make it distinct.
+ */
+function SupremeCourtPanel({ snap }: { snap: JudicialSnapshot }) {
+  const pending = pickStats(snap, 'supreme_court', 'pendency').find((s) => s.label === 'total_pending');
+  if (!pending) return null;
+  const reg = pickStats(snap, 'supreme_court', 'registration');
+  const coram = pickStats(snap, 'supreme_court', 'coram').filter((c) => (c.total ?? 0) > 0);
+  const flow = pickStats(snap, 'supreme_court', 'flow');
+  const instYear = flow.find((f) => f.label === 'instituted_this_year');
+  const dispYear = flow.find((f) => f.label === 'disposed_this_year');
+  const maxReg = Math.max(...reg.map((r) => r.total ?? 0), 1);
+
+  return (
+    <section className="card stack gap-4" style={{ padding: 'clamp(18px, 3vw, 26px)' }}>
+      <div className="stack gap-1">
+        <h2 className="t-title-lg">Supreme Court of India</h2>
+        <p className="t-body-sm ink-variant measure">
+          The apex court. Pendency here is reported by registration stage rather than age — a matter
+          is filed long before it is registered, listed and heard.
+        </p>
+      </div>
+
+      <div className="row wrap gap-5" style={{ alignItems: 'baseline' }}>
+        <span className="stack" style={{ gap: 0 }}>
+          <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+            {grouped(pending.total ?? 0)}
+          </strong>
+          <span className="t-caption">cases pending</span>
+        </span>
+        <span className="stack" style={{ gap: 0 }}>
+          <strong className="t-title-sm">{grouped(pending.civil ?? 0)}</strong>
+          <span className="t-caption">civil</span>
+        </span>
+        <span className="stack" style={{ gap: 0 }}>
+          <strong className="t-title-sm">{grouped(pending.criminal ?? 0)}</strong>
+          <span className="t-caption">criminal</span>
+        </span>
+        {instYear && dispYear && (
+          <span className="stack" style={{ gap: 0 }}>
+            <strong className="t-title-sm">
+              {Math.round(((dispYear.total ?? 0) / Math.max(instYear.total ?? 1, 1)) * 100)}%
+            </strong>
+            <span className="t-caption">disposed vs filed, this year</span>
+          </span>
+        )}
+      </div>
+
+      {reg.length > 0 && (
+        <div className="stack gap-2">
+          <span className="t-caption" style={{ fontWeight: 700 }}>Where pending matters sit</span>
+          <div className="stack gap-2" style={{ maxWidth: 560 }}>
+            {reg.map((r) => <StatBar key={r.label} label={r.label} value={r.total ?? 0} max={maxReg} />)}
+          </div>
+        </div>
+      )}
+
+      {coram.length > 0 && (
+        <div className="stack gap-2">
+          <span className="t-caption" style={{ fontWeight: 700 }}>Constitution bench pendency</span>
+          <p className="t-caption">
+            Matters awaiting a larger bench. The bracketed figure includes connected matters heard together.
+          </p>
+          <div className="row wrap gap-2">
+            {coram.map((c) => (
+              <span key={c.label} className="card row gap-2" style={{ padding: '8px 12px', alignItems: 'baseline' }}>
+                <strong className="t-body-sm">{c.label}</strong>
+                <span className="mono t-body-sm">{grouped(c.total ?? 0)}</span>
+                {c.percent != null && c.percent > 0 && (
+                  <span className="t-caption">({grouped(c.percent)} with connected)</span>
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function JudicialDataPage() {
   if (!databaseReady()) {
     return <div className="container section"><Notice tone="warn">Run <code className="mono">npm run ingest</code> first.</Notice></div>;
@@ -163,6 +248,8 @@ export default function JudicialDataPage() {
           and they are <strong>aggregates only</strong> — no case records, party names or litigant data are
           held here. Check the source before relying on a figure.
         </Notice>
+
+        <SupremeCourtPanel snap={snap} />
 
         <TierPanel
           snap={snap} tier="district" title="District Courts"

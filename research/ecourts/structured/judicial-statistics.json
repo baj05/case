@@ -1,6 +1,6 @@
 {
   "$comment": "Structured extraction from India's National Judicial Data Grid (NJDG). Every record carries source provenance per the ingestion contract. These are AGGREGATE COUNTS ONLY — no case records, no party names, no personal data. See research/ecourts/reports/CRAWL_REPORT.md for method and limits.",
-  "dataVersion": "2026-08-24.1",
+  "dataVersion": "2026-08-24.2",
   "retrievedAt": "2026-08-24T00:00:00Z",
   "sources": [
     {
@@ -19,6 +19,14 @@
       "publisher": "National Informatics Centre (NIC), Ministry of Electronics & IT, Government of India",
       "authority": "government",
       "robotsPolicy": "no robots.txt present — no crawl restriction declared"
+    },
+    {
+      "id": "njdg-supremecourt",
+      "name": "National Judicial Data Grid — Supreme Court of India",
+      "url": "https://scdg.sci.gov.in/",
+      "publisher": "Supreme Court of India / National Informatics Centre (NIC)",
+      "authority": "government",
+      "robotsPolicy": "sci.gov.in robots.txt disallows only /wp-admin/; this path is permitted"
     }
   ],
 
@@ -41,7 +49,32 @@
       "total": 6478459,
       "olderThanOneYearPercent": 72.54,
       "olderThanOneYearCount": 4699287
+    },
+    {
+      "tier": "supreme_court",
+      "sourceId": "njdg-supremecourt",
+      "civil": 72368,
+      "criminal": 21664,
+      "total": 94032
     }
+  ],
+
+  "$comment_supremeCourtRegistration": "The Supreme Court grid breaks pendency down by registration state rather than by age — a filed matter is not 'pending' in the same sense until it is registered and listed. District/HC grids have no equivalent.",
+  "supremeCourtRegistration": [
+    { "label": "Registered",                                    "civil": 54215, "criminal": 17374, "total": 71589 },
+    { "label": "Unregistered",                                  "civil": 18153, "criminal": 4290,  "total": 22443 },
+    { "label": "Listed matters",                                "civil": 9533,  "criminal": 1831,  "total": 11364 },
+    { "label": "Under scrutiny / defective / pending listing",  "civil": 8620,  "criminal": 2459,  "total": 11079 }
+  ],
+
+  "$comment_coram": "Constitution-bench pendency by bench size. Bracketed NJDG figures include connected matters; `total` here is main matters only, `withConnected` is the bracketed figure.",
+  "supremeCourtCoram": [
+    { "bench": "3 Judges",           "civil": 167, "criminal": 63, "total": 230, "withConnected": 1237 },
+    { "bench": "5 Judges",           "civil": 19,  "criminal": 3,  "total": 22,  "withConnected": 175 },
+    { "bench": "7 Judges",           "civil": 4,   "criminal": 1,  "total": 5,   "withConnected": 34 },
+    { "bench": "9 Judges",           "civil": 2,   "criminal": 0,  "total": 2,   "withConnected": 46 },
+    { "bench": "11 Judges",          "civil": 0,   "criminal": 0,  "total": 0,   "withConnected": 0 },
+    { "bench": "More than 11 Judges", "civil": 0,  "criminal": 0,  "total": 0,   "withConnected": 0 }
   ],
 
   "ageBands": [
@@ -65,7 +98,12 @@
     { "tier": "high_court", "metric": "instituted_last_month", "civil": 156886,  "criminal": 101583,  "total": 258469 },
     { "tier": "high_court", "metric": "disposed_last_month",   "civil": 153150,  "criminal": 94280,   "total": 247430 },
     { "tier": "high_court", "metric": "instituted_this_year",  "civil": 1005735, "criminal": 700116,  "total": 1705851 },
-    { "tier": "high_court", "metric": "disposed_this_year",    "civil": 957004,  "criminal": 637600,  "total": 1594604 }
+    { "tier": "high_court", "metric": "disposed_this_year",    "civil": 957004,  "criminal": 637600,  "total": 1594604 },
+
+    { "tier": "supreme_court", "metric": "instituted_last_month", "civil": 5036,  "criminal": 2404,  "total": 7440 },
+    { "tier": "supreme_court", "metric": "disposed_last_month",   "civil": 4273,  "criminal": 2201,  "total": 6474 },
+    { "tier": "supreme_court", "metric": "instituted_this_year",  "civil": 34788, "criminal": 17691, "total": 52479 },
+    { "tier": "supreme_court", "metric": "disposed_this_year",    "civil": 35131, "criminal": 15455, "total": 50586 }
   ],
 
   "litigantProfile": [
