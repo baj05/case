@@ -10,5 +10,6 @@ export * from './taxonomy.ts';
 export * from './resources.ts';
 export * from './auth.ts';
 export * from './reviews.ts';
+export * from './judicial.ts';
 export * from './organisations.ts';
 export * from './site-feedback.ts';

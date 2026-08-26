@@ -26,6 +26,7 @@ import {
   listRecentReviewsAcrossPlatform,
   getOrganisationBySlug, listOrganisations,
   getSiteFeedbackSummary, listSiteFeedback,
+  getJudicialSnapshot, listHighCourts,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
 
@@ -56,6 +57,11 @@ export function getEligibleExperiences(userId: number, professionalId: number) {
 export function getModerationQueue(status?: string) {
   return listModerationQueue(status);
 }
+/** NJDG judicial statistics. Cached per render pass — the page reads the
+ * same snapshot from several sections. */
+export const getJudicialData = cache(() => getJudicialSnapshot());
+export const getHighCourts = cache(() => listHighCourts());
+
 export function getReportedReviews() {
   return listReportedReviews();
 }

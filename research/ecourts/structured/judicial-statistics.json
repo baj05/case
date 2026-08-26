@@ -1,0 +1,115 @@
+{
+  "$comment": "Structured extraction from India's National Judicial Data Grid (NJDG). Every record carries source provenance per the ingestion contract. These are AGGREGATE COUNTS ONLY — no case records, no party names, no personal data. See research/ecourts/reports/CRAWL_REPORT.md for method and limits.",
+  "dataVersion": "2026-08-24.1",
+  "retrievedAt": "2026-08-24T00:00:00Z",
+  "sources": [
+    {
+      "id": "njdg-district",
+      "name": "National Judicial Data Grid — District Courts",
+      "url": "https://njdg.ecourts.gov.in/njdg_v3/",
+      "publisher": "National Informatics Centre (NIC), Ministry of Electronics & IT, Government of India",
+      "authority": "government",
+      "robotsPolicy": "no robots.txt present — no crawl restriction declared",
+      "portalLastReviewed": "2025-08-11"
+    },
+    {
+      "id": "njdg-highcourt",
+      "name": "National Judicial Data Grid — High Courts",
+      "url": "https://njdg.ecourts.gov.in/hcnjdg_v2/",
+      "publisher": "National Informatics Centre (NIC), Ministry of Electronics & IT, Government of India",
+      "authority": "government",
+      "robotsPolicy": "no robots.txt present — no crawl restriction declared"
+    }
+  ],
+
+  "pendency": [
+    {
+      "tier": "district",
+      "sourceId": "njdg-district",
+      "civil": 11274334,
+      "criminal": 39796329,
+      "total": 51070663,
+      "olderThanOneYearPercent": 62.09,
+      "olderThanOneYearCount": 31711116,
+      "preLitigationOrPreTrial": 1274910
+    },
+    {
+      "tier": "high_court",
+      "sourceId": "njdg-highcourt",
+      "civil": 4512720,
+      "criminal": 1965739,
+      "total": 6478459,
+      "olderThanOneYearPercent": 72.54,
+      "olderThanOneYearCount": 4699287
+    }
+  ],
+
+  "ageBands": [
+    { "tier": "district", "band": "Less than 1 year", "civil": 4397166, "criminal": 14962330, "total": 19359496, "percent": 38 },
+    { "tier": "district", "band": "1 to 3 years",     "civil": 2848728, "criminal": 8845284,  "total": 11694012, "percent": 23 },
+    { "tier": "district", "band": "3 to 5 years",     "civil": 1552818, "criminal": 5279350,  "total": 6832168,  "percent": 13 },
+    { "tier": "district", "band": "5 to 10 years",    "civil": 1637574, "criminal": 6763023,  "total": 8400597,  "percent": 16 },
+    { "tier": "district", "band": "Above 10 years",   "civil": 838446,  "criminal": 3949206,  "total": 4787652,  "percent": 9 },
+
+    { "tier": "high_court", "band": "Less than 1 year", "civil": 1208297, "criminal": 570875,  "total": 1779172, "percent": 27 },
+    { "tier": "high_court", "band": "1 to 3 years",     "civil": 834512,  "criminal": 357462,  "total": 1191974, "percent": 18 },
+    { "tier": "high_court", "band": "3 to 5 years",     "civil": 519218,  "criminal": 184453,  "total": 703671,  "percent": 11 },
+    { "tier": "high_court", "band": "5 to 10 years",    "civil": 954526,  "criminal": 358208,  "total": 1312734, "percent": 20 },
+    { "tier": "high_court", "band": "Above 10 years",   "civil": 996167,  "criminal": 494741,  "total": 1490908, "percent": 23 }
+  ],
+
+  "flow": [
+    { "tier": "district",   "metric": "instituted_last_month", "civil": 441080,  "criminal": 2480237, "total": 2921317 },
+    { "tier": "district",   "metric": "disposed_last_month",   "civil": 383640,  "criminal": 2014386, "total": 2398026 },
+    { "tier": "district",   "metric": "listed_today",          "civil": 96901,   "criminal": 263006,  "total": 359907 },
+    { "tier": "high_court", "metric": "instituted_last_month", "civil": 156886,  "criminal": 101583,  "total": 258469 },
+    { "tier": "high_court", "metric": "disposed_last_month",   "civil": 153150,  "criminal": 94280,   "total": 247430 },
+    { "tier": "high_court", "metric": "instituted_this_year",  "civil": 1005735, "criminal": 700116,  "total": 1705851 },
+    { "tier": "high_court", "metric": "disposed_this_year",    "civil": 957004,  "criminal": 637600,  "total": 1594604 }
+  ],
+
+  "litigantProfile": [
+    { "tier": "district", "group": "filed_by_women",          "civil": 1878249, "criminal": 2077611, "total": 3955860 },
+    { "tier": "district", "group": "filed_by_senior_citizens", "civil": 2523602, "criminal": 787365,  "total": 3310967 }
+  ],
+
+  "highCourtCaseTypes": [
+    { "caseType": "Writ Petition",  "civil": 1822440, "criminal": 103648, "total": 1926088 },
+    { "caseType": "Appeal",         "civil": 412249,  "criminal": 779064, "total": 1191313 },
+    { "caseType": "Application",    "civil": 444720,  "criminal": 462220, "total": 906940 },
+    { "caseType": "First Appeal",   "civil": 508890,  "criminal": 189,    "total": 509079 },
+    { "caseType": "Case/Petition",  "civil": 268433,  "criminal": 210524, "total": 478957 },
+    { "caseType": "Revision",       "civil": 101448,  "criminal": 262840, "total": 364288 },
+    { "caseType": "Second Appeal",  "civil": 312103,  "criminal": 6,      "total": 312109 },
+    { "caseType": "Suit",           "civil": 34138,   "criminal": 0,      "total": 34138 },
+    { "caseType": "Review",         "civil": 22470,   "criminal": 43,     "total": 22513 },
+    { "caseType": "Reference",      "civil": 2262,    "criminal": 493,    "total": 2755 }
+  ],
+
+  "highCourtDelayReasons": [
+    { "reason": "Evidence / Argument / Judgement", "civil": 415624, "criminal": 794866, "total": 1210484 },
+    { "reason": "Compliance / Steps / Stay",       "civil": 302770, "criminal": 629241, "total": 932011 },
+    { "reason": "Pleadings / Issues / Charge",     "civil": 109736, "criminal": 130304, "total": 240040 },
+    { "reason": "Appearance / Service related",    "civil": 5091,   "criminal": 16187,  "total": 21278 }
+  ],
+
+  "highCourts": [
+    "Allahabad High Court", "Bombay High Court", "Calcutta High Court", "Gauhati High Court",
+    "High Court for State of Telangana", "High Court of Andhra Pradesh", "High Court of Chhattisgarh",
+    "High Court of Delhi", "High Court of Gujarat", "High Court of Himachal Pradesh",
+    "High Court of Jammu and Kashmir and Ladakh", "High Court of Jharkhand", "High Court of Karnataka",
+    "High Court of Kerala", "High Court of Madhya Pradesh", "High Court of Manipur",
+    "High Court of Meghalaya", "High Court of Orissa", "High Court of Punjab and Haryana",
+    "High Court of Rajasthan", "High Court of Sikkim", "High Court of Tripura",
+    "High Court of Uttarakhand", "Madras High Court", "Patna High Court"
+  ],
+
+  "statesCovered": [
+    "Andaman and Nicobar", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh",
+    "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+    "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra",
+    "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan",
+    "Sikkim", "Tamil Nadu", "Telangana", "The Dadra And Nagar Haveli And Daman And Diu", "Tripura",
+    "Uttar Pradesh", "Uttarakhand", "West Bengal"
+  ]
+}
