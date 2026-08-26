@@ -47,4 +47,12 @@ node --input-type=module -e "
   console.log('[entrypoint] resource verification is a separate step: node packages/ingestion/cli.ts --verify-resources');
 " || echo "[entrypoint] WARNING: resource seed failed; /resources will report an empty library"
 
+# Judicial statistics (NJDG). Idempotent — re-running the same data_version is
+# a no-op, so this is safe on every boot. A failure here is non-fatal:
+# /judicial-data degrades to an honest "not ingested yet" state rather than
+# taking the container down.
+echo "[entrypoint] ingesting judicial statistics"
+node /app/packages/db/scripts/ingest-judicial-statistics.ts \
+  || echo "[entrypoint] WARNING: judicial statistics ingest failed; /judicial-data will report no data"
+
 exec "$@"

@@ -3,8 +3,8 @@ import Image from 'next/image';
 import { DualSearch } from '@/components/DualSearch';
 import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
-import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady, getFlags, getRecentReviewFeed } from '@/lib/data';
-import { formatNumber, relativeDate, searchHref } from '@/lib/format';
+import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady, getFlags, getRecentReviewFeed, getJudicialData } from '@/lib/data';
+import { formatNumber, relativeDate, searchHref, compactIndian } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +60,25 @@ export default async function HomePage() {
   const areas = getPracticeAreas();
   const highCourts = getCourts(2).filter((c) => c.isBench === 0);
   const councils = getBarCouncils();
+
+  /* Pendency headline per tier of the judiciary. Rendered largest-first
+     (district → high court → supreme) because that is the order a matter
+     actually travels, and the magnitude drop across the three is the point. */
+  const judicial = getJudicialData();
+  const judicialTiers = ([
+    ['district', 'District Courts'],
+    ['high_court', 'High Courts'],
+    ['supreme_court', 'Supreme Court'],
+  ] as const)
+    .map(([tier, name]) => {
+      const row = judicial.stats.find(
+        (s) => s.tier === tier && s.metricGroup === 'pendency' && s.label === 'total_pending',
+      );
+      return row?.total != null
+        ? { tier: tier as string, name: name as string, display: compactIndian(row.total) }
+        : null;
+    })
+    .filter((t) => t !== null);
   const topAreas = areas.filter((a) => a.parentId === null);
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
@@ -315,6 +334,42 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ====================================================== JUDICIAL DATA */}
+      {judicial.available && judicialTiers.length > 0 && (
+        <section className="container section-tight">
+          <div className="card stack gap-4" style={{ padding: 'clamp(20px, 4vw, 34px)' }}>
+            <div className="row wrap gap-4" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div className="stack gap-2">
+                <p className="t-label-mono ink-variant">Judicial data</p>
+                <h2 className="t-headline-lg" style={{ maxWidth: '20ch' }}>
+                  Know the queue before you join it.
+                </h2>
+                <p className="t-body ink-variant measure">
+                  Official pendency figures for every tier of the Indian judiciary, published by the
+                  National Judicial Data Grid.
+                </p>
+              </div>
+              <Link href="/judicial-data" className="btn btn-secondary">See the full picture</Link>
+            </div>
+
+            <div className="judicial-strip">
+              {judicialTiers.map((t) => (
+                <Link key={t.tier} href="/judicial-data" className="judicial-tier">
+                  <span className="judicial-tier-num">{t.display}</span>
+                  <span className="judicial-tier-name">{t.name}</span>
+                  <span className="judicial-tier-sub">cases pending</span>
+                </Link>
+              ))}
+            </div>
+
+            <p className="t-caption">
+              Source: National Judicial Data Grid (NIC, Government of India). Aggregate counts only —
+              no case records or personal data.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* ================================================ BROWSE BY CATEGORY */}
       <section className="container section">

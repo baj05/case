@@ -2209,3 +2209,30 @@ details[open] > .filter-summary::after { content: '–'; }
   .review-post { gap: 10px; padding: 14px; }
   .review-post-avatar { width: 36px; height: 36px; }
 }
+
+/* --- homepage judicial strip ------------------------------------------- */
+.judicial-strip {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.judicial-tier {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 18px 20px;
+  border-radius: var(--r-md);
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  transition: border-color var(--t) var(--ease), background var(--t) var(--ease), transform var(--t) var(--ease);
+}
+.judicial-tier:hover {
+  border-color: var(--outline);
+  background: var(--surface-container);
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) { .judicial-tier:hover { transform: none; } }
+.judicial-tier-num {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.75rem, 3.5vw, 2.375rem); line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.judicial-tier-name { font-weight: 600; font-size: 0.9375rem; margin-top: 4px; }
+.judicial-tier-sub { font-size: 0.8125rem; color: var(--on-surface-variant); }

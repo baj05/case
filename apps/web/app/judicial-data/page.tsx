@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getJudicialData, getHighCourts, databaseReady } from '@/lib/data';
 import { pickStats, type JudicialSnapshot } from '@lexhall/db';
+import { compactIndian } from '@/lib/format';
 import { Notice } from '@/components/States';
 
 export const dynamic = 'force-dynamic';
@@ -12,14 +13,6 @@ export const metadata: Metadata = {
     + 'sourced from the National Judicial Data Grid with full attribution.',
 };
 
-/** Indian digit grouping (lakh/crore) — 51070663 → "5,10,70,663". Plain
- * toLocaleString('en-IN') is right here, but the crore/lakh word form is what
- * an Indian legal reader actually scans for at this magnitude. */
-function inWords(n: number): string {
-  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(2)} Cr`;
-  if (n >= 100_000) return `${(n / 100_000).toFixed(2)} Lakh`;
-  return n.toLocaleString('en-IN');
-}
 const grouped = (n: number) => n.toLocaleString('en-IN');
 
 function StatBar({ label, value, max, sub }: { label: string; value: number; max: number; sub?: string }) {
@@ -63,7 +56,7 @@ function TierPanel({ snap, tier, title, blurb }: {
       <div className="row wrap gap-5" style={{ alignItems: 'baseline' }}>
         <span className="stack" style={{ gap: 0 }}>
           <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-            {inWords(pending.total ?? 0)}
+            {compactIndian(pending.total ?? 0)}
           </strong>
           <span className="t-caption">cases pending · {grouped(pending.total ?? 0)}</span>
         </span>

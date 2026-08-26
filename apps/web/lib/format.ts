@@ -38,3 +38,17 @@ export const COURT_TIER_LABEL: Record<number, string> = {
   1: 'Supreme Court', 2: 'High Court', 3: 'District Court',
   4: 'Tribunal', 5: 'Consumer Commission', 6: 'Special Court', 7: 'Arbitral Institution',
 };
+
+/**
+ * Indian short-scale magnitude — 51070663 → "5.11 Cr", 6478459 → "64.78 Lakh".
+ *
+ * At judicial-pendency magnitudes a fully grouped number ("5,10,70,663") is
+ * accurate but unreadable at a glance, and the Western "51M" form is not how
+ * an Indian legal reader scales quantity. Pair this with formatNumber() when
+ * the exact figure also matters.
+ */
+export function compactIndian(n: number): string {
+  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(2)} Cr`;
+  if (n >= 100_000) return `${(n / 100_000).toFixed(2)} Lakh`;
+  return formatNumber(n);
+}

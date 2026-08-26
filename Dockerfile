@@ -50,6 +50,9 @@ COPY --from=build --chown=lexhall:lexhall /app/apps/web/package.json ./apps/web/
 COPY --from=build --chown=lexhall:lexhall /app/apps/web/next.config.ts ./apps/web/
 COPY --from=build --chown=lexhall:lexhall /app/packages ./packages
 COPY --from=build --chown=lexhall:lexhall /app/package.json ./
+# The reviewed judicial-statistics extract the ingest script reads at boot.
+# Only the structured artifact ships — raw crawl HTML stays out of the image.
+COPY --from=build --chown=lexhall:lexhall /app/research/ecourts/structured ./research/ecourts/structured
 COPY --chown=lexhall:lexhall docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && mkdir -p /app/data && chown -R lexhall:lexhall /app/data
