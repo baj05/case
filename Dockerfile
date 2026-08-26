@@ -1,72 +1,67 @@
-# syntax=docker/dockerfile:1
+# ---------------------------------------------------------------------------
+# CaseADVO — production image.
+#
+# Multi-stage: deps -> build -> runtime. The runtime stage carries no compiler
+# and no dev dependencies, runs as a non-root user, and includes a healthcheck.
+#
+# The database is SQLite via Node's built-in node:sqlite (ADR-002), so the image
+# needs no database server and no native compilation. The data directory is a
+# volume so the ingested corpus survives container replacement.
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY apps/web/package.json apps/web/
+COPY packages/core/package.json packages/core/
+COPY packages/db/package.json packages/db/
+COPY packages/ingestion/package.json packages/ingestion/
+# npm workspaces need every manifest present before install.
+RUN npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
-ARG NODE_VERSION=26.0.0
-
-################################################################################
-# Use node image for base image for all stages.
-FROM node:${NODE_VERSION}-alpine as base
-
-# Set working directory for all build stages.
-WORKDIR /usr/src/app
-
-
-################################################################################
-# Create a stage for installing production dependecies.
-FROM base as deps
-
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.npm to speed up subsequent builds.
-# Leverage bind mounts to package.json and package-lock.json to avoid having to copy them
-# into this layer.
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
-
-################################################################################
-# Create a stage for building the application.
-FROM deps as build
-
-# Download additional development dependencies before building, as some projects require
-# "devDependencies" to be installed to build. If you don't need this, remove this step.
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci
-
-# Copy the rest of the source files into the image.
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY apps/web/package.json apps/web/
+COPY packages/core/package.json packages/core/
+COPY packages/db/package.json packages/db/
+COPY packages/ingestion/package.json packages/ingestion/
+RUN npm ci --ignore-scripts || npm install --ignore-scripts
 COPY . .
-# Run the build script.
-RUN npm run build
+ENV NEXT_TELEMETRY_DISABLED=1
+# Build with a throwaway database so prerendering has a schema to read.
+RUN DATABASE_PATH=/tmp/build.db node -e "\
+  const {applySchema}=await import('./packages/db/src/client.ts');\
+  applySchema({fresh:true});" --input-type=module \
+  && DATABASE_PATH=/tmp/build.db npm run build
 
-################################################################################
-# Create a new stage to run the application with minimal runtime dependencies
-# where the necessary files are copied from the build stage.
-FROM base as final
-
-# Use production node environment by default.
-ENV NODE_ENV production
-
-# Run the application as a non-root user.
-USER node
-
-# Copy package.json so that package manager commands can be used.
-COPY package.json .
-
-# Copy the production dependencies from the deps stage and also
-# the built application from the build stage into the image.
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/. ./.
-
-
-# Expose the port that the application listens on.
+FROM node:22-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0 \
+    DATABASE_PATH=/app/data/lexhall.db
+RUN addgroup -S lexhall && adduser -S lexhall -G lexhall \
+    && apk add --no-cache curl
+COPY --from=build --chown=lexhall:lexhall /app/node_modules ./node_modules
+COPY --from=build --chown=lexhall:lexhall /app/apps/web/.next ./apps/web/.next
+COPY --from=build --chown=lexhall:lexhall /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=lexhall:lexhall /app/apps/web/package.json ./apps/web/
+COPY --from=build --chown=lexhall:lexhall /app/apps/web/next.config.ts ./apps/web/
+COPY --from=build --chown=lexhall:lexhall /app/packages ./packages
+COPY --from=build --chown=lexhall:lexhall /app/package.json ./
+# The reviewed judicial-statistics extract the ingest script reads at boot.
+# Only the structured artifact ships — raw crawl HTML stays out of the image.
+COPY --from=build --chown=lexhall:lexhall /app/research/ecourts/structured ./research/ecourts/structured
+COPY --chown=lexhall:lexhall docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && mkdir -p /app/data && chown -R lexhall:lexhall /app/data
+USER lexhall
 EXPOSE 3000
-
-# Run the application.
-CMD npm start
+VOLUME ["/app/data"]
+# Liveness AND readiness in one probe: /api/health reports database reachability
+# and corpus size, so an empty database is visibly not-ready rather than "up".
+HEALTHCHECK --interval=15s --timeout=5s --start-period=25s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:3000/api/health | grep -qE '"status":"(ok|degraded)"' || exit 1
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["npm", "run", "start", "--workspace=@lexhall/web"]
