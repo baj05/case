@@ -4,6 +4,8 @@
  *
  *   npm run db:ecourts -- --structure              # states + districts (~39 calls)
  *   npm run db:ecourts -- --advocates --pages 20   # advocate discovery
+ *   npm run db:ecourts -- --export <file>         # dump ingested rows to JSON
+ *   npm run db:ecourts -- --import <file>         # load a dump (spends no credits)
  *   npm run db:ecourts -- --clear
  *
  * EVERY CALL SPENDS CREDITS, so nothing here is unbounded. `--pages` caps the
@@ -17,7 +19,9 @@ import {
 } from '../../ingestion/src/ecourts-api.ts';
 import { applySchema, db, now, transaction, toJson } from '../src/client.ts';
 
-if (!hasECourtsKey()) {
+// Export, import and clear touch no network, so they must not require a key.
+const NEEDS_KEY = !['--export', '--import', '--clear'].some((f) => process.argv.includes(f));
+if (NEEDS_KEY && !hasECourtsKey()) {
   process.stderr.write('ECOURTS_API_KEY not set. See .env.example.\n');
   process.exit(1);
 }
@@ -61,6 +65,61 @@ function sourceId(): number {
   return (h.prepare(`SELECT id FROM source WHERE code='ecourtsindia-api'`).get() as { id: number }).id;
 }
 const SRC = sourceId();
+
+/* Export / import exist so the same ingested rows can be moved to another
+   database — the Docker container, a colleague's machine — WITHOUT paying for
+   the API calls a second time. Credits are the scarce resource here, not disk. */
+
+const EXPORT_TABLES = ['ecourts_state', 'ecourts_district', 'ecourts_court', 'ecourts_advocate'] as const;
+
+function argValue(flag: string): string | undefined {
+  const i = argv.indexOf(flag);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+if (has('--export')) {
+  const file = argValue('--export');
+  if (!file) { process.stderr.write('--export needs a file path\n'); process.exit(1); }
+  const payload: Record<string, unknown> = { exportedAt: ts };
+  for (const t of EXPORT_TABLES) {
+    payload[t] = h.prepare(`SELECT * FROM ${t}`).all();
+  }
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(file!, JSON.stringify(payload));
+  for (const t of EXPORT_TABLES) {
+    process.stdout.write(`  ${t}: ${(payload[t] as unknown[]).length}\n`);
+  }
+  process.stdout.write(`exported to ${file}\n`);
+  process.exit(0);
+}
+
+if (has('--import')) {
+  const file = argValue('--import');
+  if (!file) { process.stderr.write('--import needs a file path\n'); process.exit(1); }
+  const { readFileSync } = await import('node:fs');
+  const payload = JSON.parse(readFileSync(file!, 'utf8')) as Record<string, Array<Record<string, unknown>>>;
+  // source_id in the dump is the EXPORTING database's row id and means nothing
+  // here; every imported row is repointed at this database's own source row.
+  const localSource = sourceId();
+  let total = 0;
+  transaction(() => {
+    for (const t of EXPORT_TABLES) {
+      const rows = payload[t] ?? [];
+      if (rows.length === 0) continue;
+      const cols = Object.keys(rows[0]!).filter((c) => c !== 'id');
+      const stmt = h.prepare(
+        `INSERT OR REPLACE INTO ${t} (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
+      );
+      for (const r of rows) {
+        stmt.run(...cols.map((c) => (c === 'source_id' ? localSource : r[c] as never)));
+        total += 1;
+      }
+      process.stdout.write(`  ${t}: ${rows.length}\n`);
+    }
+  });
+  process.stdout.write(`imported ${total} rows (no API calls, no credits spent)\n`);
+  process.exit(0);
+}
 
 const HONORIFICS = /^(?:adv|advocate|mr|mrs|ms|miss|dr|shri|smt|sri|kum|late|m\/s)\.?\s+/gi;
 
