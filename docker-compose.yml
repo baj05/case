@@ -1,47 +1,51 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
 services:
-  web:
+  server:
     build:
       context: .
-      target: runtime
-    image: lexhall/web:local
-    container_name: lexhall-web
-    restart: unless-stopped
-    ports:
-      - "3100:3000"
     environment:
       NODE_ENV: production
-      DATABASE_PATH: /app/data/lexhall.db
-      NEXT_PUBLIC_APP_URL: http://localhost:3100
-      # Compliance gates. Off by default; see docs/COMPLIANCE_MATRIX.md.
-      FEATURE_REVIEWS: "false"
-      FEATURE_PAYMENTS: "false"
-      FEATURE_REFERRALS: "false"
-      FEATURE_PAID_RANKING: "false"
-      FEATURE_AI_INTAKE: "true"
-    volumes:
-      # Named volume so the ingested corpus survives container replacement.
-      - lexhall_data:/app/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health | grep -qE '\"status\":\"(ok|degraded)\"' || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 4
-      start_period: 25s
+    ports:
+      - 3000:3000
 
-  # One-shot ingestion. `docker compose run --rm ingest` populates the shared
-  # volume; it is not part of `up` because crawling on every boot would be
-  # impolite to the source.
-  ingest:
-    build:
-      context: .
-      target: build
-    image: lexhall/ingest:local
-    profiles: ["tools"]
-    environment:
-      DATABASE_PATH: /app/data/lexhall.db
-    volumes:
-      - lexhall_data:/app/data
-    command: ["sh", "-lc", "npm run ingest && npm run ingest:judges && npm run db:demo"]
+# The commented out section below is an example of how to define a PostgreSQL
+# database that your application can use. `depends_on` tells Docker Compose to
+# start the database before your application. The `db-data` volume persists the
+# database data between container restarts. The `db-password` secret is used
+# to set the database password. You must create `db/password.txt` and add
+# a password of your choosing to it before running `docker-compose up`.
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#   db:
+#     image: postgres
+#     restart: always
+#     user: postgres
+#     secrets:
+#       - db-password
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#     environment:
+#       - POSTGRES_DB=example
+#       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+#     expose:
+#       - 5432
+#     healthcheck:
+#       test: [ "CMD", "pg_isready" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+# volumes:
+#   db-data:
+# secrets:
+#   db-password:
+#     file: db/password.txt
 
-volumes:
-  lexhall_data:
