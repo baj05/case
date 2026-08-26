@@ -69,6 +69,7 @@ export const NAV: NavItem[] = [
           { href: '/bar-councils', label: 'State Bar Councils' },
           { href: '/forums', label: 'Consumer & other forums' },
           { href: '/judicial-data', label: 'Judicial data', hint: 'Pendency & disposal statistics' },
+          { href: '/court-directory', label: 'Court directory', hint: 'Courts, districts & names on record' },
         ],
         footer: { href: '/data-sources', label: 'Where our data comes from' },
       },

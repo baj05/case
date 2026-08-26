@@ -27,6 +27,7 @@ import {
   getOrganisationBySlug, listOrganisations,
   getSiteFeedbackSummary, listSiteFeedback,
   getJudicialSnapshot, listHighCourts,
+  getECourtsCoverage, listECourtsCourts, listECourtsAdvocates, countECourtsAdvocates, listECourtsStates,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
 
@@ -61,6 +62,18 @@ export function getModerationQueue(status?: string) {
  * same snapshot from several sections. */
 export const getJudicialData = cache(() => getJudicialSnapshot());
 export const getHighCourts = cache(() => listHighCourts());
+
+/** eCourtsIndia licensed-API directory. Source-derived and unverified —
+ * never merge these into the Bar-Council-sourced professional counts. */
+export const getECourtsStats = cache(() => getECourtsCoverage());
+export const getECourtsCourtList = cache((limit?: number) => listECourtsCourts(limit));
+export const getECourtsStateList = cache(() => listECourtsStates());
+export function getECourtsAdvocateList(opts?: { limit?: number; offset?: number; q?: string }) {
+  return listECourtsAdvocates(opts);
+}
+export function getECourtsAdvocateCount(q?: string) {
+  return countECourtsAdvocates(q);
+}
 
 export function getReportedReviews() {
   return listReportedReviews();

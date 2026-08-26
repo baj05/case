@@ -36,6 +36,8 @@
     "resources:harvest:dry": "node packages/ingestion/cli.ts --harvest-resources --dry-run --limit 6",
     "resources:publish": "node packages/ingestion/cli.ts --publish-reviewed",
     "resources:refresh": "npm run resources && npm run resources:verify",
-    "db:judicial": "npm run judicial --workspace=@lexhall/db --"
+    "db:judicial": "npm run judicial --workspace=@lexhall/db --",
+    "ecourts:verify": "node --env-file-if-exists=.env packages/ingestion/verify-ecourts.ts",
+    "db:ecourts": "node --env-file-if-exists=.env packages/db/scripts/ingest-ecourts.ts"
   }
 }
