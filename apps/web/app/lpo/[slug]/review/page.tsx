@@ -11,7 +11,7 @@ export default async function WriteLpoReviewPage({ params }: { params: Promise<{
   const { slug } = await params;
   const flags = getFlags();
   if (!flags.FEATURE_REVIEWS) redirect(`/lpo/${slug}`);
-  const org = getOrganisation(slug);
+  const org = getOrganisation(slug, ['lpo']);
   if (!org || org.kind !== 'lpo') notFound();
   await requireUser(undefined, `/lpo/${slug}/review`);
 

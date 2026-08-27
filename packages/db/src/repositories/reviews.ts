@@ -19,6 +19,7 @@
  *     confident-looking breakdown (§28 of the product brief).
  */
 import { db, now, transaction, toJson, fromJson } from '../client.ts';
+import { REVIEWABLE_ORG_KINDS } from './organisations.ts';
 
 export type DisplayMode = 'attributed' | 'pseudonymous' | 'anonymous';
 export type ReviewerType =
@@ -247,9 +248,19 @@ export function createOrganisationReview(input: CreateOrganisationReviewInput): 
     const h = db();
     const author = h.prepare(`SELECT email FROM app_user WHERE id = ?`).get(input.authorUserId) as { email: string } | undefined;
     if (!author) throw new Error('AUTHOR_NOT_FOUND');
-    const org = h.prepare(`SELECT email_domain AS emailDomain, domain_verified_at AS domainVerifiedAt FROM organisation WHERE id = ?`)
-      .get(input.organisationId) as { emailDomain: string | null; domainVerifiedAt: string | null } | undefined;
+    const org = h.prepare(`SELECT kind, email_domain AS emailDomain, domain_verified_at AS domainVerifiedAt FROM organisation WHERE id = ?`)
+      .get(input.organisationId) as { kind: string; emailDomain: string | null; domainVerifiedAt: string | null } | undefined;
     if (!org) throw new Error('ORGANISATION_NOT_FOUND');
+
+    // Only publicly listed legal-service providers can be reviewed. A
+    // 'corporate' organisation is a client company that signed up to USE the
+    // platform; reviewing one would publish a private tenant as though it
+    // were a listed firm. Enforced here, in the write path, rather than only
+    // at the callers: a Server Action is invocable directly, so a caller-side
+    // check alone is a UI gate, not a boundary.
+    if (!(REVIEWABLE_ORG_KINDS as readonly string[]).includes(org.kind)) {
+      throw new Error('ORGANISATION_NOT_REVIEWABLE');
+    }
 
     const existing = h.prepare(`SELECT 1 FROM review WHERE author_user_id = ? AND organisation_id = ?`)
       .get(input.authorUserId, input.organisationId);

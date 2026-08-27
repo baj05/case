@@ -21,7 +21,7 @@ const {
   reportReview, listModerationQueue, moderateReview, deleteReview, listReportedReviews, isAuthorizedToRespond, listReviewsForProfessional,
   getProfessionalReviewSummary, eligibleExperiences,
   createOrganisationReview, getOrganisationReviewSummary, listReviewsForOrganisation,
-  getReviewSubjectPath,
+  getReviewSubjectPath, getOrganisationBySlug, REVIEWABLE_ORG_KINDS,
 } = await import('@lexhall/db');
 
 let pass = 0;
@@ -375,6 +375,36 @@ const orgMemberUser = createUser({ email: 'org-member@example.com', fullName: 'O
 h.exec(`INSERT INTO org_member (organisation_id, user_id, role, created_at) VALUES (1, ${orgMemberUser.id}, 'member', '${ts}')`);
 check('a member of the reviewed organisation is authorized to respond to its reviews', () => isAuthorizedToRespond(verifiedOrgReview.id, orgMemberUser.id) === true);
 check('a non-member is not authorized to respond to an organisation review', () => isAuthorizedToRespond(verifiedOrgReview.id, randomUser.id) === false);
+
+// --- a 'corporate' organisation is a CLIENT COMPANY using the platform, not a
+// listed provider. It must never be reviewable. Guarded in the write path
+// rather than only at callers, because a Server Action is invocable directly
+// and a caller-side check alone is a UI gate, not a boundary.
+h.exec(`INSERT INTO organisation (id, kind, name, slug, country_id, created_at, updated_at)
+  VALUES (3,'corporate','Acme Client Pvt Ltd','acme-client',1,'${ts}','${ts}')`);
+const corpReviewer = createUser({ email: 'corp-reviewer@example.com', fullName: 'Corp Reviewer', password: 'whatever-123' });
+
+check('a corporate organisation cannot be reviewed, even called directly', () => {
+  try {
+    createOrganisationReview({
+      organisationId: 3, authorUserId: corpReviewer.id, displayMode: 'attributed',
+      reviewerType: 'client', experienceCategory: 'legal_matter',
+      ratings: { overallSatisfaction: 5 }, body: 'Trying to review a private client company.',
+    });
+    return false;
+  } catch (e) { return e.message === 'ORGANISATION_NOT_REVIEWABLE'; }
+});
+
+check('resolving a slug restricted to reviewable kinds hides a corporate org', () =>
+  getOrganisationBySlug('acme-client', REVIEWABLE_ORG_KINDS) === null);
+
+// Proves the previous assertion passes because of the FILTER, not because the
+// row is missing or the slug is wrong.
+check('the same corporate slug still resolves when kinds are not restricted', () =>
+  getOrganisationBySlug('acme-client')?.kind === 'corporate');
+
+check('restricting kinds does not break resolving a real law firm', () =>
+  getOrganisationBySlug('test-chambers', REVIEWABLE_ORG_KINDS)?.kind === 'law_firm');
 
 console.log(`\n${pass} passed, ${failures.length} failed`);
 for (const f of failures) console.log(`  ✗ ${f}`);

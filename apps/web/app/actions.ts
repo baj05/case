@@ -14,7 +14,7 @@ import {
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview,
-  createOrganisationReview, getOrganisationBySlug, submitSiteFeedback, getReviewSubjectPath,
+  createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS, submitSiteFeedback, getReviewSubjectPath,
 } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 
@@ -390,7 +390,12 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
 
-  const org = getOrganisationBySlug(slug);
+  // Restricted to reviewable kinds: slugs share one namespace across every
+  // organisation kind, and a Server Action is invocable directly without the
+  // page ever rendering — so the notFound() guards on the review PAGES do not
+  // protect this path. Without the filter a POST naming a corporate tenant's
+  // slug would create a public review of a private client company.
+  const org = getOrganisationBySlug(slug, REVIEWABLE_ORG_KINDS);
   if (!org) return { ok: false, message: 'That organisation is no longer available.' };
   if (body.trim().length < 15) return { ok: false, message: 'Please write a little more about your experience (at least 15 characters).' };
 

@@ -11,7 +11,7 @@ export default async function WriteFirmReviewPage({ params }: { params: Promise<
   const { slug } = await params;
   const flags = getFlags();
   if (!flags.FEATURE_REVIEWS) redirect(`/firms/${slug}`);
-  const org = getOrganisation(slug);
+  const org = getOrganisation(slug, ['law_firm', 'chamber']);
   if (!org || (org.kind !== 'law_firm' && org.kind !== 'chamber')) notFound();
   await requireUser(undefined, `/firms/${slug}/review`);
 

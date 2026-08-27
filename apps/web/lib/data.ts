@@ -24,12 +24,12 @@ import {
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
   listModerationQueue, listReportedReviews, getOrganisationReviewSummary, listReviewsForOrganisation,
   listRecentReviewsAcrossPlatform,
-  getOrganisationBySlug, listOrganisations,
+  getOrganisationBySlug, listOrganisations, REVIEWABLE_ORG_KINDS,
   getSiteFeedbackSummary, listSiteFeedback,
   getJudicialSnapshot, listHighCourts,
   getECourtsCoverage, listECourtsCourts, listECourtsAdvocates, countECourtsAdvocates, listECourtsStates,
 } from '@lexhall/db';
-import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort } from '@lexhall/db';
+import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort, OrganisationKind } from '@lexhall/db';
 
 /** Guard so a missing database renders a helpful page, not a stack trace. */
 export function databaseReady(): boolean {
@@ -83,7 +83,13 @@ export const getOrgReviewSummary = cache((organisationId: number) => getOrganisa
 export function getOrgReviews(organisationId: number, opts?: { filter?: ReviewFilter; sort?: ReviewSort; limit?: number; offset?: number }) {
   return listReviewsForOrganisation(organisationId, opts);
 }
-export const getOrganisation = cache((slug: string) => getOrganisationBySlug(slug));
+/** Optionally restricted to certain kinds. `REVIEWABLE_ORG_KINDS` is a frozen
+ * module-level constant, so passing it keeps `cache()` memoisation working —
+ * a fresh array literal per call would key differently every time. */
+export const getOrganisation = cache(
+  (slug: string, kinds?: readonly OrganisationKind[]) => getOrganisationBySlug(slug, kinds),
+);
+export { REVIEWABLE_ORG_KINDS };
 export const getOrganisations = cache((kind?: 'law_firm' | 'chamber' | 'lpo') => listOrganisations(kind));
 
 export const getRecentReviewFeed = cache((limit?: number) => listRecentReviewsAcrossPlatform(limit));

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const org = getOrganisation(slug);
+  const org = getOrganisation(slug, ['lpo']);
   return { title: org ? org.name : 'Provider unavailable' };
 }
 
@@ -17,7 +17,7 @@ export default async function LpoProfilePage({
 }: { params: Promise<{ slug: string }>; searchParams: Promise<{ reviewFilter?: string; reviewSort?: string }> }) {
   const { slug } = await params;
   const { reviewFilter: rf, reviewSort: rs } = await searchParams;
-  const org = getOrganisation(slug);
+  const org = getOrganisation(slug, ['lpo']);
   if (!org || org.kind !== 'lpo') notFound();
 
   return (
