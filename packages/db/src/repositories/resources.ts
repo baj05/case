@@ -28,7 +28,7 @@ import {
   RESOURCE_TYPE_META, OFFICIAL_STATUS_META, LINK_OUTCOME_META,
   disclaimerFor, assertStatusConsistent, qualityScore, reviewIntervalDays,
   parseResourceQuery, matchKits, downloadFilename, classifyLinkCheck,
-  INDIA_STATES, fold, toFtsQuery,
+  INDIA_STATES, fold, toFtsQuery, normaliseTemplateFields,
 } from '@lexhall/core';
 import type {
   ResourceCatalogSeed, ResourceTemplateSeed, ResourceType, OfficialStatus, LinkOutcome,
@@ -563,7 +563,7 @@ function seedTemplate(tpl: ResourceTemplateSeed, ctx: SeedContext): number {
        jurisdiction_notes=excluded.jurisdiction_notes, word_count=excluded.word_count,
        page_count=excluded.page_count, updated_at=excluded.updated_at`,
   ).run(
-    id, tpl.version, tpl.body, toJson(tpl.fields), toJson(tpl.beforeYouUse),
+    id, tpl.version, tpl.body, toJson(normaliseTemplateFields(tpl.fields)), toJson(tpl.beforeYouUse),
     toJson(tpl.jurisdictionNotes), words, Math.max(1, Math.ceil(words / WORDS_PER_PAGE)), ctx.ts, ctx.ts,
   );
 

@@ -13,6 +13,8 @@ export * from './resource-taxonomy.ts';
 export * from './resource-sources.ts';
 export * from './resource-templates.ts';
 export * from './resource-templates-2.ts';
+export * from './document-fill.ts';
+export * from './document-fields.ts';
 export * from './resource-catalog.ts';
 export * from './resource-catalog-states.ts';
 export * from './resource-kits.ts';

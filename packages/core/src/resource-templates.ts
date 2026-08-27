@@ -12,7 +12,26 @@
  * label them. Stamp duty, registration and limitation vary by state, so every
  * template carries jurisdiction notes rather than pretending to be national.
  */
-export interface TemplateField { key: string; label: string; hint?: string }
+export type TemplateFieldType = 'text' | 'date' | 'money' | 'number' | 'multiline' | 'select';
+
+/**
+ * `type`, `required` and `options` are optional so every existing seed
+ * literal (`{ key, label, hint? }`) is still valid — nothing here forces the
+ * 26 template files to be hand-edited. Where a template author hasn't set
+ * `type`/`required` explicitly, `normaliseTemplateFields` (document-fields.ts)
+ * fills them in by inference at seed time, and explicit values always win
+ * over inferred ones.
+ */
+export interface TemplateField {
+  key: string;
+  label: string;
+  hint?: string;
+  type?: TemplateFieldType;
+  required?: boolean;
+  /** Only meaningful when `type: 'select'`. */
+  options?: string[];
+  maxLength?: number;
+}
 
 export interface ResourceTemplateSeed {
   slug: string;

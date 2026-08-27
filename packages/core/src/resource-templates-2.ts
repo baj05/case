@@ -288,7 +288,7 @@ _______________________                        _______________________`,
        Presiding Officer: [[IC_PRESIDING]]
        Members: [[IC_MEMBERS]]
        External member: [[IC_EXTERNAL]]
-   4.2 The Committee may be reached at [[IC_CONTACT]].
+   4.2 The Committee may be reached at [[IC_CONTACT]]. A complaint may also be routed through Human Resources at [[HR_CONTACT]], who will refer it to the Committee without delay.
    4.3 At least half the members are women. No member of the Committee shall take part in a matter in which that member has an interest.
 
 5. MAKING A COMPLAINT
