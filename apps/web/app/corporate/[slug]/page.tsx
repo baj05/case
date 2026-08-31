@@ -27,7 +27,8 @@ export default async function CorporateDocumentPage({ params }: { params: Promis
   if (!databaseReady()) {
     return <div className="container section"><Notice tone="warn">Run <code className="mono">npm run ingest</code> first.</Notice></div>;
   }
-  if (!getFlags().FEATURE_CORPORATE) notFound();
+  const flags = getFlags();
+  if (!flags.FEATURE_CORPORATE) notFound();
 
   const resource = getResourceDetail(slug);
   if (!resource || !resource.template) notFound();
@@ -57,6 +58,7 @@ export default async function CorporateDocumentPage({ params }: { params: Promis
         title={resource.title}
         fields={resource.template.fields}
         body={resource.template.body}
+        aiExtractEnabled={Boolean(flags.FEATURE_AI_FIELD_EXTRACT)}
       />
     </div>
   );

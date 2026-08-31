@@ -20,7 +20,7 @@ import {
   resourcesBySlug,
   listResourceKits, getResourceKit as getResourceKitRepo,
   listResourceCentres, getResourceCentre as getResourceCentreRepo,
-  recordResourceEvent, recordDocumentFill, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  recordResourceEvent, recordDocumentFill, recordAiExtraction, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
   listModerationQueue, listReportedReviews, getOrganisationReviewSummary, listReviewsForOrganisation,
@@ -227,7 +227,7 @@ export function runResourceSearch(filters: ResourceSearchFilters) {
 }
 
 export {
-  recordResourceEvent, recordDocumentFill, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  recordResourceEvent, recordDocumentFill, recordAiExtraction, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
 };
 export type { ResourceSearchFilters };

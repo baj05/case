@@ -98,3 +98,30 @@ would be a confident, plausible, unfounded assertion about a real named person, 
 product sells: that what it says can be relied on.
 **Cost.** Practice-area search returns zero results today. Surfaced explicitly in the empty state and in
 `/data-sources` rather than hidden.
+
+### ADR-013 — A language model may extract field values, and may never write document text
+**Decision.** `FEATURE_AI_FIELD_EXTRACT`, **off by default**, permits one narrow use of a language model:
+given text the user wrote themselves and a template's own declared fields, return candidate values for those
+fields. The JSON schema handed to the model is generated from `TemplateField[]` — properties keyed by exactly
+those field keys, `additionalProperties: false`, and no property for clause text, document text, or advice.
+Every returned value is re-validated server-side through `normaliseFieldValue`, the same function a
+hand-typed value passes through, and any value containing `[[` or `]]` is discarded. Confirmation is
+mandatory: extraction renders a list of proposals with the span each came from, and the user accepts, edits
+or ignores each one. Only accepted values enter form state, and only form state reaches `fillTemplate`.
+Low-confidence proposals default to unchecked. `ai_field_extraction` stores counts and a latency figure —
+never the prose, never the extracted values.
+
+**Why this is not a reversal of ADR-006 or C-17.** ADR-006 rejected an LLM for *intake routing*, where the
+model's output would have been the platform's own assertion about a person's legal position. C-17 forbids
+generative text. Neither is in play here: the model is reading values out of the user's own sentence, and
+every character that reaches a document came either from the fixed template body or from a value the user
+confirmed. The distinction that matters is not "LLM / no LLM" but "who is the author" — and the answer here
+stays the user, with the platform's template.
+
+**What would make this wrong.** Any of: a schema property that accepts prose; skipping the confirmation
+step "because confidence was high"; storing the user's text to improve extraction; a fallback that fills a
+field the user did not accept. Each would move authorship to the model, which is the line C-17 draws.
+
+**Cost.** The feature is off, so the default experience is unchanged and the work is only justified once
+someone turns it on. That is deliberate — the flag is the control that makes this reviewable rather than
+ambient.

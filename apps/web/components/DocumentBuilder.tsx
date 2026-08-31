@@ -28,13 +28,24 @@ import { DocumentViewer } from './DocumentViewer';
  * database for no benefit.
  */
 export function DocumentBuilder({
-  slug, title, fields, body,
+  slug, title, fields, body, aiExtractEnabled = false,
 }: {
   slug: string; title: string; fields: TemplateField[]; body: string;
+  /** FEATURE_AI_FIELD_EXTRACT. Off by default; see ADR-013. */
+  aiExtractEnabled?: boolean;
 }) {
   const groups = useMemo(() => groupFields(fields), [fields]);
-  const steps = useMemo(() => [...groups.map((g) => g.label), 'Review & download'], [groups]);
-  const reviewStep = groups.length;
+  const steps = useMemo(
+    () => [
+      ...(aiExtractEnabled ? ['Describe it'] : []),
+      ...groups.map((g) => g.label),
+      'Review & download',
+    ],
+    [groups, aiExtractEnabled],
+  );
+  /** Group N is at step N + this offset, once the optional first step exists. */
+  const groupOffset = aiExtractEnabled ? 1 : 0;
+  const reviewStep = groups.length + groupOffset;
 
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -70,7 +81,16 @@ export function DocumentBuilder({
           <input key={f.key} type="hidden" name={f.key} value={values[f.key] ?? ''} />
         ))}
 
-        {groups.map((g, i) => step === i && (
+        {aiExtractEnabled && step === 0 && (
+          <DescribeStep
+            slug={slug}
+            fields={fields}
+            onAccept={(accepted) => setValues((prev) => ({ ...prev, ...accepted }))}
+            onContinue={() => setStep(1)}
+          />
+        )}
+
+        {groups.map((g, i) => step === i + groupOffset && (
           <section key={g.id} className="stack gap-4">
             <h2 className="t-headline-md">{g.label}</h2>
             <div className="form-grid">
@@ -79,10 +99,12 @@ export function DocumentBuilder({
               ))}
             </div>
             <div className="row wrap gap-2">
-              <button type="button" className="btn btn-primary" disabled={missingOnStep(i)} onClick={() => setStep(i + 1)}>
+              <button type="button" className="btn btn-primary" disabled={missingOnStep(i)} onClick={() => setStep(i + groupOffset + 1)}>
                 Continue
               </button>
-              {i > 0 && <button type="button" className="btn btn-ghost" onClick={() => setStep(i - 1)}>Back</button>}
+              {(i + groupOffset) > 0 && (
+                <button type="button" className="btn btn-ghost" onClick={() => setStep(i + groupOffset - 1)}>Back</button>
+              )}
             </div>
           </section>
         ))}
@@ -172,5 +194,176 @@ function FieldInput({
         />
       )}
     </Field>
+  );
+}
+
+interface Proposal {
+  key: string; label: string; value: string;
+  confidence: 'high' | 'low'; evidence: string; problem?: string;
+}
+
+/**
+ * The optional AI step: describe the arrangement in your own words, get
+ * proposed field values, accept or ignore each one.
+ *
+ * CONFIRMATION IS MANDATORY AND STRUCTURAL, not a nicety. Nothing here
+ * writes to the form until the user presses "Use the ticked values", and
+ * only ticked rows are written. Low-confidence rows — and anything the
+ * server could not validate — start UNticked, so an unreviewed value cannot
+ * reach the document by inaction.
+ *
+ * See ADR-013 and COMPLIANCE_MATRIX C-17a. The model reads values out of
+ * the user's own sentence; it never writes document text.
+ */
+function DescribeStep({
+  slug, fields, onAccept, onContinue,
+}: {
+  slug: string;
+  fields: TemplateField[];
+  onAccept: (values: Record<string, string>) => void;
+  onContinue: () => void;
+}) {
+  const [prose, setProse] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<Proposal[] | null>(null);
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const [edited, setEdited] = useState<Record<string, string>>({});
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/corporate/${slug}/extract`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prose }),
+      });
+      if (!res.ok) { setError('We could not read that. Fill the fields in yourself below.'); return; }
+      const data = await res.json() as { items: Proposal[]; outcome: string };
+      setProposals(data.items);
+      // High-confidence rows are ticked; low-confidence and rejected rows are
+      // not. An unreviewed value must never reach the document by inaction.
+      setTicked(Object.fromEntries(data.items.map((i) => [i.key, i.confidence === 'high' && !i.problem])));
+      setEdited(Object.fromEntries(data.items.map((i) => [i.key, i.value])));
+      if (data.items.length === 0) setError('Nothing could be read from that. Fill the fields in yourself below.');
+    } catch {
+      setError('We could not reach the reader. Fill the fields in yourself below.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function useTicked() {
+    if (!proposals) { onContinue(); return; }
+    const accepted: Record<string, string> = {};
+    for (const p of proposals) {
+      if (ticked[p.key]) accepted[p.key] = edited[p.key] ?? p.value;
+    }
+    onAccept(accepted);
+    onContinue();
+  }
+
+  const tickedCount = Object.values(ticked).filter(Boolean).length;
+
+  return (
+    <section className="stack gap-4">
+      <h2 className="t-headline-md">Describe it in your own words</h2>
+      <p className="t-body-sm ink-variant" style={{ maxWidth: '68ch' }}>
+        Optional. Write what you are arranging and we will suggest values for the fields — you check each
+        one before it goes anywhere near the document. You can skip this and fill the fields in yourself.
+      </p>
+
+      <div className="field">
+        <label className="label" htmlFor="ai-prose">What are you arranging?</label>
+        <span className="hint" id="ai-prose-hint">
+          Leave out anything confidential you would not want to send over the internet.
+        </span>
+        <textarea
+          id="ai-prose" className="textarea" rows={5} value={prose} maxLength={6000}
+          aria-describedby="ai-prose-hint"
+          onChange={(e) => setProse(e.target.value)}
+          placeholder="For example: We are hiring Priya Nair as a Senior Software Engineer in Hyderabad from 15 September 2026, ₹18 lakh a year, three months probation, 30 days' notice."
+        />
+      </div>
+
+      {error && (
+        <div className="notice notice-warn" role="alert">
+          <span className="notice-icon" aria-hidden="true">!</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="row wrap gap-2">
+        <button type="button" className="btn btn-secondary" data-loading={busy} disabled={busy || prose.trim().length < 20} onClick={run}>
+          {busy ? 'Reading…' : 'Suggest values'}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onContinue}>
+          Skip and fill it in myself
+        </button>
+      </div>
+
+      {proposals && proposals.length > 0 && (
+        <div className="stack gap-3">
+          <h3 className="t-title">Suggested values</h3>
+          <p className="t-body-sm ink-variant">
+            Nothing is used until you press the button below. Untick anything you would rather type yourself.
+          </p>
+
+          <div className="stack gap-2">
+            {proposals.map((p) => (
+              <div key={p.key} className="result-card" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
+                <div className="stack gap-2" style={{ minWidth: 0 }}>
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(ticked[p.key])}
+                      onChange={(e) => setTicked((t) => ({ ...t, [p.key]: e.target.checked }))}
+                    />
+                    <span className="stack gap-1" style={{ minWidth: 0 }}>
+                      <strong>{p.label}</strong>
+                      {p.problem
+                        ? <span className="error-text"><span aria-hidden="true">!</span>{p.problem} Please check it.</span>
+                        : p.confidence === 'low' && (
+                          <span className="t-caption">Couldn’t read this confidently — please check it.</span>
+                        )}
+                    </span>
+                  </label>
+
+                  <input
+                    className="input"
+                    value={edited[p.key] ?? p.value}
+                    aria-label={`${p.label} — suggested value, editable`}
+                    onChange={(e) => setEdited((v) => ({ ...v, [p.key]: e.target.value }))}
+                  />
+
+                  {p.evidence && (
+                    <span className="t-caption">From your words: “{p.evidence}”</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="notice notice-legal">
+            <span className="notice-icon" aria-hidden="true">ⓘ</span>
+            <span className="t-body-sm">
+              These are readings of your own words, not advice, and no wording of ours has been added to the
+              document. Check each value — you are the one signing it.
+            </span>
+          </div>
+
+          <div className="row wrap gap-2">
+            <button type="button" className="btn btn-primary" onClick={useTicked}>
+              Use the {tickedCount} ticked {tickedCount === 1 ? 'value' : 'values'}
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={onContinue}>Ignore all and continue</button>
+          </div>
+        </div>
+      )}
+
+      {/* Field count, so the user knows what the step is worth skipping. */}
+      <p className="t-caption">This document has {fields.length} fields.</p>
+    </section>
   );
 }

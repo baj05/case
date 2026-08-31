@@ -1440,6 +1440,34 @@ export interface DocumentFillInput {
   mode: 'manual' | 'ai_assisted';
 }
 
+/**
+ * Counts only — never the user's prose, never the extracted values.
+ * See 018_document_builder.sql and COMPLIANCE_MATRIX C-17a.
+ */
+export interface AiExtractionInput {
+  slug: string;
+  promptChars: number;
+  fieldsOffered: number;
+  fieldsReturned: number;
+  lowConfidence: number;
+  rejected: number;
+  model: string;
+  latencyMs: number;
+  outcome: string;
+}
+
+export function recordAiExtraction(input: AiExtractionInput): void {
+  const h = db();
+  const row = h.prepare(`SELECT id FROM resource WHERE slug = ?`).get(input.slug) as { id: number } | undefined;
+  if (!row) return;
+  h.prepare(
+    `INSERT INTO ai_field_extraction (resource_id, prompt_chars, fields_offered, fields_returned,
+       low_confidence, rejected, model, latency_ms, outcome, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+  ).run(row.id, input.promptChars, input.fieldsOffered, input.fieldsReturned,
+    input.lowConfidence, input.rejected, input.model, input.latencyMs, input.outcome, now());
+}
+
 export function recordDocumentFill(input: DocumentFillInput): void {
   const h = db();
   const row = h.prepare(`SELECT id FROM resource WHERE slug = ?`).get(input.slug) as { id: number } | undefined;
