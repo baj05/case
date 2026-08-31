@@ -309,3 +309,24 @@ function slugFor(id: number): string {
   const row = db().prepare(`SELECT slug FROM professional WHERE id=?`).get(id) as { slug: string } | undefined;
   return row?.slug ?? String(id);
 }
+
+/**
+ * The professional's published office address, or null.
+ *
+ * Returns null far more often than not, and that is the correct answer: we
+ * hold Bar Council records for real named people and have not been given
+ * their office addresses. An invented one would be a fabricated fact about
+ * a real person's premises that someone might actually travel to — a worse
+ * error than an invented fee band (ADR-008, ADR-012). The booking form says
+ * "the advocate will confirm the address" instead.
+ */
+export function chamberAddress(professionalId: number): string | null {
+  const row = db().prepare(
+    `SELECT address_public AS address
+       FROM professional_location
+      WHERE professional_id = ? AND address_public IS NOT NULL
+      ORDER BY is_primary DESC, id
+      LIMIT 1`,
+  ).get(professionalId) as { address: string } | undefined;
+  return row?.address ?? null;
+}

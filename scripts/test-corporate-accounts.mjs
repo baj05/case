@@ -26,6 +26,7 @@ const {
   getOrgMembershipBySlug, getCorporateOrgBySlug, listOrgBookings,
   createDomainClaim, markDomainClaimVerified, promoteVerifiedDomain, listDomainClaims,
   orgEntitlements, INVITABLE_ROLES,
+  createBooking, getBooking, upsertFee,
   createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS,
 } = await import('@lexhall/db');
 
@@ -215,8 +216,74 @@ check('getCorporateOrgBySlug finds a corporate org but not a law firm', () =>
   getCorporateOrgBySlug(org.slug)?.id === org.id && getCorporateOrgBySlug('real-firm-llp') === null);
 
 // ------------------------------------------------------- tenant-scoped reads
-check('listOrgBookings is empty for a new organisation and never leaks another tenant’s rows', () =>
+check('listOrgBookings is empty for a new organisation', () =>
   listOrgBookings(org.id).length === 0);
+
+/*
+ * A REAL booking, created through createBooking.
+ *
+ * This exists because an earlier change to that INSERT added a column
+ * without its placeholder and shipped: every booking failed with "31 values
+ * for 32 columns", and nothing here noticed, because the only booking
+ * assertion was that a new organisation had none. An assertion that
+ * something is empty cannot tell you the writer is broken.
+ */
+const jurisdictionId = Number(db().prepare(
+  `INSERT INTO jurisdiction (country_id, code, name, kind, legal_system, created_at, updated_at)
+   VALUES (1,'IN-KA','Karnataka','state','common_law',?,?) RETURNING id`,
+).get(ts, ts).id);
+
+const proId = Number(db().prepare(
+  `INSERT INTO professional (kind, slug, full_name, normalised_name, display_name,
+     country_id, primary_jurisdiction_id, is_published, accepts_consultations,
+     claim_status, created_at, updated_at)
+   VALUES ('advocate','test-advocate','Test Advocate','test advocate','Test Advocate',
+     1,?,1,1,'unclaimed',?,?) RETURNING id`,
+).get(jurisdictionId, ts, ts).id);
+
+check('createBooking writes a booking, with the meeting place', () => {
+  const feeId = upsertFee({
+    professionalId: proId, kind: 'consultation', label: 'In-person consultation',
+    mode: 'in_person', durationMinutes: 45, amountMinor: 300000, basis: 'fixed',
+  });
+  const created = createBooking({
+    professionalId: proId,
+    feeScheduleId: feeId,
+    clientUserId: colleague.id,
+    organisationId: org.id,
+    clientName: 'Booking Tester',
+    clientEmail: 'colleague@acme.example',
+    startsAtUtc: '2099-01-05T05:00:00Z',
+    endsAtUtc: '2099-01-05T05:45:00Z',
+    clientTimezone: 'Asia/Kolkata',
+    mode: 'in_person',
+    meetingKind: 'client_place',
+    meetingAddress: 'Flat 4B, Sunrise Apartments, MG Road, Bengaluru 560001',
+    brief: 'A commercial lease dispute where the renewal clause is in issue.',
+    feeDisclosureAck: true,
+  });
+  const row = getBooking(created.reference);
+  return row.mode === 'in_person'
+    && row.meeting_kind === 'client_place'
+    && row.meeting_address.startsWith('Flat 4B')
+    && row.client_name === 'Booking Tester'
+    && Number(row.total_minor) === 300000;
+});
+
+check('a booking made in the company’s name appears in listOrgBookings', () =>
+  listOrgBookings(org.id).length === 1);
+
+check('the booking carries BOTH the client user and the organisation, derived not submitted', () => {
+  const row = db().prepare(
+    `SELECT client_user_id AS u, organisation_id AS o FROM booking WHERE organisation_id = ?`,
+  ).get(org.id);
+  return Number(row.u) === colleague.id && Number(row.o) === org.id;
+});
+
+check('a second organisation never sees the first one’s bookings', () => {
+  const other = createCorporateOrganisation({ name: 'Unrelated Ltd', ownerUserId: outsider.id });
+  return listOrgBookings(other.id).length === 0;
+});
 
 // ---------------------------------------------------------------------------
 rmSync(dir, { recursive: true, force: true });

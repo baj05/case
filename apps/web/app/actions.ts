@@ -21,6 +21,7 @@ import {
 import type { OrgRole } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 import { orgActionContext, can } from '@/lib/org';
+import { resolveMeetingPlace } from '@lexhall/core';
 
 export interface ActionResult {
   ok: boolean;
@@ -209,6 +210,7 @@ export async function submitBooking(_prev: ActionResult | null, form: FormData):
   const values = keep(form, [
     'clientName', 'clientEmail', 'clientPhone', 'startsAtUtc', 'endsAtUtc',
     'mode', 'feeScheduleId', 'practiceAreaId', 'matterTypeId', 'brief', 'urgency', 'clientTimezone',
+    'meetingKind', 'meetingAddress',
   ] as const);
   const fieldErrors: Record<string, string> = {};
 
@@ -226,6 +228,16 @@ export async function submitBooking(_prev: ActionResult | null, form: FormData):
   if (values.brief.length < 30) fieldErrors.brief = 'Please describe the matter in a couple of sentences.';
   if (!values.startsAtUtc || !values.endsAtUtc) fieldErrors.startsAtUtc = 'Choose a time slot.';
   if (!form.get('feeAck')) fieldErrors.feeAck = 'Please confirm you have read the fee note.';
+
+  /*
+   * WHERE, for an in-person booking. Resolved by the same `resolveMeetingPlace`
+   * the form uses, so the client and the server cannot disagree about what
+   * counts as a valid place — and so a mode switched to video after an address
+   * was typed drops that address instead of storing it.
+   */
+  const place = resolveMeetingPlace({ mode: values.mode || 'video', kind: values.meetingKind, address: values.meetingAddress });
+  Object.assign(fieldErrors, place.errors);
+
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
   }
@@ -259,6 +271,8 @@ export async function submitBooking(_prev: ActionResult | null, form: FormData):
       endsAtUtc: values.endsAtUtc,
       clientTimezone: values.clientTimezone || 'Asia/Kolkata',
       mode: values.mode || 'video',
+      meetingKind: place.kind,
+      meetingAddress: place.address,
       practiceAreaId: Number(values.practiceAreaId) || null,
       matterTypeId: Number(values.matterTypeId) || null,
       brief: values.brief,

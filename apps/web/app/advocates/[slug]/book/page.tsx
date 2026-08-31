@@ -6,7 +6,7 @@ import { VerificationBadge } from '@/components/Badges';
 import { Notice } from '@/components/States';
 import { BookingFlow } from '@/components/BookingFlow';
 import { getProfessional, getPracticeAreas, databaseReady, getFlags } from '@/lib/data';
-import { generateSlots, listFees } from '@lexhall/db';
+import { generateSlots, listFees, chamberAddress } from '@lexhall/db';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Book a consultation', robots: { index: false, follow: false } };
@@ -40,6 +40,9 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const slots = generateSlots(p.id, new Date().toISOString(), 14);
   const fees = listFees(p.id);
   const areas = getPracticeAreas();
+  // Usually null — we hold Bar Council records, not office addresses. The
+  // booking form says so rather than inventing one.
+  const chamber = chamberAddress(p.id);
 
   return (
     <div className="container section-tight">
@@ -80,6 +83,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
               taxNote: f.taxNote,
             }))}
             areas={areas.map((a) => ({ id: a.id, name: a.name, parentName: a.parentName }))}
+            chamberAddress={chamber}
           />
         </div>
 

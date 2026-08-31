@@ -216,6 +216,14 @@ export interface CreateBookingInput {
    */
   clientUserId?: number | null;
   organisationId?: number | null;
+  /**
+   * WHERE the meeting happens. Only meaningful for a physical mode; the
+   * caller resolves both through `resolveMeetingPlace`, which discards them
+   * for a video or phone booking rather than storing an address that has no
+   * purpose there.
+   */
+  meetingKind?: string | null;
+  meetingAddress?: string | null;
 }
 
 export class SlotTakenError extends Error {
@@ -259,16 +267,21 @@ export function createBooking(input: CreateBookingInput): { id: number; referenc
     const info = h.prepare(
       `INSERT INTO booking (reference, professional_id, client_user_id, organisation_id, fee_schedule_id,
          client_name, client_email, client_phone, starts_at_utc, ends_at_utc, client_timezone,
-         mode, practice_area_id, matter_type_id, court_id, brief, urgency,
+         mode, meeting_kind, meeting_address,
+         practice_area_id, matter_type_id, court_id, brief, urgency,
          currency_code, quoted_fee_minor, statutory_charges_minor, tax_minor, total_minor,
          platform_fee_minor, settlement_mode, payment_status, status,
          fee_disclosure_ack, terms_ack_at, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,0,'collect_offline','unpaid','pending',?,?,?,?)`,
+       -- 22 bound values, then tax_minor = 0, total_minor bound, platform_fee_minor = 0,
+       -- the three fixed settlement literals, and the four trailing bound values.
+       -- Count these against the column list above when changing either.
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,0,'collect_offline','unpaid','pending',?,?,?,?)`,
     ).run(
       reference, input.professionalId, input.clientUserId ?? null, input.organisationId ?? null,
       input.feeScheduleId ?? null,
       input.clientName, input.clientEmail, input.clientPhone ?? null,
       input.startsAtUtc, input.endsAtUtc, input.clientTimezone, input.mode,
+      input.meetingKind ?? null, input.meetingAddress ?? null,
       input.practiceAreaId ?? null, input.matterTypeId ?? null, input.courtId ?? null,
       input.brief, input.urgency ?? 'normal',
       currency, fee, statutory, total,
@@ -295,6 +308,9 @@ export interface BookingRecord {
   client_user_id: number | null; organisation_id: number | null;
   client_name: string; client_email: string; client_phone: string | null;
   starts_at_utc: string; ends_at_utc: string; client_timezone: string; mode: string;
+  /** Only set for a physical mode. meeting_address is confidential — treated
+   * like brief: never indexed, never in an analytics payload, never in a URL. */
+  meeting_kind: string | null; meeting_address: string | null;
   brief: string; urgency: string; status: string;
   currency_code: string; quoted_fee_minor: number; statutory_charges_minor: number;
   tax_minor: number; total_minor: number; platform_fee_minor: number;

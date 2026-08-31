@@ -5,6 +5,8 @@ import { Notice } from '@/components/States';
 import { getBooking, formatMinor } from '@lexhall/db';
 import { databaseReady } from '@/lib/data';
 import { formatDate } from '@/lib/format';
+import { MEETING_MODE_LABEL, meetingKindMeta } from '@lexhall/core';
+import type { MeetingMode } from '@lexhall/core';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your booking', robots: { index: false, follow: false } };
@@ -51,7 +53,19 @@ export default async function BookingPage({ params }: { params: Promise<{ refere
             </dd></div>
             <div><dt>When</dt><dd>{when}</dd></div>
             <div><dt>Timezone</dt><dd>{b.client_timezone}</dd></div>
-            <div><dt>Format</dt><dd style={{ textTransform: 'capitalize' }}>{String(b.mode).replace(/_/g, ' ')}</dd></div>
+            <div><dt>Format</dt><dd>{MEETING_MODE_LABEL[b.mode as MeetingMode] ?? String(b.mode).replace(/_/g, ' ')}</dd></div>
+            {b.meeting_kind && (
+              <div>
+                <dt>Where</dt>
+                <dd style={{ whiteSpace: 'pre-line' }}>
+                  {meetingKindMeta(b.meeting_kind)?.label ?? b.meeting_kind}
+                  {b.meeting_address ? `\n${b.meeting_address}` : ''}
+                  {b.meeting_kind === 'chamber' && !b.meeting_address
+                    ? '\nThe advocate will confirm the address.'
+                    : ''}
+                </dd>
+              </div>
+            )}
             {b.practiceAreaName && <div><dt>Area</dt><dd>{b.practiceAreaName}</dd></div>}
             <div><dt>Urgency</dt><dd style={{ textTransform: 'capitalize' }}>{b.urgency}</dd></div>
             <div><dt>Requested</dt><dd>{formatDate(b.created_at)}</dd></div>

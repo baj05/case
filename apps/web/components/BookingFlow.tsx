@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState } from 'react';
 import { submitBooking } from '@/app/actions';
+import { MEETING_KINDS, MEETING_MODE_LABEL, isPhysicalMode, chamberAddressNotice, meetingKindMeta } from '@lexhall/core';
 import { Field, FormError, SubmitButton } from './Forms';
 
 export interface SlotDTO { startUtc: string; endUtc: string; mode: string; feeScheduleId: number | null; durationMinutes: number }
@@ -13,12 +14,9 @@ export interface FeeDTO {
 }
 export interface AreaDTO { id: number; name: string; parentName: string | null }
 
-const MODE_LABEL: Record<string, string> = {
-  video: 'Video call', audio: 'Audio call', phone: 'Telephone',
-  chat: 'Secure chat', in_person: 'In person',
-};
-
-const STEPS = ['Service', 'Date', 'Time', 'Your matter', 'Review'] as const;
+/** The mode labels now live in core, next to the place rules that depend on
+ * them, so the booking form and the confirmation page cannot drift. */
+const MODE_LABEL = MEETING_MODE_LABEL as Record<string, string>;
 
 function money(minor: number, currency: string): string {
   try {
@@ -38,10 +36,13 @@ function money(minor: number, currency: string): string {
  * mistaken for the total.
  */
 export function BookingFlow({
-  slug, professionalName, slots, fees, areas,
+  slug, professionalName, slots, fees, areas, chamberAddress = null,
 }: {
   slug: string; professionalName: string;
   slots: SlotDTO[]; fees: FeeDTO[]; areas: AreaDTO[];
+  /** The professional's published office address, when they have one. Never
+   * invented — see chamberAddressNotice for what is shown when it is absent. */
+  chamberAddress?: string | null;
 }) {
   const [state, formAction] = useActionState(submitBooking, null);
   const err = state?.fieldErrors ?? {};
@@ -79,6 +80,32 @@ export function BookingFlow({
   const [step, setStep] = useState(0);
 
   const daySlots = day ? byDay.get(day) ?? [] : [];
+
+  /*
+   * WHERE. Only asked for a physical mode, and the step only exists then —
+   * a permanently-present "Where" step that reads "not applicable" for the
+   * 90% of bookings that are video calls is worse than no step.
+   */
+  const effectiveMode = slot?.mode ?? chosenFee?.mode ?? 'video';
+  const needsPlace = isPhysicalMode(effectiveMode);
+  const [meetingKind, setMeetingKind] = useState<string>('chamber');
+  const [meetingAddress, setMeetingAddress] = useState('');
+  const kindMeta = meetingKindMeta(meetingKind);
+  const chamberNotice = chamberAddressNotice(Boolean(chamberAddress));
+
+  const STEPS = useMemo(
+    () => (needsPlace
+      ? ['Service', 'Date', 'Time', 'Where', 'Your matter', 'Review'] as const
+      : ['Service', 'Date', 'Time', 'Your matter', 'Review'] as const),
+    [needsPlace],
+  );
+  /** Steps after 'Time' shift by one once 'Where' exists. */
+  const placeStep = 3;
+  const matterStep = needsPlace ? 4 : 3;
+  const reviewStep = needsPlace ? 5 : 4;
+
+  const placeIncomplete = needsPlace
+    && (!kindMeta || (kindMeta.needsAddress && meetingAddress.trim().length < 10));
 
   const statutory = fees.filter((f) => f.isStatutoryPassthrough === 1);
   const totalMinor = chosenFee?.isStatutoryPassthrough ? chosenFee.amountMinor : chosenFee?.amountMinor ?? 0;
@@ -134,7 +161,12 @@ export function BookingFlow({
         <input type="hidden" name="feeScheduleId" value={feeId ?? ''} />
         <input type="hidden" name="startsAtUtc" value={slot?.startUtc ?? ''} />
         <input type="hidden" name="endsAtUtc" value={slot?.endUtc ?? ''} />
-        <input type="hidden" name="mode" value={slot?.mode ?? chosenFee?.mode ?? 'video'} />
+        <input type="hidden" name="mode" value={effectiveMode} />
+        {/* Sent only for a physical mode. The server discards both anyway via
+            resolveMeetingPlace, but there is no reason to put a client's
+            address on the wire for a video call at all. */}
+        {needsPlace && <input type="hidden" name="meetingKind" value={meetingKind} />}
+        {needsPlace && <input type="hidden" name="meetingAddress" value={meetingAddress} />}
 
         {/* ----------------------------------------------------- 1. service */}
         {step === 0 && (
@@ -222,9 +254,107 @@ export function BookingFlow({
           </section>
         )}
 
-        {/* ------------------------------------------------------ 4. matter */}
-        {step === 3 && (
+        {/* -------------------------------------------- 4. where (in person) */}
+        {needsPlace && step === placeStep && (
           <section className="stack gap-4">
+            <h2 className="t-headline-md">Where would you like to meet?</h2>
+            <p className="t-caption">
+              This is an in-person appointment, so {professionalName} needs to know where to come — or where
+              to expect you.
+            </p>
+
+            <div className="stack gap-2" role="radiogroup" aria-label="Where to meet">
+              {MEETING_KINDS.map((k) => (
+                <label key={k.kind} className={`fee-option ${meetingKind === k.kind ? 'is-on' : ''}`}>
+                  <input
+                    type="radio" name="meetingKindChoice" value={k.kind}
+                    checked={meetingKind === k.kind}
+                    onChange={() => setMeetingKind(k.kind)}
+                  />
+                  <span className="stack gap-1" style={{ minWidth: 0, flex: 1 }}>
+                    <strong>{k.label}</strong>
+                    <span className="t-caption">{k.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {err.meetingKind && (
+              <span className="error-text" role="alert"><span aria-hidden="true">!</span>{err.meetingKind}</span>
+            )}
+
+            {meetingKind === 'chamber' && (
+              chamberAddress
+                ? (
+                  <div className="notice notice-info">
+                    <span className="notice-icon" aria-hidden="true">ⓘ</span>
+                    <div className="stack gap-1">
+                      <strong>Where to go</strong>
+                      <span className="t-body-sm" style={{ whiteSpace: 'pre-line' }}>{chamberAddress}</span>
+                    </div>
+                  </div>
+                )
+                : (
+                  /* No invented address. This advocate is a real person and we
+                     do not hold their office address, so we say so. */
+                  <div className="notice notice-info">
+                    <span className="notice-icon" aria-hidden="true">ⓘ</span>
+                    <span className="t-body-sm">{chamberNotice}</span>
+                  </div>
+                )
+            )}
+
+            <Field
+              name="meetingAddressInput"
+              label={kindMeta?.needsAddress ? 'Address' : 'Anything they should know about getting to you (optional)'}
+              required={kindMeta?.needsAddress}
+              hint={kindMeta?.needsAddress
+                ? 'Include the city, and a landmark or floor if it helps.'
+                : 'A floor, a reception instruction, a phone number to call on arrival.'}
+              error={err.meetingAddress}
+            >
+              <textarea
+                id="meetingAddressInput" className="textarea" rows={3} maxLength={400}
+                value={meetingAddress}
+                onChange={(e) => setMeetingAddress(e.target.value)}
+                aria-invalid={Boolean(err.meetingAddress)}
+                placeholder={meetingKind === 'court'
+                  ? 'For example: Delhi High Court, Gate 4, outside Court No. 12'
+                  : 'For example: Flat 4B, Sunrise Apartments, MG Road, Bengaluru 560001'}
+              />
+            </Field>
+
+            <div className="notice notice-legal">
+              <span className="notice-icon" aria-hidden="true">ⓘ</span>
+              <span className="t-body-sm">
+                The address you give is shared with {professionalName} for this appointment and nothing else.
+                Travel to an address you name may be declined or charged for — agree that with them directly.
+              </span>
+            </div>
+
+            <div className="row wrap gap-2">
+              <button type="button" className="btn btn-primary" disabled={placeIncomplete} onClick={() => setStep(matterStep)}>
+                Continue
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setStep(2)}>Back</button>
+            </div>
+          </section>
+        )}
+
+        {/* ------------------------------------------------------ 5. matter */}
+        {/*
+          * `hidden` rather than an unmounting `{step === matterStep && …}`.
+          *
+          * This section holds the only named inputs the action needs that are
+          * not already form-level hidden fields — name, email, phone, urgency,
+          * practice area and the brief. FormData is read from whatever is in
+          * the DOM at submit time, not from React's history, so unmounting
+          * this step on the way to Review dropped every one of those values
+          * and the action rejected the booking as incomplete every single
+          * time. A `hidden` section is still part of the form and is still
+          * submitted; it is also out of the accessibility tree, which is what
+          * we want for a step that is not on screen.
+          */}
+        <section className="stack gap-4" hidden={step !== matterStep}>
             <h2 className="t-headline-md">About you and the matter</h2>
             <div className="form-grid">
               <Field name="clientName" label="Your name" required error={err.clientName}>
@@ -263,14 +393,13 @@ export function BookingFlow({
                 placeholder="For example: My employer has not deposited my PF contributions for eight months. I raised it with HR twice in writing and had no reply." />
             </Field>
             <div className="row wrap gap-2">
-              <button type="button" className="btn btn-primary" onClick={() => setStep(4)}>Review</button>
-              <button type="button" className="btn btn-ghost" onClick={() => setStep(2)}>Back</button>
+              <button type="button" className="btn btn-primary" onClick={() => setStep(reviewStep)}>Review</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setStep(matterStep - 1)}>Back</button>
             </div>
-          </section>
-        )}
+        </section>
 
-        {/* ------------------------------------------------------ 5. review */}
-        {step === 4 && (
+        {/* ------------------------------------------------------ 6. review */}
+        {step === reviewStep && (
           <section className="stack gap-4">
             <h2 className="t-headline-md">Check and confirm</h2>
 
@@ -279,6 +408,17 @@ export function BookingFlow({
                 <div><dt>Professional</dt><dd>{professionalName}</dd></div>
                 <div><dt>Service</dt><dd>{chosenFee?.label ?? '—'}</dd></div>
                 <div><dt>Format</dt><dd>{MODE_LABEL[slot?.mode ?? ''] ?? slot?.mode ?? '—'}</dd></div>
+                {needsPlace && (
+                  <div>
+                    <dt>Where</dt>
+                    <dd style={{ whiteSpace: 'pre-line' }}>
+                      {kindMeta?.label}
+                      {meetingKind === 'chamber' && chamberAddress ? `\n${chamberAddress}` : ''}
+                      {meetingAddress ? `\n${meetingAddress}` : ''}
+                      {meetingKind === 'chamber' && !chamberAddress ? '\nAddress to be confirmed by the advocate.' : ''}
+                    </dd>
+                  </div>
+                )}
                 <div><dt>When</dt><dd>{slot ? `${fmtDay(new Date(slot.startUtc).toLocaleDateString('en-CA', { timeZone: timezone }))}, ${fmtTime(slot.startUtc)}` : '—'}</dd></div>
                 <div><dt>Timezone</dt><dd>{timezone}</dd></div>
                 <div><dt>Duration</dt><dd>{slot?.durationMinutes ?? '—'} minutes</dd></div>
@@ -342,7 +482,7 @@ export function BookingFlow({
 
             <div className="row wrap gap-2">
               <SubmitButton pendingLabel="Confirming…">Confirm booking</SubmitButton>
-              <button type="button" className="btn btn-ghost" onClick={() => setStep(3)}>Back</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setStep(matterStep)}>Back</button>
             </div>
           </section>
         )}

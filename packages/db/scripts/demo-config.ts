@@ -191,10 +191,21 @@ for (const [i, c] of candidates.entries()) {
     }
     declaredMatters += matterRows.length;
 
-    // 3. Availability: weekday mornings and afternoons, Kolkata time.
+    /*
+     * 3. Availability: weekday mornings and afternoons, Kolkata time.
+     *
+     * `afternoonMode` is used for BOTH the availability rule and the
+     * afternoon consultation fee below. Those two used to disagree — every
+     * third professional published in_person availability while their only
+     * fees were video and phone — and because BookingFlow filters slots to
+     * the chosen fee's mode, that made the in-person slots unreachable AND
+     * the phone fee yield zero slots. Deriving both from one value is what
+     * stops the pair drifting again.
+     */
+    const afternoonMode = c.id % 3 === 0 ? 'in_person' : 'phone';
     const rules = [1, 2, 3, 4, 5].flatMap((weekday) => ([
       { weekday, startMinute: 10 * 60 + 30, endMinute: 13 * 60, mode: 'video', slotMinutes: 30, timezone: 'Asia/Kolkata' },
-      { weekday, startMinute: 16 * 60, endMinute: 18 * 60, mode: c.id % 3 === 0 ? 'in_person' : 'phone', slotMinutes: 30, timezone: 'Asia/Kolkata' },
+      { weekday, startMinute: 16 * 60, endMinute: 18 * 60, mode: afternoonMode, slotMinutes: 30, timezone: 'Asia/Kolkata' },
     ]));
     setAvailability(c.id, rules);
 
@@ -202,7 +213,21 @@ for (const [i, c] of candidates.entries()) {
     // Replace rather than append: a re-run must not stack duplicate fee rows.
     h.prepare(`DELETE FROM fee_schedule WHERE professional_id=?`).run(c.id);
     upsertFee({ professionalId: c.id, kind: 'consultation', label: `First consultation (${bundle.label})`, mode: 'video', durationMinutes: 30, amountMinor: band.consult, basis: 'fixed', includes: 'A 30-minute discussion of your position and the options open to you.', excludes: 'Drafting, filing and appearances are charged separately.', taxNote: 'Taxes, if applicable, are charged in addition.', sortOrder: 10 });
-    upsertFee({ professionalId: c.id, kind: 'consultation', label: 'Follow-up consultation', mode: 'phone', durationMinutes: 20, amountMinor: Math.round(band.consult * 0.6), basis: 'fixed', sortOrder: 20 });
+    upsertFee({
+      professionalId: c.id, kind: 'consultation',
+      label: afternoonMode === 'in_person' ? 'In-person consultation' : 'Follow-up consultation',
+      mode: afternoonMode,
+      durationMinutes: afternoonMode === 'in_person' ? 45 : 20,
+      amountMinor: Math.round(band.consult * (afternoonMode === 'in_person' ? 1.2 : 0.6)),
+      basis: 'fixed',
+      includes: afternoonMode === 'in_person'
+        ? 'A 45-minute meeting. You will be asked where to meet when you book.'
+        : undefined,
+      excludes: afternoonMode === 'in_person'
+        ? 'Travel to an address you name is not included and may be declined or charged for.'
+        : undefined,
+      sortOrder: 20,
+    });
     upsertFee({ professionalId: c.id, kind: 'drafting', label: 'Drafting a legal notice or application', amountMinor: band.drafting, basis: 'from', includes: 'One draft and one round of revisions.', sortOrder: 30 });
     upsertFee({ professionalId: c.id, kind: 'filing', label: 'Filing charges', amountMinor: band.filing, basis: 'from', includes: 'Preparation and lodging of the petition.', excludes: 'Court fees and statutory charges are payable in addition and are shown separately.', sortOrder: 40 });
     upsertFee({ professionalId: c.id, kind: 'filing', label: 'Court fee and statutory charges', amountMinor: 500_00, basis: 'from', isStatutoryPassthrough: true, includes: 'Payable to the court, not to the advocate. Varies by relief claimed.', sortOrder: 45 });
