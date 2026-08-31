@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { groupFields, fillTemplate } from '@lexhall/core';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { groupFields, annotateTemplate } from '@lexhall/core';
 import type { TemplateField } from '@lexhall/core';
 import { Field } from './Forms';
-import { DocumentViewer } from './DocumentViewer';
+import { LiveDocument } from './LiveDocument';
+import { DialogFlush } from './ui/Dialog';
 
 /**
  * The corporate document builder: pick values for a template's declared
@@ -52,15 +53,45 @@ export function DocumentBuilder({
 
   const setValue = (key: string, v: string) => setValues((prev) => ({ ...prev, [key]: v }));
 
-  const preview = useMemo(() => fillTemplate(body, fields, values, { mode: 'draft' }), [body, fields, values]);
-  const strict = useMemo(() => fillTemplate(body, fields, values, { mode: 'strict' }), [body, fields, values]);
-  const canDownload = strict.text !== '';
+  /** The field the cursor is in, so the preview can point at the right spot. */
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  /** Phones cannot show the document beside the form; a dialog offers it. */
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  /*
+   * ONE annotate pass drives everything: the preview's segments, the
+   * progress count, and whether the download is allowed. `annotateTemplate`
+   * is the same substitution the download route runs, so what is on screen
+   * is what lands in the file.
+   */
+  const draft = useMemo(
+    () => annotateTemplate(body, fields, values, { mode: 'draft' }),
+    [body, fields, values],
+  );
+  const canDownload = draft.missingRequired.length === 0
+    && Object.keys(draft.fieldErrors).length === 0;
 
   const missingOnStep = (groupIndex: number) =>
-    (groups[groupIndex]?.fields ?? []).some((f) => f.required && !(values[f.key] ?? '').trim());
+    (groups[groupIndex]?.fields ?? []).filter((f) => f.required && !(values[f.key] ?? '').trim());
+
+  /*
+   * Move focus to the step that just appeared.
+   *
+   * Advancing unmounts the section holding the button that was focused, so
+   * without this focus falls to <body> and a keyboard user is dumped at the
+   * top of the page on every single step change.
+   */
+  const stepRef = useRef<HTMLDivElement>(null);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    stepRef.current?.focus();
+  }, [step]);
 
   return (
-    <div className="stack gap-5">
+    <div className="builder-layout">
+      {/* ------------------------------------------------ left: the questions */}
+      <div className="stack gap-5" style={{ minWidth: 0 }}>
       <div className="stepper" role="group" aria-label={`${title} progress`}>
         {steps.map((label, i) => (
           <div key={label} style={{ display: 'contents' }}>
@@ -90,51 +121,83 @@ export function DocumentBuilder({
           />
         )}
 
-        {groups.map((g, i) => step === i + groupOffset && (
-          <section key={g.id} className="stack gap-4">
-            <h2 className="t-headline-md">{g.label}</h2>
-            <div className="form-grid">
-              {g.fields.map((f) => (
-                <FieldInput key={f.key} field={f} value={values[f.key] ?? ''} onChange={(v) => setValue(f.key, v)} />
-              ))}
-            </div>
-            <div className="row wrap gap-2">
-              <button type="button" className="btn btn-primary" disabled={missingOnStep(i)} onClick={() => setStep(i + groupOffset + 1)}>
-                Continue
-              </button>
-              {(i + groupOffset) > 0 && (
-                <button type="button" className="btn btn-ghost" onClick={() => setStep(i + groupOffset - 1)}>Back</button>
+        {groups.map((g, i) => {
+          if (step !== i + groupOffset) return null;
+          const missing = missingOnStep(i);
+          return (
+            /* tabIndex -1 so the step-change effect can move focus here; see
+               the note on stepRef. */
+            <section
+              key={g.id}
+              ref={stepRef}
+              tabIndex={-1}
+              className="stack gap-4"
+              style={{ outline: 'none' }}
+              aria-labelledby={`step-${g.id}-heading`}
+            >
+              <h2 className="t-headline-md" id={`step-${g.id}-heading`}>{g.label}</h2>
+              <div className="form-grid">
+                {g.fields.map((f) => (
+                  <FieldInput
+                    key={f.key}
+                    field={f}
+                    value={values[f.key] ?? ''}
+                    onChange={(v) => setValue(f.key, v)}
+                    onFocus={() => setActiveKey(f.key)}
+                    error={draft.fieldErrors[f.key]}
+                  />
+                ))}
+              </div>
+              {/* The button stays ENABLED and says what is missing. A disabled
+                  Continue drops out of the tab order and tells the user
+                  nothing about why they are stuck. */}
+              {missing.length > 0 && (
+                <span className="hint" id={`step-${g.id}-missing`}>
+                  Still needed: {missing.map((f) => f.label).join(', ')}.
+                </span>
               )}
-            </div>
-          </section>
-        ))}
+              <div className="row wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  aria-describedby={missing.length > 0 ? `step-${g.id}-missing` : undefined}
+                  onClick={() => {
+                    if (missing.length > 0) { setActiveKey(missing[0]!.key); return; }
+                    setStep(i + groupOffset + 1);
+                  }}
+                >
+                  Continue
+                </button>
+                {(i + groupOffset) > 0 && (
+                  <button type="button" className="btn btn-ghost" onClick={() => setStep(i + groupOffset - 1)}>Back</button>
+                )}
+              </div>
+            </section>
+          );
+        })}
 
         {step === reviewStep && (
-          <section className="stack gap-4">
+          <section ref={stepRef} tabIndex={-1} className="stack gap-4" style={{ outline: 'none' }}>
             <h2 className="t-headline-md">Review &amp; download</h2>
 
-            {preview.missingRequired.length > 0 && (
+            {/* No document is repeated here — the live panel beside this form
+                is already showing it, and two copies of the same document on
+                one screen is worse than one. */}
+            {draft.missingRequired.length > 0 && (
               <div className="notice notice-error" role="alert">
                 <span className="notice-icon" aria-hidden="true">!</span>
-                <span>Still blank: {preview.missingRequired.map((f) => f.label).join(', ')}.</span>
+                <div className="stack gap-1">
+                  <strong>Still blank</strong>
+                  <span>{draft.missingRequired.map((f) => f.label).join(', ')}.</span>
+                </div>
               </div>
             )}
-            {Object.keys(preview.fieldErrors).length > 0 && (
+            {Object.keys(draft.fieldErrors).length > 0 && (
               <div className="notice notice-error" role="alert">
                 <span className="notice-icon" aria-hidden="true">!</span>
-                <span>{Object.values(preview.fieldErrors).join(' ')}</span>
+                <span>{Object.values(draft.fieldErrors).join(' ')}</span>
               </div>
             )}
-
-            {/* Only the fields that did not receive a real value — once
-                everything is filled this is empty, so DocumentViewer's own
-                "Nothing to fill in" caption shows instead of a stale count
-                of the template's total field count. */}
-            <DocumentViewer
-              title={title}
-              body={preview.text}
-              fields={fields.filter((f) => !preview.filled.includes(f.key))}
-            />
 
             <div className="notice notice-legal">
               <span className="notice-icon" aria-hidden="true">ⓘ</span>
@@ -162,22 +225,74 @@ export function DocumentBuilder({
           </section>
         )}
       </form>
+      </div>
+
+      {/* ------------------------------------------- right: the live document */}
+      <div className="builder-doc-col" style={{ minWidth: 0 }}>
+        <LiveDocument
+          title={title}
+          lines={draft.lines}
+          activeKey={activeKey}
+          filledCount={draft.filled.length}
+          totalCount={fields.length}
+        />
+      </div>
+
+      {/* On a phone the document cannot sit beside the form, so a persistent
+          bar offers it without taking the viewport from the questions. */}
+      <div className="live-doc-bar">
+        <div className="fill-meter" aria-hidden="true">
+          <span style={{ width: `${fields.length === 0 ? 100 : Math.round((draft.filled.length / fields.length) * 100)}%` }} />
+        </div>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPreviewOpen(true)}>
+          See the document ({draft.filled.length}/{fields.length})
+        </button>
+      </div>
+
+      <DialogFlush open={previewOpen} onOpenChange={setPreviewOpen} title={`${title} — preview`}>
+        <div style={{ overflow: 'auto', padding: 12 }}>
+          <LiveDocument
+            title={title}
+            lines={draft.lines}
+            activeKey={activeKey}
+            filledCount={draft.filled.length}
+            totalCount={fields.length}
+            heading="As it stands"
+          />
+        </div>
+      </DialogFlush>
     </div>
   );
 }
 
 function FieldInput({
-  field, value, onChange,
-}: { field: TemplateField; value: string; onChange: (v: string) => void }) {
+  field, value, onChange, onFocus, error,
+}: {
+  field: TemplateField; value: string; onChange: (v: string) => void;
+  onFocus: () => void; error?: string;
+}) {
   const id = `f-${field.key}`;
+  /* Field renders the hint and the error with ids but cannot reach the
+     control to point at them, so the association is made here. Without it
+     every hint and every validation message in this form is orphaned from
+     its input for a screen-reader user. */
+  const describedBy = [field.hint ? `${id}-hint` : null, error ? `${id}-error` : null]
+    .filter(Boolean).join(' ') || undefined;
+
   const common = {
-    id, className: field.type === 'multiline' ? 'textarea' : field.type === 'select' ? 'select' : 'input',
-    value, required: field.required, maxLength: field.maxLength,
+    id,
+    className: field.type === 'multiline' ? 'textarea' : field.type === 'select' ? 'select' : 'input',
+    value,
+    required: field.required,
+    maxLength: field.maxLength,
+    'aria-describedby': describedBy,
+    'aria-invalid': error ? true : undefined,
+    onFocus,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => onChange(e.target.value),
-  };
+  } as const;
 
   return (
-    <Field name={id} label={field.label} hint={field.hint} required={field.required}>
+    <Field name={id} label={field.label} hint={field.hint} required={field.required} error={error}>
       {field.type === 'multiline' ? (
         <textarea {...common} rows={4} />
       ) : field.type === 'select' ? (
@@ -186,10 +301,14 @@ function FieldInput({
           {(field.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : (
+        /* Number fields are type="text" + inputMode, not type="number":
+           a number input mutates its value on a stray scroll-wheel over the
+           focused field, and rejects grouped digits people naturally type.
+           The money branch already avoided this; both now do. */
         <input
           {...common}
-          type={field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : field.type === 'money' ? 'text' : 'text'}
-          inputMode={field.type === 'money' ? 'numeric' : undefined}
+          type={field.type === 'date' ? 'date' : 'text'}
+          inputMode={field.type === 'money' || field.type === 'number' ? 'decimal' : undefined}
           placeholder={field.type === 'money' ? 'e.g. 25000' : undefined}
         />
       )}

@@ -46,7 +46,7 @@
   background: var(--surface-lowest);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--shadow-lg);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
   animation: ui-sheet-in var(--t-slow) var(--ease);
 }
 .ui-dialog[data-state='closed'] { animation: ui-sheet-out var(--t) var(--ease); }
@@ -127,7 +127,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom, 0px)));
   margin: 0;
   list-style: none;
   outline: none;

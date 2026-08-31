@@ -8,6 +8,7 @@
  *   * statutory/court charges are carried separately from the professional's
  *     fee, so a quoted fee is never mistaken for the total
  */
+import { DatabaseSync } from 'node:sqlite';
 import { db, now, flag, transaction } from '../client.ts';
 import { referenceCode } from '../ids.ts';
 
@@ -121,12 +122,15 @@ export function generateSlots(professionalId: number, fromIso: string, days = 14
   ).all(professionalId) as Array<{ weekday: number; s: number; e: number; mode: string; len: number; timezone: string }>;
   if (rules.length === 0) return [];
 
-  const taken = new Set(
-    (h.prepare(
-      `SELECT starts_at_utc AS t FROM booking
-        WHERE professional_id = ? AND status IN ('pending','confirmed','rescheduled')`,
-    ).all(professionalId) as Array<{ t: string }>).map((r) => r.t),
-  );
+  // Compared by interval overlap below, not by exact start-time equality: an
+  // existing 45-minute booking at 16:00 also occupies 16:15-16:45, and a
+  // grid that offered a fresh slot starting at 16:15 because no OTHER
+  // booking starts at exactly that instant would let the advocate be
+  // double-booked the moment the client tried to confirm it.
+  const takenIntervals = (h.prepare(
+    `SELECT starts_at_utc AS s, ends_at_utc AS e FROM booking
+      WHERE professional_id = ? AND status IN ('pending','confirmed','rescheduled')`,
+  ).all(professionalId) as Array<{ s: string; e: string }>).map((r) => ({ s: Date.parse(r.s), e: Date.parse(r.e) }));
   const blocks = h.prepare(
     `SELECT starts_at_utc AS s, ends_at_utc AS e FROM availability_block WHERE professional_id = ?`,
   ).all(professionalId) as Array<{ s: string; e: string }>;
@@ -162,15 +166,21 @@ export function generateSlots(professionalId: number, fromIso: string, days = 14
         new Date(day.getTime() + offsetMinutes * 60_000).getUTCDate(),
       ) - offsetMinutes * 60_000;
 
-      const len = Math.max(15, rule.len);
+      const fee = feeByMode.get(rule.mode) ?? feeByMode.get('any') ?? null;
+      // The slot's actual length is the service being sold, not the grid the
+      // advocate's calendar happens to be divided into. Falling back to
+      // rule.len when no fee duration is set keeps the old behaviour for a
+      // rule with no matching fee; ignoring the fee's duration is what let
+      // seeded 45-minute in-person consultations get offered on a 30-minute
+      // grid, so two of them could be booked overlapping.
+      const len = Math.max(15, fee?.minutes ?? rule.len);
       for (let m = rule.s; m + len <= rule.e; m += len) {
         const startMs = dayStartUtcMs + m * 60_000;
         if (startMs < nowMs + 3_600_000) continue;          // no same-hour booking
         const endMs = startMs + len * 60_000;
         const startIso = new Date(startMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
-        if (taken.has(startIso)) continue;
+        if (takenIntervals.some((t) => startMs < t.e && endMs > t.s)) continue;
         if (blocks.some((b) => startMs < Date.parse(b.e) && endMs > Date.parse(b.s))) continue;
-        const fee = feeByMode.get(rule.mode) ?? feeByMode.get('any') ?? null;
         out.push({
           startUtc: startIso,
           endUtc: new Date(endMs).toISOString().replace(/\.\d{3}Z$/, 'Z'),
@@ -230,6 +240,84 @@ export class SlotTakenError extends Error {
   constructor() { super('SLOT_TAKEN'); this.name = 'SlotTakenError'; }
 }
 
+export class BookingRejectedError extends Error {
+  code: string;
+  constructor(code: string) { super(code); this.name = 'BookingRejectedError'; this.code = code; }
+}
+
+/**
+ * Re-derive whether `(startsAtUtc, endsAtUtc, mode)` is actually bookable
+ * for this professional, inside the write transaction.
+ *
+ * `generateSlots` is the ADVISORY, read-only version of this same set of
+ * rules, used to build the list a client picks from. Advisory is the
+ * load-bearing word: nothing previously stopped a request built by hand, or
+ * one sent against a slot list that had gone stale between page load and
+ * submit, from booking a time that was never actually offered — any
+ * non-empty `startsAtUtc`/`endsAtUtc` pair was accepted as long as no OTHER
+ * booking shared its exact start instant. This is the version allowed to
+ * say no: every constraint `generateSlots` encodes (which weekday and
+ * window the advocate actually publishes, the slot's real duration, any
+ * block, any overlapping booking, the minimum-notice window) is checked
+ * again here, from the database, regardless of what the client claims.
+ */
+function assertSlotBookable(h: DatabaseSync, input: {
+  professionalId: number; startsAtUtc: string; endsAtUtc: string; mode: string;
+}): void {
+  const startMs = Date.parse(input.startsAtUtc);
+  const endMs = Date.parse(input.endsAtUtc);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    throw new BookingRejectedError('SLOT_INVALID');
+  }
+  if (startMs < Date.now() + 3_600_000) throw new BookingRejectedError('SLOT_TOO_SOON');
+
+  const rules = h.prepare(
+    `SELECT weekday, start_minute AS s, end_minute AS e, slot_minutes AS len, timezone
+       FROM availability_rule WHERE professional_id = ? AND is_active = 1 AND mode = ?`,
+  ).all(input.professionalId, input.mode) as Array<{ weekday: number; s: number; e: number; len: number; timezone: string }>;
+
+  const durationMinutes = Math.round((endMs - startMs) / 60_000);
+  const fee = h.prepare(
+    `SELECT min(duration_minutes) AS m FROM fee_schedule
+      WHERE professional_id = ? AND is_active = 1 AND kind = 'consultation' AND (mode = ? OR mode IS NULL)
+        AND duration_minutes IS NOT NULL`,
+  ).get(input.professionalId, input.mode) as { m: number | null } | undefined;
+
+  const matches = rules.some((rule) => {
+    const offsetMinutes = zoneOffsetMinutes(rule.timezone, new Date(startMs));
+    const local = new Date(startMs + offsetMinutes * 60_000);
+    if (local.getUTCDay() !== rule.weekday) return false;
+    const dayStartUtcMs = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - offsetMinutes * 60_000;
+    const minuteOfDay = Math.round((startMs - dayStartUtcMs) / 60_000);
+    // The slot's real length is the fee's duration when one is declared —
+    // matching generateSlots — falling back to the rule's own grid unit.
+    const expectedLen = Math.max(15, fee?.m ?? rule.len);
+    if (durationMinutes !== expectedLen) return false;
+    if (minuteOfDay < rule.s || minuteOfDay + expectedLen > rule.e) return false;
+    // The start must land ON the grid this rule actually offers — not just
+    // anywhere inside the window — so a request cannot claim an off-grid
+    // instant a real client was never shown.
+    if ((minuteOfDay - rule.s) % expectedLen !== 0) return false;
+    return true;
+  });
+  if (!matches) throw new BookingRejectedError('SLOT_NOT_AVAILABLE');
+
+  const blocked = h.prepare(
+    `SELECT 1 FROM availability_block
+      WHERE professional_id = ? AND starts_at_utc < ? AND ends_at_utc > ? LIMIT 1`,
+  ).get(input.professionalId, input.endsAtUtc, input.startsAtUtc);
+  if (blocked) throw new BookingRejectedError('SLOT_BLOCKED');
+
+  // Interval overlap against LIVE bookings, not exact-start equality — see
+  // the identical fix in generateSlots for why equality alone is not enough.
+  const overlap = h.prepare(
+    `SELECT 1 FROM booking
+      WHERE professional_id = ? AND status IN ('pending','confirmed','rescheduled')
+        AND starts_at_utc < ? AND ends_at_utc > ? LIMIT 1`,
+  ).get(input.professionalId, input.endsAtUtc, input.startsAtUtc);
+  if (overlap) throw new SlotTakenError();
+}
+
 export function createBooking(input: CreateBookingInput): { id: number; reference: string; totalMinor: number; currencyCode: string } {
   return transaction(() => {
     const h = db();
@@ -242,13 +330,12 @@ export function createBooking(input: CreateBookingInput): { id: number; referenc
     if (!target) throw new Error('PROFESSIONAL_NOT_AVAILABLE');
     if (target.accepts_consultations !== 1) throw new Error('NOT_ACCEPTING');
 
-    // Re-check contention inside the transaction: the slot list the client saw
-    // may be seconds stale.
-    const clash = h.prepare(
-      `SELECT 1 FROM booking WHERE professional_id = ? AND starts_at_utc = ?
-         AND status IN ('pending','confirmed','rescheduled') LIMIT 1`,
-    ).get(input.professionalId, input.startsAtUtc);
-    if (clash) throw new SlotTakenError();
+    assertSlotBookable(h, {
+      professionalId: input.professionalId,
+      startsAtUtc: input.startsAtUtc,
+      endsAtUtc: input.endsAtUtc,
+      mode: input.mode,
+    });
 
     // Snapshot the price. A later fee edit must not rewrite this quote.
     let currency = 'INR';

@@ -26,7 +26,7 @@ const {
   getOrgMembershipBySlug, getCorporateOrgBySlug, listOrgBookings,
   createDomainClaim, markDomainClaimVerified, promoteVerifiedDomain, listDomainClaims,
   orgEntitlements, INVITABLE_ROLES,
-  createBooking, getBooking, upsertFee,
+  createBooking, getBooking, upsertFee, setAvailability, generateSlots,
   createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS,
 } = await import('@lexhall/db');
 
@@ -241,20 +241,32 @@ const proId = Number(db().prepare(
      1,?,1,1,'unclaimed',?,?) RETURNING id`,
 ).get(jurisdictionId, ts, ts).id);
 
+// Publish real availability rather than hand-picking a timestamp:
+// createBooking now re-derives the actual bookable slot set (see fees.ts
+// assertSlotBookable) and rejects anything not on it, so this fixture has
+// to go through generateSlots exactly as a real booking flow does.
+setAvailability(proId, [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
+  weekday, startMinute: 9 * 60, endMinute: 17 * 60, mode: 'in_person', slotMinutes: 45, timezone: 'Asia/Kolkata',
+})));
+const feeId = upsertFee({
+  professionalId: proId, kind: 'consultation', label: 'In-person consultation',
+  mode: 'in_person', durationMinutes: 45, amountMinor: 300000, basis: 'fixed',
+});
+const realSlot = generateSlots(proId, new Date(Date.now() + 86_400_000).toISOString(), 14)
+  .find((s) => s.mode === 'in_person');
+
+check('a real slot is actually offered for the fixture professional', () => Boolean(realSlot));
+
 check('createBooking writes a booking, with the meeting place', () => {
-  const feeId = upsertFee({
-    professionalId: proId, kind: 'consultation', label: 'In-person consultation',
-    mode: 'in_person', durationMinutes: 45, amountMinor: 300000, basis: 'fixed',
-  });
   const created = createBooking({
     professionalId: proId,
-    feeScheduleId: feeId,
+    feeScheduleId: realSlot.feeScheduleId ?? feeId,
     clientUserId: colleague.id,
     organisationId: org.id,
     clientName: 'Booking Tester',
     clientEmail: 'colleague@acme.example',
-    startsAtUtc: '2099-01-05T05:00:00Z',
-    endsAtUtc: '2099-01-05T05:45:00Z',
+    startsAtUtc: realSlot.startUtc,
+    endsAtUtc: realSlot.endUtc,
     clientTimezone: 'Asia/Kolkata',
     mode: 'in_person',
     meetingKind: 'client_place',

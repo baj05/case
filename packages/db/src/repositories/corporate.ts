@@ -202,9 +202,26 @@ function countOwners(orgId: number, excludeUserId?: number): number {
 // Roster changes
 // ---------------------------------------------------------------------------
 
+const ALL_ROLES: readonly OrgRole[] = Object.freeze(['owner', 'admin', 'member', 'billing', 'read_only'] as const);
+
+/** Is the actor an owner of this organisation? Used to gate anything that
+ * touches ownership itself — granting it, or changing an existing owner's
+ * role — which `member.manage` alone must not be enough for. */
+function actorIsOwner(orgId: number, actorUserId: number): boolean {
+  const row = db().prepare(
+    `SELECT role FROM org_member WHERE organisation_id = ? AND user_id = ?`,
+  ).get(orgId, actorUserId) as { role: string } | undefined;
+  return row?.role === 'owner';
+}
+
 export function setMemberRole(input: {
   orgId: number; targetUserId: number; role: OrgRole; actorUserId: number;
 }): void {
+  // `role` arrives from a form field cast at the type level, not validated
+  // at runtime — a POST carrying `role=owner`, or any other string, must be
+  // rejected here rather than trusted because TypeScript said it was safe.
+  if (!ALL_ROLES.includes(input.role)) throw new CorporateError('INVALID_ROLE');
+
   transaction(() => {
     const h = db();
     const current = h.prepare(
@@ -212,6 +229,17 @@ export function setMemberRole(input: {
     ).get(input.orgId, input.targetUserId) as { role: string } | undefined;
     if (!current) throw new CorporateError('NOT_A_MEMBER');
     if (current.role === input.role) return;
+
+    /*
+     * Ownership itself is owner-only to touch — granting it, or changing an
+     * existing owner's role. `member.manage` is held by 'admin' too, and
+     * without this an admin could mint a co-owner (including themselves) or
+     * demote an owner they disagree with; neither is what that capability
+     * is for.
+     */
+    if ((input.role === 'owner' || current.role === 'owner') && !actorIsOwner(input.orgId, input.actorUserId)) {
+      throw new CorporateError('OWNER_ONLY');
+    }
 
     // Demoting the last owner would leave the tenant with nobody who can
     // manage it — including nobody who can appoint a new owner.
@@ -239,6 +267,10 @@ export function removeMember(input: { orgId: number; targetUserId: number; actor
       `SELECT role FROM org_member WHERE organisation_id = ? AND user_id = ?`,
     ).get(input.orgId, input.targetUserId) as { role: string } | undefined;
     if (!current) throw new CorporateError('NOT_A_MEMBER');
+    // Removing an owner is owner-only — see setMemberRole's identical rule.
+    if (current.role === 'owner' && !actorIsOwner(input.orgId, input.actorUserId)) {
+      throw new CorporateError('OWNER_ONLY');
+    }
     if (current.role === 'owner' && countOwners(input.orgId, input.targetUserId) === 0) {
       throw new CorporateError('LAST_OWNER');
     }

@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   createConsultationRequest, createClaim, createDataRequest,
-  getProfessionalBySlug, createBooking, getBooking, setBookingStatus,
+  getProfessionalBySlug, createBooking, getBooking, setBookingStatus, BookingRejectedError,
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview,
@@ -53,6 +53,24 @@ function rating(form: FormData, key: string): number | undefined {
  */
 function keep<const K extends readonly string[]>(form: FormData, keys: K): Record<K[number], string> {
   return Object.fromEntries(keys.map((k) => [k, str(form, k)])) as Record<K[number], string>;
+}
+
+/**
+ * A `next` destination this server may redirect to after sign-in, or the
+ * given fallback.
+ *
+ * `values.next` comes straight from a form field an attacker fully
+ * controls — `?next=https://evil.example` or the protocol-relative
+ * `//evil.example` sail through a bare `redirect(values.next || fallback)`
+ * unchanged, sending a user who just typed their password to a page of the
+ * attacker's choosing. A destination is safe only when it is a single
+ * leading slash not followed by a second slash or a backslash — both of
+ * those are read as "go to another host" by a browser even though they
+ * pass a naive `startsWith('/')` check.
+ */
+function safeNext(next: string | undefined, fallback: string): string {
+  if (next && /^\/(?!\/|\\)/.test(next)) return next;
+  return fallback;
 }
 
 // -------------------------------------------------------------- consultation
@@ -295,6 +313,18 @@ export async function submitBooking(_prev: ActionResult | null, form: FormData):
       };
     }
     if (code === 'NOT_ACCEPTING') return { ok: false, values, message: 'This professional has stopped accepting bookings.' };
+    // BookingRejectedError: the slot passed client-side checks but failed
+    // the server's own re-derivation of what is actually bookable — a
+    // tampered or stale request, not something a real user did by picking
+    // from the list they were shown. One message covers every sub-code:
+    // none of them is something the client should get to distinguish.
+    if (error instanceof BookingRejectedError) {
+      return {
+        ok: false, values,
+        message: 'That time is no longer available. Nothing has been booked — choose another time and your details will be kept.',
+        fieldErrors: { startsAtUtc: 'Pick a different time.' },
+      };
+    }
     return { ok: false, values, message: 'We could not complete the booking. Nothing has been charged or reserved — please try again.' };
   }
 }
@@ -367,7 +397,7 @@ export async function signupAction(_prev: ActionResult | null, form: FormData): 
     }
     return { ok: false, values, message: 'We could not create your account. Please try again.' };
   }
-  redirect(values.next || '/dashboard');
+  redirect(safeNext(values.next, '/dashboard'));
 }
 
 export async function loginAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -382,7 +412,7 @@ export async function loginAction(_prev: ActionResult | null, form: FormData): P
     }
     return { ok: false, values, message: 'Incorrect email or password.' };
   }
-  redirect(values.next || '/dashboard');
+  redirect(safeNext(values.next, '/dashboard'));
 }
 
 export async function logoutAction(): Promise<void> {
@@ -543,12 +573,19 @@ export async function voteReviewHelpfulAction(form: FormData): Promise<void> {
 
 export async function reportReviewAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in to report a review.' };
   const reviewId = Number(form.get('reviewId'));
   const slug = str(form, 'slug', 120);
   const reason = str(form, 'reason', 60) || 'other';
   const detail = str(form, 'detail', 1000);
   if (detail.trim().length < 5) return { ok: false, message: 'Tell us briefly what the issue is.' };
-  reportReview(reviewId, { reporterUserId: user?.id, reason, detail });
+  try {
+    reportReview(reviewId, { reporterUserId: user.id, reason, detail });
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'ALREADY_REPORTED') return { ok: false, message: 'You have already reported this review.' };
+    return { ok: false, message: 'That review could not be found.' };
+  }
   revalidateReviewSubject(reviewId, slug);
   return { ok: true, message: 'Thank you — this review has been sent for moderation review.' };
 }
@@ -775,6 +812,8 @@ export async function setMemberRoleAction(_prev: ActionResult | null, form: Form
     if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
     const code = (error as { code?: string }).code;
     if (code === 'LAST_OWNER') return { ok: false, message: 'This account must keep at least one owner. Make someone else an owner first.' };
+    if (code === 'OWNER_ONLY') return { ok: false, message: 'Only an owner can change another owner’s role, or grant ownership.' };
+    if (code === 'INVALID_ROLE') return { ok: false, message: 'That is not a valid role.' };
     if (code === 'NOT_A_MEMBER') return { ok: false, message: 'That person is not in this account.' };
     return { ok: false, message: 'We could not change that role. Please try again.' };
   }
@@ -798,6 +837,7 @@ export async function removeMemberAction(_prev: ActionResult | null, form: FormD
     if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
     const code = (error as { code?: string }).code;
     if (code === 'LAST_OWNER') return { ok: false, message: 'This account must keep at least one owner.' };
+    if (code === 'OWNER_ONLY') return { ok: false, message: 'Only an owner can remove another owner.' };
     if (code === 'NOT_A_MEMBER') return { ok: false, message: 'That person is not in this account.' };
     return { ok: false, message: 'We could not remove that person. Please try again.' };
   }

@@ -156,31 +156,46 @@ export function createReview(input: CreateReviewInput): { id: number; moderation
     let basis = 'unverified';
     let experienceCategory: ExperienceCategory = 'consultation';
 
+    /*
+     * SECURITY: every branch below binds `input.professionalId` into the
+     * WHERE clause itself, not just author/status. Checking only that the
+     * CALLER owns the interaction — and never that the interaction belongs
+     * to the professional the review is FOR — let a review submitted with
+     * someone else's slug and your own completed booking post as a
+     * verified review of an unrelated advocate. `professionalId` here is
+     * the review's claimed subject, so a mismatch must fail exactly like a
+     * missing row: the review is simply not eligible.
+     */
     if (input.bookingId != null) {
-      const b = h.prepare(`SELECT client_user_id AS clientUserId, status FROM booking WHERE id = ?`)
-        .get(input.bookingId) as { clientUserId: number | null; status: string } | undefined;
+      const b = h.prepare(
+        `SELECT client_user_id AS clientUserId, status FROM booking WHERE id = ? AND professional_id = ?`,
+      ).get(input.bookingId, input.professionalId) as { clientUserId: number | null; status: string } | undefined;
       if (!b || b.clientUserId !== input.authorUserId || b.status !== 'completed') {
         throw new Error('INELIGIBLE_INTERACTION');
       }
       basis = 'verified_engagement'; experienceCategory = 'booking';
     } else if (input.consultationRequestId != null) {
-      const cr = h.prepare(`SELECT requester_user_id AS requesterUserId, status FROM consultation_request WHERE id = ?`)
-        .get(input.consultationRequestId) as { requesterUserId: number | null; status: string } | undefined;
+      const cr = h.prepare(
+        `SELECT requester_user_id AS requesterUserId, status FROM consultation_request WHERE id = ? AND professional_id = ?`,
+      ).get(input.consultationRequestId, input.professionalId) as { requesterUserId: number | null; status: string } | undefined;
       if (!cr || cr.requesterUserId !== input.authorUserId || cr.status !== 'completed') {
         throw new Error('INELIGIBLE_INTERACTION');
       }
       basis = 'verified_consultation'; experienceCategory = 'consultation';
     } else if (input.appointmentId != null) {
-      const a = h.prepare(`SELECT client_user_id AS clientUserId, status FROM appointment WHERE id = ?`)
-        .get(input.appointmentId) as { clientUserId: number | null; status: string } | undefined;
+      const a = h.prepare(
+        `SELECT client_user_id AS clientUserId, status FROM appointment WHERE id = ? AND professional_id = ?`,
+      ).get(input.appointmentId, input.professionalId) as { clientUserId: number | null; status: string } | undefined;
       if (!a || a.clientUserId !== input.authorUserId || a.status !== 'completed') {
         throw new Error('INELIGIBLE_INTERACTION');
       }
       basis = 'verified_engagement'; experienceCategory = 'appointment';
     } else if (input.matterId != null) {
       const m = h.prepare(
-        `SELECT 1 AS ok FROM matter_participant WHERE matter_id = ? AND user_id = ?`,
-      ).get(input.matterId, input.authorUserId) as { ok: number } | undefined;
+        `SELECT 1 AS ok FROM matter_participant mp
+           JOIN matter mt ON mt.id = mp.matter_id
+          WHERE mp.matter_id = ? AND mp.user_id = ? AND mt.lead_professional_id = ?`,
+      ).get(input.matterId, input.authorUserId, input.professionalId) as { ok: number } | undefined;
       if (!m) throw new Error('INELIGIBLE_INTERACTION');
       basis = 'verified_engagement'; experienceCategory = 'legal_matter';
     }
@@ -390,17 +405,49 @@ export function voteHelpful(reviewId: number, userId: number, vote: 1 | -1): voi
   ).run(reviewId, userId, vote, ts, ts);
 }
 
-export function reportReview(reviewId: number, input: { reporterUserId?: number; reporterEmail?: string; reason: string; detail: string }): number {
-  const ts = now();
-  const result = db().prepare(
-    `INSERT INTO content_report (subject_type, subject_id, reporter_user_id, reporter_email, reason, detail, status, created_at)
-     VALUES ('review',?,?,?,?,?,'open',?)`,
-  ).run(reviewId, input.reporterUserId ?? null, input.reporterEmail ?? null, input.reason, input.detail, ts);
-  // A report always bumps a published review back into human review — never
-  // auto-removed (§31 fairness), but never left unexamined either.
-  db().prepare(`UPDATE review SET moderation_status = 'in_review', updated_at = ? WHERE id = ? AND moderation_status = 'published'`)
-    .run(ts, reviewId);
-  return Number(result.lastInsertRowid);
+export class ReportError extends Error {
+  code: string;
+  constructor(code: string) { super(code); this.code = code; }
+}
+
+/**
+ * `reporterUserId` is required, not optional.
+ *
+ * A report changes a PUBLISHED review's state — the row leaves public
+ * listings the instant this runs, ahead of any human look (§31 fairness
+ * says "never left unexamined", not "never removed from view", but an
+ * unauthenticated single call achieving both was never the intended
+ * reading). Requiring a session, and rejecting a second report from the
+ * same account, is the minimum that makes a report cost something: without
+ * it, one anonymous request per review id silently unpublishes the entire
+ * corpus, with no rate limit and no record of who did it.
+ */
+export function reportReview(
+  reviewId: number,
+  input: { reporterUserId: number; reason: string; detail: string },
+): number {
+  return transaction(() => {
+    const h = db();
+    const exists = h.prepare(`SELECT 1 FROM review WHERE id = ?`).get(reviewId);
+    if (!exists) throw new ReportError('REVIEW_NOT_FOUND');
+
+    const already = h.prepare(
+      `SELECT 1 FROM content_report WHERE subject_type='review' AND subject_id=? AND reporter_user_id=?`,
+    ).get(reviewId, input.reporterUserId);
+    if (already) throw new ReportError('ALREADY_REPORTED');
+
+    const ts = now();
+    const result = h.prepare(
+      `INSERT INTO content_report (subject_type, subject_id, reporter_user_id, reason, detail, status, created_at)
+       VALUES ('review',?,?,?,?,'open',?)`,
+    ).run(reviewId, input.reporterUserId, input.reason, input.detail, ts);
+    // A report bumps a published review back into human review — never left
+    // unexamined, and never SILENTLY removed either now that reaching this
+    // line costs a real, traceable account.
+    h.prepare(`UPDATE review SET moderation_status = 'in_review', updated_at = ? WHERE id = ? AND moderation_status = 'published'`)
+      .run(ts, reviewId);
+    return Number(result.lastInsertRowid);
+  });
 }
 
 // ------------------------------------------------------------ discovery feed

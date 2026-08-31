@@ -236,6 +236,13 @@ ul, ol { list-style: none; padding: 0; }
   line-height: 1.12;
   letter-spacing: -0.03em;
 }
+.t-headline-xl {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.75rem, 1.25rem + 2.2vw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
 .t-headline-lg {
   font-family: var(--font-display);
   font-weight: 700;
@@ -283,6 +290,7 @@ ul, ol { list-style: none; padding: 0; }
   margin-inline: auto;
   padding-inline: 20px;
 }
+@media (max-width: 400px) { .container { padding-inline: 16px; } }
 @media (min-width: 768px) { .container { padding-inline: var(--container-pad); } }
 
 .section { padding-block: clamp(48px, 8vw, var(--section-gap)); }
@@ -297,7 +305,9 @@ ul, ol { list-style: none; padding: 0; }
 .gap-4 { gap: calc(var(--u) * 2); }
 .gap-5 { gap: calc(var(--u) * 2.5); }
 .gap-6 { gap: calc(var(--u) * 3); }
+.gap-7 { gap: calc(var(--u) * 3.5); }
 .gap-8 { gap: calc(var(--u) * 4); }
+.gap-10 { gap: calc(var(--u) * 5); }
 
 /* Auto-fit grid: no breakpoint gymnastics, works 320 -> 1920. */
 .grid-auto {
@@ -1211,18 +1221,20 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (max-width: 860px) {
   .glass-card {
     position: static;
-    max-width: 320px;
+    max-width: 360px;
     width: 100%;
-    margin-top: 12px;
+    margin-top: 0;
   }
   .hero-stage {
     flex-direction: column;
     align-items: center;
     min-height: 0;
+    gap: 12px;
   }
 }
 @media (max-width: 480px) {
-  .hero-subject { height: 260px; }
+  .hero-subject-wrap { height: 260px; }
+  .hero-subject { height: 260px; max-height: 260px; width: auto; object-fit: contain; }
   .glass-card { max-width: 100%; }
 }
 
@@ -1448,8 +1460,16 @@ details[open] > .filter-summary::after { content: '–'; }
 .acc-body { padding: 0 18px 18px; color: var(--on-surface-variant); font-size: 0.9375rem; line-height: 1.6; }
 
 /* --- booking stepper (reference image 3) ------------------------------ */
-.stepper { display: flex; align-items: center; gap: 0; margin-inline: auto; max-width: 620px; width: 100%; }
-.stepper-node { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; }
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-inline: auto;
+  max-width: 620px;
+  width: 100%;
+  min-width: 0;
+}
+.stepper-node { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; min-width: 0; }
 .stepper-dot {
   width: 15px; height: 15px; border-radius: 50%;
   background: var(--surface-high); border: 2px solid var(--surface-high);
@@ -1460,9 +1480,12 @@ details[open] > .filter-summary::after { content: '–'; }
 .stepper-dot[data-state='current'] { box-shadow: 0 0 0 4px rgba(255,122,69,0.28); }
 .stepper-label { font-size: 0.75rem; color: var(--on-surface-variant); text-align: center; white-space: nowrap; }
 .stepper-dot[data-state='current'] + .stepper-label { color: var(--on-surface); font-weight: 600; }
-.stepper-line { flex: 1 1 auto; height: 3px; background: var(--surface-high); border-radius: 2px; margin-bottom: 22px; }
+.stepper-line { flex: 1 1 auto; min-width: 12px; height: 3px; background: var(--surface-high); border-radius: 2px; margin-bottom: 22px; }
 .stepper-line[data-on='true'] { background: var(--action-orange); }
-@media (max-width: 520px) { .stepper-label { font-size: 0.6875rem; } }
+@media (max-width: 520px) {
+  .stepper { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .stepper-label { font-size: 0.6875rem; }
+}
 
 /* --- logo / authority strip ------------------------------------------- */
 .authority-strip {
@@ -1710,8 +1733,8 @@ details[open] > .filter-summary::after { content: '–'; }
     gap: 8px;
   }
   .dual-divider { display: none; }
-  .dual-field { border: 1px solid var(--outline-variant); border-radius: var(--r); padding: 2px 10px; }
-  .dual-submit { width: 100%; border-radius: var(--r); }
+  .dual-field { border: 1px solid var(--outline-variant); border-radius: var(--r); padding: 2px 10px; min-height: 44px; }
+  .dual-submit { width: 100%; min-height: 44px; border-radius: var(--r); }
 }
 
 /* --- motion: scroll reveal, respecting reduced-motion ------------------ */
@@ -1746,20 +1769,16 @@ details[open] > .filter-summary::after { content: '–'; }
    tearing a hole through the neck, and the edge is visibly jagged when
    scaled up. A circular frame gets the reference's "breaks the boundary,
    overlaps the info panel" depth without altering a real person's photo. */
-/* Non-scrolling row: cards are wide enough that a typical container shows
-   two in full and cuts the third at its edge. `overflow-x: hidden` paired
-   with `overflow-y: visible` does NOT work for that — per the CSS Overflow
-   spec, pairing 'hidden' on one axis forces the other away from 'visible'
-   into 'auto', which silently creates a vertical scroll container and clips
-   (verified: it did — getBoundingClientRect showed the photo's rect
-   escaping the row's box, but rowScrollHeight > rowClientHeight confirmed a
-   real scrollable clip was hiding that escape). `clip` is exempt from that
-   forcing rule, so overflow-x: clip cuts horizontally while overflow-y
-   genuinely stays visible. margin-top reserves room for the head's breakout. */
+/* Smooth horizontal scrolling on mobile/tablet; cleanly contained on wide screens. */
 .block-row {
   display: flex;
   gap: 20px;
-  overflow-x: clip;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
+  padding-top: 4px;
+  min-width: 0;
 }
 /* Landscape (~4:3) card, matching the reference proportions rather than the
    tall near-square block this replaced. The colour card is the frame: it
@@ -1776,6 +1795,7 @@ details[open] > .filter-summary::after { content: '–'; }
   border-radius: var(--r-2xl, 28px);
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  scroll-snap-align: start;
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .block-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
@@ -1858,11 +1878,11 @@ details[open] > .filter-summary::after { content: '–'; }
    plain stacked layout (photo on top, panel filling the width below it)
    rather than crushing either into an unreadable sliver. */
 @media (max-width: 600px) {
-  .block-card { width: 88vw; height: auto; display: flex; flex-direction: column; overflow: hidden; }
+  .block-card { width: min(340px, 86vw); height: auto; display: flex; flex-direction: column; overflow: hidden; }
   .block-photo {
     position: static;
     width: 100%;
-    height: 240px;
+    height: 220px;
     max-width: none;
   }
   .block-info {
@@ -2236,3 +2256,159 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 .judicial-tier-name { font-weight: 600; font-size: 0.9375rem; margin-top: 4px; }
 .judicial-tier-sub { font-size: 0.8125rem; color: var(--on-surface-variant); }
+
+/* ===========================================================================
+   LIVE DOCUMENT PREVIEW — the corporate builder's side-by-side panel.
+   
+   Reuses .doc-page / .doc-line so the preview and the paginated reader render
+   the document identically. What differs is that this one scrolls
+   continuously rather than paginating: the panel follows the field you are
+   editing, and a page boundary landing mid-clause would fight that.
+   =========================================================================== */
+.builder-layout {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+/* The side-by-side column and the phone bar are switched HERE, at this
+   file's own breakpoint, rather than with .hide-mobile/.hide-desktop. Those
+   utilities flip at 1200px, so borrowing them would leave 1024-1199px
+   showing neither the column nor the bar; and `.hide-mobile { display:
+   initial }` computes to `inline` on a div, which would break the sticky
+   positioning below. */
+.builder-doc-col { display: none; }
+
+@media (min-width: 1024px) {
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+  /* Sticky so the document stays beside the fields as the form grows past a
+     screen. The offset clears the sticky site header (61px measured). */
+  .builder-doc-col {
+    display: block;
+    position: sticky;
+    top: calc(var(--header-h, 61px) + 12px);
+  }
+}
+
+.live-doc {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--surface-lowest);
+}
+
+.live-doc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+}
+
+.live-doc-stage {
+  padding: clamp(10px, 2vw, 20px);
+  background: var(--surface-dim);
+  overflow: auto;
+  /* Tall enough to read a clause in context, short enough to leave the form
+     reachable without scrolling the whole page. */
+  max-height: min(68vh, 720px);
+}
+@media (min-width: 1024px) {
+  .live-doc-stage { max-height: calc(100vh - var(--header-h, 72px) - 190px); min-height: 380px; }
+}
+
+/* A filled value: readable as part of the document, but still visibly
+   something the user supplied rather than template prose. */
+.doc-fill {
+  background: color-mix(in srgb, var(--electric-lime) 26%, transparent);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-style: normal;
+}
+/* An optional field deliberately left blank. Deliberately quieter than a
+   missing required one — it is a choice, not an omission. */
+.doc-blank {
+  background: transparent;
+  color: var(--on-surface-variant);
+  border-bottom: 1px dashed var(--outline);
+  font-style: normal;
+}
+/* A token with no declared field. Should never reach a user; loud on purpose
+   so it is caught in development rather than shipped. */
+.doc-unknown {
+  background: var(--error-container);
+  color: var(--on-error-container, var(--error));
+  border-radius: 3px;
+  padding: 0 4px;
+  font-style: normal;
+}
+
+/* The field being edited right now, in either state. */
+.doc-fill[data-active='true'],
+.doc-placeholder[data-active='true'],
+.doc-blank[data-active='true'],
+.doc-unknown[data-active='true'] {
+  outline: 2px solid var(--action-orange);
+  outline-offset: 1px;
+  scroll-margin-block: 40%;
+}
+
+.live-doc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+}
+
+/* Fill progress. A meter rather than a bare count, because "9 of 17" is
+   harder to read at a glance than a bar you can see is nearly full. */
+.fill-meter {
+  flex: 1 1 120px;
+  min-width: 90px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-highest);
+  overflow: hidden;
+}
+.fill-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-full);
+  background: var(--primary);
+  transition: width var(--t) var(--ease);
+}
+
+/* The mobile affordance: the document is not beside the form on a phone, so
+   a persistent bar offers it without stealing the viewport. */
+.live-doc-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  padding-bottom: max(10px, calc(10px + env(safe-area-inset-bottom, 0px)));
+  background: var(--surface-lowest);
+  border-top: 1px solid var(--outline-variant);
+  box-shadow: var(--shadow-md);
+}
+@media (min-width: 1024px) { .live-doc-bar { display: none; } }
+
+/* Below the breakpoint the document is offered by the bar, so the column
+   must not also reserve grid space. */
+@media (max-width: 1023px) {
+  .builder-layout { grid-template-columns: minmax(0, 1fr); }
+}

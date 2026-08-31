@@ -110,6 +110,59 @@ test('normaliseFieldValue passes text through untouched (once sanitised)', () =>
   if (r.ok) assert.equal(r.value, 'Jane Doe');
 });
 
+test('BUG FIX: a required field whose value is non-blank but entirely stripped characters is a field error, not a silent empty success', () => {
+  const field: TemplateField = { key: 'TENANT_NAME', label: 'Tenant name', required: true };
+  const r = normaliseFieldValue(field, '[]');
+  assert.equal(r.ok, false, 'a value that sanitises to nothing must not be recorded as filled');
+});
+
+test('a field left genuinely blank is still a clean empty success', () => {
+  const field: TemplateField = { key: 'TENANT_NAME', label: 'Tenant name' };
+  const r = normaliseFieldValue(field, '   ');
+  assert.ok(r.ok);
+  if (r.ok) assert.equal(r.value, '');
+});
+
+test('BUG FIX: money rejects paise rather than silently discarding them', () => {
+  const field: TemplateField = { key: 'RENT', label: 'Monthly rent', type: 'money' };
+  const r = normaliseFieldValue(field, '1500.75');
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error, /whole number/i);
+});
+
+test('BUG FIX: a multiline field keeps its line breaks instead of collapsing to one line', () => {
+  const field: TemplateField = { key: 'SCOPE', label: 'Scope of work', type: 'multiline' };
+  const r = normaliseFieldValue(field, 'a) one\nb) two\nc) three');
+  assert.ok(r.ok);
+  if (r.ok) assert.equal(r.value, 'a) one\nb) two\nc) three');
+});
+
+test('a multiline field still collapses horizontal whitespace and excess blank lines', () => {
+  const field: TemplateField = { key: 'SCOPE', label: 'Scope of work', type: 'multiline' };
+  const r = normaliseFieldValue(field, '  line one   here  \n\n\n\n  line two  ');
+  assert.ok(r.ok);
+  if (r.ok) assert.equal(r.value, 'line one here\n\nline two');
+});
+
+test('BUG FIX: an over-length value is a field error naming the limit, never silently truncated', () => {
+  const field: TemplateField = { key: 'GROUNDS', label: 'Grounds', maxLength: 20 };
+  const r = normaliseFieldValue(field, 'x'.repeat(30));
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error, /20 characters/);
+});
+
+test('BUG FIX: a rollover date like 30 February is rejected, not silently rolled to 2 March', () => {
+  const field: TemplateField = { key: 'START_DATE', label: 'Start date', type: 'date' };
+  const r = normaliseFieldValue(field, '2026-02-30');
+  assert.equal(r.ok, false);
+});
+
+test('BUG FIX: a non-ISO date is rejected rather than parsed in ambiguous US month-first order', () => {
+  const field: TemplateField = { key: 'START_DATE', label: 'Start date', type: 'date' };
+  const r = normaliseFieldValue(field, '03/04/2026');
+  assert.equal(r.ok, false, '03/04/2026 must not be silently read as 4 March');
+});
+
 // ------------------------------------------------------------------- fillTemplate
 
 test('fillTemplate substitutes every declared field', () => {

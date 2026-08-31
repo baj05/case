@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LexHall — Law Firm Platform</title>
+  <meta http-equiv="refresh" content="0; url=http://localhost:3000" />
+  <style>
+    :root {
+      --surface: #faf8ff;
+      --on-surface: #131b2e;
+      --primary: #a73a05;
+      --action-orange: #ff7a45;
+      --trust-navy: #0f172a;
+      --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--surface);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #dfc0b5;
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--on-surface);
+    }
+    p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #58423a;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: #ffffff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15px;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.9; }
+    .hint {
+      font-size: 12px;
+      color: #8b7168;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>LexHall Law Firm Platform</h1>
+    <p>Opening local development server at <strong>http://localhost:3000</strong>...</p>
+    <a href="http://localhost:3000" class="btn">Open Web App</a>
+    <span class="hint">Ensure <code>npm run dev</code> is running in the project directory.</span>
+  </div>
+</body>
+</html>

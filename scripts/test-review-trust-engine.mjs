@@ -102,6 +102,33 @@ check('review with no bound interaction is rejected', () => {
   } catch { return true; }
 });
 
+// --- SECURITY REGRESSION: a completed booking with professional A cannot be
+// used to post a VERIFIED review of professional B. createReview used to
+// check only that the CALLER owned the booking and that it was completed —
+// never that the booking belonged to the professional named in the review —
+// so submitting professionalId=<anyone> with your own bookingId posted a
+// 'verified_engagement' review of a professional you never engaged.
+h.exec(
+  `INSERT INTO professional (id, kind, slug, full_name, normalised_name, display_name, country_id,
+     primary_jurisdiction_id, body_role, claim_status, verification_level, is_published, data_confidence,
+     source_id, created_at, updated_at)
+   VALUES (2,'advocate','other-advocate','Other Advocate','other advocate','Other Advocate',1,1,'advocate',
+     'claimed',1,1,80,1,'${ts}','${ts}')`,
+);
+check('a booking with professional 1 cannot be used to review professional 2', () => {
+  try {
+    createReview({
+      professionalId: 2, authorUserId: client.id, bookingId: 1, displayMode: 'attributed',
+      reviewerType: 'client', ratings: {}, body: 'forged verified review of an unrelated advocate',
+    });
+    return false;
+  } catch (e) { return e.message === 'INELIGIBLE_INTERACTION'; }
+});
+check('...and no such row was written', () => {
+  const row = h.prepare(`SELECT count(*) AS n FROM review WHERE professional_id = 2`).get();
+  return row.n === 0;
+});
+
 // --- privacy filter: a review that leaks a phone number or case-number-like
 // string must go straight to human review, overriding the fraud tier.
 const privacyUser = createUser({ email: 'privacy@example.com', fullName: 'Privacy Tester', password: 'whatever-123' });
@@ -169,10 +196,25 @@ check('an edited, previously-published review returns to pending', () => {
 
 // --- report and withdraw
 moderateReview(review.id, admin.id, 'published');
-reportReview(review.id, { reporterEmail: 'someone@example.com', reason: 'incorrect_information', detail: 'wrong professional' });
+// reportReview requires a signed-in reporter — an anonymous, unauthenticated
+// call used to be enough to instantly unpublish any review by id, with no
+// rate limit and nothing to trace it to. See ADR / actions.ts reportReviewAction.
+reportReview(review.id, { reporterUserId: admin.id, reason: 'incorrect_information', detail: 'wrong professional' });
 check('a report on a published review sends it back to in_review', () => {
   const row = h.prepare(`SELECT moderation_status AS s FROM review WHERE id = ?`).get(review.id);
   return row.s === 'in_review';
+});
+check('the same reporter cannot report the same review twice', () => {
+  try {
+    reportReview(review.id, { reporterUserId: admin.id, reason: 'other', detail: 'reporting again' });
+    return false;
+  } catch (e) { return e.code === 'ALREADY_REPORTED'; }
+});
+check('reporting a non-existent review is rejected, not silently accepted', () => {
+  try {
+    reportReview(999999999, { reporterUserId: admin.id, reason: 'other', detail: 'no such review' });
+    return false;
+  } catch (e) { return e.code === 'REVIEW_NOT_FOUND'; }
 });
 
 check('withdraw only works for the author', () => withdrawReview(review.id, admin.id) === false && withdrawReview(review.id, client.id) === true);
@@ -344,7 +386,8 @@ const reportedFlowReview = createReview({
   reviewerType: 'client', ratings: { overallSatisfaction: 5 }, body: 'This review will be reported and then removed by an admin.',
 });
 moderateReview(reportedFlowReview.id, admin.id, 'published');
-reportReview(reportedFlowReview.id, { reporterEmail: 'concerned@example.com', reason: 'fake_review', detail: 'This does not read like a real client experience.' });
+const concernedReporter = createUser({ email: 'concerned@example.com', fullName: 'Concerned Reporter', password: 'whatever-123' });
+reportReview(reportedFlowReview.id, { reporterUserId: concernedReporter.id, reason: 'fake_review', detail: 'This does not read like a real client experience.' });
 
 check('a reported review surfaces in the admin reported-reviews queue with its reason and detail', () => {
   const row = listReportedReviews().find((r) => r.reviewId === reportedFlowReview.id);
