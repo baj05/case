@@ -156,18 +156,27 @@ export default async function BookingPage({ params }: { params: Promise<{ refere
             <p className="t-body-sm ink-variant">Nothing recorded yet.</p>
           ) : (
             <ol className="stack gap-3">
-              {b.events.map((e, i) => (
-                <li key={i} className="row gap-3" style={{ alignItems: 'flex-start' }}>
-                  <span aria-hidden="true" className="ink-primary" style={{ fontWeight: 700, flex: 'none' }}>◆</span>
-                  <span className="stack gap-1">
-                    <span className="t-body-sm" style={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                      {e.kind.replace(/_/g, ' ')} <span className="t-caption" style={{ fontWeight: 400 }}>by {e.actor}</span>
+              {b.events.map((e, i) => {
+                const kindLabel = e.kind.replace(/_/g, ' ');
+                // `kind` is often the booking's own status string, and several
+                // of those already end in "by client"/"by professional" (e.g.
+                // cancelled_by_client) — appending "by {actor}" unconditionally
+                // read as "Cancelled by client by client".
+                const kindNamesActor = kindLabel.toLowerCase().endsWith(`by ${e.actor.toLowerCase()}`);
+                return (
+                  <li key={i} className="row gap-3" style={{ alignItems: 'flex-start' }}>
+                    <span aria-hidden="true" className="ink-primary" style={{ fontWeight: 700, flex: 'none' }}>◆</span>
+                    <span className="stack gap-1">
+                      <span className="t-body-sm" style={{ fontWeight: 600, textTransform: 'capitalize' }}>
+                        {kindLabel}
+                        {!kindNamesActor && <span className="t-caption" style={{ fontWeight: 400 }}> by {e.actor}</span>}
+                      </span>
+                      <span className="t-caption">{e.detail}</span>
+                      <span className="t-caption mono">{formatDate(e.occurredAt)}</span>
                     </span>
-                    <span className="t-caption">{e.detail}</span>
-                    <span className="t-caption mono">{formatDate(e.occurredAt)}</span>
-                  </span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>

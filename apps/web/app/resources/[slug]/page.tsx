@@ -437,7 +437,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             <Link href={`/search?legalMatter=${resource.matterSlug}`} className="btn btn-secondary btn-sm">
               See all {professionals.total}
             </Link>
-            <Link href="/resources/i-need-a-free-lawyer" className="btn btn-ghost btn-sm">
+            <Link href="/resources/kits/i-need-a-free-lawyer" className="btn btn-ghost btn-sm">
               Free legal aid, if you qualify
             </Link>
           </div>

@@ -22,7 +22,9 @@ import { db, now, transaction, isInitialised } from '../src/client.ts';
 import {
   setAvailability, declarePracticeAreas, reindexAll,
 } from '../src/repositories/shortlist.ts';
-import { upsertFee } from '../src/repositories/fees.ts';
+import { upsertFee, createBooking, generateSlots } from '../src/repositories/fees.ts';
+import { createUser } from '../src/repositories/auth.ts';
+import { createCorporateOrganisation, createOrgInvite, acceptInvite } from '../src/repositories/corporate.ts';
 
 const { values } = parseArgs({ options: { clear: { type: 'boolean', default: false }, count: { type: 'string', default: '18' } } });
 
@@ -53,6 +55,20 @@ if (values.clear) {
     }
     h.prepare(`DELETE FROM booking WHERE client_email LIKE '%@demo.invalid'`).run();
     h.prepare(`DELETE FROM audit_log WHERE action='demo.configured'`).run();
+
+    // Demo corporate account: same disclosure convention, a distinct email
+    // domain, and a `demo.corporate_configured` audit action so it can be
+    // torn down independently of the advocate-side demo configuration above.
+    const demoOrg = h.prepare(`SELECT id FROM organisation WHERE slug = 'demo-legal-ops-llp'`).get() as { id: number } | undefined;
+    if (demoOrg) {
+      h.prepare(`DELETE FROM booking WHERE organisation_id = ?`).run(demoOrg.id);
+      h.prepare(`DELETE FROM org_invite WHERE organisation_id = ?`).run(demoOrg.id);
+      h.prepare(`DELETE FROM org_member WHERE organisation_id = ?`).run(demoOrg.id);
+      h.prepare(`DELETE FROM audit_log WHERE subject_type = 'organisation' AND subject_id = ?`).run(demoOrg.id);
+      h.prepare(`DELETE FROM organisation WHERE id = ?`).run(demoOrg.id);
+    }
+    h.prepare(`DELETE FROM app_user WHERE email LIKE '%@democorp.invalid'`).run();
+
     h.prepare(`UPDATE feature_flag SET enabled=0, updated_at=? WHERE key='DEMO_DATA_SEEDED'`).run(now());
   });
   const r = reindexAll();
@@ -142,6 +158,69 @@ function feeBand(kind: string, years: number): { consult: number; filing: number
     appearance: Math.round(base * 1.6),
   };
 }
+
+/*
+ * Demo corporate account — resolved/created BEFORE the professional loop
+ * below, and any existing demo booking deleted here too.
+ *
+ * The Corporate Suite ships with real code and no demonstrable tenant — a
+ * fresh `/corporate/o/[slug]` has no members, no invitations and no
+ * bookings, which makes the feature look unfinished even though it works.
+ * Unlike the advocate-side configuration below, nothing here simulates
+ * data belonging to a REAL entity: the company, its two people and its
+ * booking are all fictional, on the same `@democorp.invalid` non-routable
+ * domain convention `demo.invalid` already uses for advocate-side demo
+ * bookings. Torn down independently by `--clear`, above.
+ *
+ * The booking must be deleted here, before the loop, not after it: the
+ * booking's fee_schedule_id points into candidates[0]'s fee_schedule, and
+ * the loop unconditionally deletes and recreates every candidate's
+ * fee_schedule rows on every run. A booking created on run 1 and left in
+ * place until after run 2's loop made that loop's
+ * `DELETE FROM fee_schedule WHERE professional_id=?` fail with a foreign
+ * key violation before it ever reached the recreation step, aborting the
+ * whole script. Deleting the stale booking first, then recreating it after
+ * the loop against that run's freshly-seeded fee_schedule, keeps the FK
+ * valid throughout.
+ */
+let corporateSeeded = false;
+const existingDemoOrg = h.prepare(`SELECT id FROM organisation WHERE slug = 'demo-legal-ops-llp'`).get() as { id: number } | undefined;
+
+let corpOrgId: number;
+let colleagueId: number;
+
+if (!existingDemoOrg) {
+  const owner = createUser({
+    email: 'owner@democorp.invalid', fullName: 'Ananya Rao', password: 'demo-password-only',
+  });
+  const colleague = createUser({
+    email: 'colleague@democorp.invalid', fullName: 'Vikram Sen', password: 'demo-password-only',
+  });
+  const org = createCorporateOrganisation({
+    name: 'Demo Legal Ops LLP', ownerUserId: owner.id, billingEmail: 'owner@democorp.invalid',
+  });
+  const invite = createOrgInvite({
+    orgId: org.id, email: 'colleague@democorp.invalid', role: 'admin',
+    actorUserId: owner.id, seatLimit: 25,
+  });
+  acceptInvite({ token: invite.token, userId: colleague.id });
+  // A third, still-open invitation — otherwise /corporate/o/[slug]/team has
+  // nothing to show in its "open invitations" section either.
+  createOrgInvite({
+    orgId: org.id, email: 'newhire@democorp.invalid', role: 'member',
+    actorUserId: owner.id, seatLimit: 25,
+  });
+  corpOrgId = org.id;
+  colleagueId = colleague.id;
+  corporateSeeded = true;
+} else {
+  corpOrgId = existingDemoOrg.id;
+  const row = h.prepare(`SELECT id FROM app_user WHERE email = 'colleague@democorp.invalid'`).get() as { id: number };
+  colleagueId = row.id;
+}
+
+h.prepare(`DELETE FROM booking_event WHERE booking_id IN (SELECT id FROM booking WHERE organisation_id = ?)`).run(corpOrgId);
+h.prepare(`DELETE FROM booking WHERE organisation_id = ?`).run(corpOrgId);
 
 let configured = 0;
 const ts = now();
@@ -248,6 +327,27 @@ for (const [i, c] of candidates.entries()) {
   configured += 1;
 }
 
+// The demo booking is (re)created here, after the professional loop above
+// has finished, so it points at that run's freshly-seeded fee_schedule row
+// rather than one already deleted by the loop's own cleanup — see the
+// comment above the corporate-account block for why the delete happened
+// earlier instead of here.
+const bookTarget = candidates[0];
+if (bookTarget) {
+  const slot = generateSlots(bookTarget.id, new Date(Date.now() + 86_400_000).toISOString(), 14)[0];
+  if (slot) {
+    createBooking({
+      professionalId: bookTarget.id, feeScheduleId: slot.feeScheduleId,
+      clientUserId: colleagueId, organisationId: corpOrgId,
+      clientName: 'Vikram Sen', clientEmail: 'colleague@democorp.invalid',
+      startsAtUtc: slot.startUtc, endsAtUtc: slot.endUtc,
+      clientTimezone: 'Asia/Kolkata', mode: slot.mode,
+      brief: 'Demo booking seeded so the Corporate Suite dashboard has something to show. Not a real matter.',
+      feeDisclosureAck: true,
+    });
+  }
+}
+
 h.prepare(
   `INSERT INTO feature_flag (key, enabled, description, gate_note, updated_at)
    VALUES ('DEMO_DATA_SEEDED',1,?,?,?)
@@ -265,4 +365,7 @@ const fees = Number((h.prepare(`SELECT count(*) n FROM fee_schedule`).get() as {
 const slots = Number((h.prepare(`SELECT count(*) n FROM availability_rule`).get() as { n: number }).n);
 process.stdout.write(`fee rows ${fees}, availability rules ${slots}\n`);
 process.stdout.write(`declared legal matters ${declaredMatters}\n`);
+process.stdout.write(corporateSeeded
+  ? 'demo corporate account: Demo Legal Ops LLP (/corporate/o/demo-legal-ops-llp), 2 members, 1 open invite\n'
+  : 'demo corporate account already present\n');
 process.stdout.write(`\nDEMO_DATA_SEEDED flag is on; the UI discloses this. Clear with: npm run db:demo -- --clear\n`);

@@ -261,7 +261,7 @@ export default function ResourcesPage() {
           </p>
           <div className="row wrap gap-2">
             <Link href="/search" className="btn btn-primary">Find an advocate</Link>
-            <Link href="/resources/i-need-a-free-lawyer" className="btn btn-secondary">Cannot afford one?</Link>
+            <Link href="/resources/kits/i-need-a-free-lawyer" className="btn btn-secondary">Cannot afford one?</Link>
             <Link href="/matters" className="btn btn-ghost">Browse legal matters</Link>
           </div>
           <p className="t-caption">
