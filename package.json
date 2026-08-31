@@ -21,7 +21,7 @@
     "db:stats": "npm run stats --workspace=@lexhall/db",
     "ingest": "npm run ingest --workspace=@lexhall/ingestion",
     "ingest:dry": "npm run ingest:dry --workspace=@lexhall/ingestion",
-    "test": "npm run test --workspace=@lexhall/core && node scripts/test-review-trust-engine.mjs",
+    "test": "npm run test --workspace=@lexhall/core && node scripts/test-review-trust-engine.mjs && node scripts/test-corporate-accounts.mjs",
     "db:demo": "npm run demo --workspace=@lexhall/db --",
     "ingest:judges": "npm run ingest --workspace=@lexhall/ingestion -- --judges",
     "assets:sync": "node scripts/sync-assets.mjs",

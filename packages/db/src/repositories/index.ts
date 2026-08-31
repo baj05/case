@@ -13,4 +13,6 @@ export * from './reviews.ts';
 export * from './judicial.ts';
 export * from './ecourts.ts';
 export * from './organisations.ts';
+export * from './corporate.ts';
+export * from './entitlements.ts';
 export * from './site-feedback.ts';

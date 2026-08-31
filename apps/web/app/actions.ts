@@ -15,8 +15,12 @@ import {
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview,
   createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS, submitSiteFeedback, getReviewSubjectPath,
+  createCorporateOrganisation, createOrgInvite, revokeInvite, setMemberRole, removeMember,
+  acceptInvite, peekInvite, INVITABLE_ROLES, listOrgsForUser,
 } from '@lexhall/db';
+import type { OrgRole } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
+import { orgActionContext, can } from '@/lib/org';
 
 export interface ActionResult {
   ok: boolean;
@@ -226,9 +230,27 @@ export async function submitBooking(_prev: ActionResult | null, form: FormData):
     return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
   }
 
+  /*
+   * Attribution is derived here, from the session and from the org slug in
+   * the form — and the org is then re-checked against the signed-in user's
+   * real memberships. A submitted `orgSlug` alone proves nothing: without
+   * that check, anyone could file a booking into any company's account by
+   * editing one field.
+   */
+  const user = await currentUser();
+  const orgSlug = str(form, 'orgSlug', 120);
+  let organisationId: number | null = null;
+  if (user && orgSlug) {
+    const membership = listOrgsForUser(user.id)
+      .find((m) => m.slug === orgSlug && can(m.role, 'booking.create'));
+    organisationId = membership?.organisationId ?? null;
+  }
+
   try {
     const booking = createBooking({
       professionalId: professional.id,
+      clientUserId: user?.id ?? null,
+      organisationId,
       feeScheduleId: Number(values.feeScheduleId) || null,
       clientName: values.clientName,
       clientEmail: values.clientEmail,
@@ -271,11 +293,38 @@ export async function cancelBooking(_prev: ActionResult | null, form: FormData):
 
   const booking = getBooking(reference);
   if (!booking) return { ok: false, message: 'We could not find that booking.' };
-  // Ownership check: the email on the booking must match. Weak without
-  // accounts, but it is a real check rather than a hidden field.
-  if (String(booking.client_email).toLowerCase() !== email.toLowerCase()) {
-    return { ok: false, message: 'That email does not match the booking. Please use the address you booked with.' };
+
+  /*
+   * Three ways to be entitled to cancel, checked strongest first.
+   *
+   * (c) — the email comparison — MUST STAY. Bookings can be made without an
+   * account at all, and every booking made before accounts existed has a
+   * NULL client_user_id. Deleting the email path would strand all of them
+   * with no way for the person who made them to cancel.
+   */
+  const user = await currentUser();
+  const bookingUserId = booking.client_user_id === null ? null : Number(booking.client_user_id);
+  const bookingOrgId = booking.organisation_id === null ? null : Number(booking.organisation_id);
+
+  // (a) the signed-in owner of the booking
+  let entitled = Boolean(user && bookingUserId !== null && bookingUserId === user.id);
+
+  // (b) someone who can manage this organisation's bookings
+  if (!entitled && user && bookingOrgId !== null) {
+    entitled = listOrgsForUser(user.id).some(
+      (m) => m.organisationId === bookingOrgId && can(m.role, 'booking.manage'),
+    );
   }
+
+  // (c) the address the booking was made with
+  if (!entitled) {
+    if (String(booking.client_email).toLowerCase() !== email.toLowerCase()) {
+      return { ok: false, message: 'That email does not match the booking. Please use the address you booked with.' };
+    }
+    entitled = true;
+  }
+  if (!entitled) return { ok: false, message: 'You cannot cancel that booking.' };
+
   const done = setBookingStatus(reference, 'cancelled_by_client', reason || 'Cancelled by the client.', 'client');
   if (!done) return { ok: false, message: 'That booking can no longer be cancelled.' };
   revalidatePath(`/bookings/${reference}`);
@@ -552,4 +601,247 @@ export async function recordAdvoSession(facts: unknown, transcript: unknown, res
   } catch {
     return '';
   }
+}
+
+// -------------------------------------------------------------------- corporate
+/**
+ * Corporate tenant actions.
+ *
+ * Every one of these derives the actor from the session cookie and the
+ * organisation from the submitted slug, then checks the pair through
+ * `orgActionContext`. None of them trusts an organisation id from the form:
+ * a hidden `organisationId` field would let anyone act on any tenant by
+ * editing it, and these actions are addressable directly whether or not the
+ * page that renders them was ever loaded.
+ *
+ * `platform_role` stays 'public' throughout. An org role is tenant-scoped by
+ * design and has nothing to say about platform privileges; repurposing
+ * 'professional' to mean "belongs to a company" would conflate the two.
+ */
+export async function createOrganisationAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  const values = keep(form, ['name', 'billingEmail'] as const);
+  const fieldErrors: Record<string, string> = {};
+  if (values.name.length < 2) fieldErrors.name = 'Enter the company name.';
+  if (values.billingEmail && !EMAIL_RE.test(values.billingEmail)) {
+    fieldErrors.billingEmail = 'Enter a valid email address, or leave this blank.';
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
+  }
+
+  let slug: string;
+  try {
+    const org = createCorporateOrganisation({
+      name: values.name,
+      ownerUserId: user.id,
+      billingEmail: values.billingEmail || null,
+    });
+    slug = org.slug;
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    return { ok: false, values, message: 'We could not create the account. Please try again.' };
+  }
+  redirect(`/corporate/o/${slug}`);
+}
+
+/** Sign up and create the company in one step, for someone with no account. */
+export async function corporateSignupAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const values = keep(form, ['fullName', 'email', 'password', 'companyName'] as const);
+  const fieldErrors: Record<string, string> = {};
+  if (values.fullName.length < 2) fieldErrors.fullName = 'Enter your name.';
+  if (!EMAIL_RE.test(values.email)) fieldErrors.email = 'Enter a valid email address.';
+  if (values.password.length < 8) fieldErrors.password = 'Use at least 8 characters.';
+  if (values.companyName.length < 2) fieldErrors.companyName = 'Enter the company name.';
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
+  }
+
+  let slug: string;
+  try {
+    const user = createUser({ email: values.email, fullName: values.fullName, password: values.password });
+    const session = createSession(user.id);
+    await setSessionCookie(session.id, session.expiresAt);
+    slug = createCorporateOrganisation({ name: values.companyName, ownerUserId: user.id }).slug;
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
+      return {
+        ok: false, values, message: 'Please correct the highlighted fields.',
+        fieldErrors: { email: 'An account with this email already exists. Sign in, then create the company.' },
+      };
+    }
+    return { ok: false, values, message: 'We could not create the account. Please try again.' };
+  }
+  redirect(`/corporate/o/${slug}`);
+}
+
+export async function inviteMemberAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const values = keep(form, ['email', 'role'] as const);
+
+  const gate = await orgActionContext(slug, 'member.invite');
+  if ('error' in gate) return { ...gate.error, values };
+
+  if (!EMAIL_RE.test(values.email)) {
+    return { ok: false, values, message: 'Please correct the highlighted fields.', fieldErrors: { email: 'Enter a valid email address.' } };
+  }
+  if (!(INVITABLE_ROLES as readonly string[]).includes(values.role)) {
+    return { ok: false, values, message: 'Please correct the highlighted fields.', fieldErrors: { role: 'Choose a role.' } };
+  }
+
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  try {
+    const invite = createOrgInvite({
+      orgId: gate.ctx.membership.organisationId,
+      email: values.email,
+      role: values.role as OrgRole,
+      actorUserId: user.id,
+      seatLimit: gate.ctx.entitlements.seatLimit,
+    });
+    revalidatePath(`/corporate/o/${slug}/team`);
+    // There is no mailer in this build, so the link is surfaced here for the
+    // inviter to pass on. This is the ONLY moment the raw token exists —
+    // only its hash is stored, so it cannot be shown again later.
+    return {
+      ok: true,
+      message: `Invitation created. Send this link to ${values.email} — it will not be shown again: /corporate/join/${invite.token}`,
+    };
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    const code = (error as { code?: string }).code;
+    if (code === 'SEAT_LIMIT') return { ok: false, values, message: `This account is limited to ${gate.ctx.entitlements.seatLimit} seats, including open invitations.` };
+    if (code === 'ALREADY_A_MEMBER') return { ok: false, values, message: 'That person is already in this account.' };
+    if (code === 'INVITE_ALREADY_OPEN') return { ok: false, values, message: 'There is already an open invitation for that address.' };
+    return { ok: false, values, message: 'We could not create the invitation. Please try again.' };
+  }
+}
+
+export async function revokeInviteAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const inviteId = Number(form.get('inviteId'));
+
+  const gate = await orgActionContext(slug, 'member.invite');
+  if ('error' in gate) return gate.error;
+
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  try {
+    revokeInvite({ orgId: gate.ctx.membership.organisationId, inviteId, actorUserId: user.id });
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    return { ok: false, message: 'That invitation is no longer open.' };
+  }
+  revalidatePath(`/corporate/o/${slug}/team`);
+  return { ok: true, message: 'Invitation revoked.' };
+}
+
+export async function setMemberRoleAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const targetUserId = Number(form.get('targetUserId'));
+  const role = str(form, 'role', 20);
+
+  const gate = await orgActionContext(slug, 'member.manage');
+  if ('error' in gate) return gate.error;
+
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  try {
+    setMemberRole({
+      orgId: gate.ctx.membership.organisationId,
+      targetUserId, role: role as OrgRole, actorUserId: user.id,
+    });
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    const code = (error as { code?: string }).code;
+    if (code === 'LAST_OWNER') return { ok: false, message: 'This account must keep at least one owner. Make someone else an owner first.' };
+    if (code === 'NOT_A_MEMBER') return { ok: false, message: 'That person is not in this account.' };
+    return { ok: false, message: 'We could not change that role. Please try again.' };
+  }
+  revalidatePath(`/corporate/o/${slug}/team`);
+  return { ok: true, message: 'Role updated.' };
+}
+
+export async function removeMemberAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const targetUserId = Number(form.get('targetUserId'));
+
+  const gate = await orgActionContext(slug, 'member.manage');
+  if ('error' in gate) return gate.error;
+
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  try {
+    removeMember({ orgId: gate.ctx.membership.organisationId, targetUserId, actorUserId: user.id });
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    const code = (error as { code?: string }).code;
+    if (code === 'LAST_OWNER') return { ok: false, message: 'This account must keep at least one owner.' };
+    if (code === 'NOT_A_MEMBER') return { ok: false, message: 'That person is not in this account.' };
+    return { ok: false, message: 'We could not remove that person. Please try again.' };
+  }
+  revalidatePath(`/corporate/o/${slug}/team`);
+  return { ok: true, message: 'Removed from the account.' };
+}
+
+/** Accept an invitation as the signed-in user. */
+export async function acceptInviteAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const token = str(form, 'token', 200);
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in to accept this invitation.' };
+
+  let slug: string;
+  try {
+    slug = acceptInvite({ token, userId: user.id }).orgSlug;
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    // Deliberately one message for expired / revoked / already-used /
+    // unknown: telling them apart helps someone guessing tokens.
+    return { ok: false, message: 'This invitation is no longer valid. Ask for a new one.' };
+  }
+  redirect(`/corporate/o/${slug}`);
+}
+
+/** Accept an invitation by creating an account at the same time. */
+export async function acceptInviteSignupAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const token = str(form, 'token', 200);
+  const values = keep(form, ['fullName', 'email', 'password'] as const);
+  const fieldErrors: Record<string, string> = {};
+  if (values.fullName.length < 2) fieldErrors.fullName = 'Enter your name.';
+  if (!EMAIL_RE.test(values.email)) fieldErrors.email = 'Enter a valid email address.';
+  if (values.password.length < 8) fieldErrors.password = 'Use at least 8 characters.';
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, message: 'Please correct the highlighted fields.', fieldErrors, values };
+  }
+
+  // Check the invite before creating anything, so a dead token does not
+  // leave a stranded account behind.
+  if (!peekInvite(token)) {
+    return { ok: false, values, message: 'This invitation is no longer valid. Ask for a new one.' };
+  }
+
+  let slug: string;
+  try {
+    const user = createUser({ email: values.email, fullName: values.fullName, password: values.password });
+    const session = createSession(user.id);
+    await setSessionCookie(session.id, session.expiresAt);
+    slug = acceptInvite({ token, userId: user.id }).orgSlug;
+  } catch (error) {
+    if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
+    if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
+      return {
+        ok: false, values, message: 'Please correct the highlighted fields.',
+        fieldErrors: { email: 'An account with this email already exists. Sign in, then open the invitation link again.' },
+      };
+    }
+    return { ok: false, values, message: 'We could not complete that. Please try again.' };
+  }
+  redirect(`/corporate/o/${slug}`);
 }

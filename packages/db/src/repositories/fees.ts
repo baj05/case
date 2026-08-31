@@ -208,6 +208,14 @@ export interface CreateBookingInput {
   practiceAreaId?: number | null; matterTypeId?: number | null; courtId?: number | null;
   brief: string; urgency?: 'normal' | 'urgent' | 'emergency';
   feeDisclosureAck: boolean;
+  /**
+   * Both derived by the CALLER from the session and the URL's org slug —
+   * never read from a form field. A booking that took its owner or its
+   * organisation from submitted data would let anyone file a booking into
+   * any company's account, or claim someone else's booking as theirs.
+   */
+  clientUserId?: number | null;
+  organisationId?: number | null;
 }
 
 export class SlotTakenError extends Error {
@@ -249,15 +257,16 @@ export function createBooking(input: CreateBookingInput): { id: number; referenc
 
     const reference = referenceCode('BK');
     const info = h.prepare(
-      `INSERT INTO booking (reference, professional_id, client_user_id, fee_schedule_id,
+      `INSERT INTO booking (reference, professional_id, client_user_id, organisation_id, fee_schedule_id,
          client_name, client_email, client_phone, starts_at_utc, ends_at_utc, client_timezone,
          mode, practice_area_id, matter_type_id, court_id, brief, urgency,
          currency_code, quoted_fee_minor, statutory_charges_minor, tax_minor, total_minor,
          platform_fee_minor, settlement_mode, payment_status, status,
          fee_disclosure_ack, terms_ack_at, created_at, updated_at)
-       VALUES (?,?,NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,0,'collect_offline','unpaid','pending',?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,0,'collect_offline','unpaid','pending',?,?,?,?)`,
     ).run(
-      reference, input.professionalId, input.feeScheduleId ?? null,
+      reference, input.professionalId, input.clientUserId ?? null, input.organisationId ?? null,
+      input.feeScheduleId ?? null,
       input.clientName, input.clientEmail, input.clientPhone ?? null,
       input.startsAtUtc, input.endsAtUtc, input.clientTimezone, input.mode,
       input.practiceAreaId ?? null, input.matterTypeId ?? null, input.courtId ?? null,
@@ -280,6 +289,10 @@ export function logBookingEvent(bookingId: number, kind: string, detail: string,
 export interface BookingRecord {
   id: number; reference: string; professional_id: number;
   professionalName: string; professionalSlug: string;
+  /** Both nullable and often NULL: bookings can be made with no account at
+   * all, and every booking made before accounts existed has neither. Any
+   * entitlement check has to keep working when they are null. */
+  client_user_id: number | null; organisation_id: number | null;
   client_name: string; client_email: string; client_phone: string | null;
   starts_at_utc: string; ends_at_utc: string; client_timezone: string; mode: string;
   brief: string; urgency: string; status: string;

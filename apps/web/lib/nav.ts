@@ -236,6 +236,12 @@ export const NAV: NavItem[] = [
           { href: '/corporate/posh-policy', label: 'POSH policy' },
         ],
       },
+      {
+        heading: 'Your company',
+        links: [
+          { href: '/corporate/start', label: 'Set up a company account', hint: 'Share documents and bookings with colleagues' },
+        ],
+      },
     ],
     feature: {
       href: '/corporate',
