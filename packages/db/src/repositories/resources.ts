@@ -31,7 +31,7 @@ import {
   INDIA_STATES, fold, toFtsQuery, normaliseTemplateFields,
 } from '@lexhall/core';
 import type {
-  ResourceCatalogSeed, ResourceTemplateSeed, ResourceType, OfficialStatus, LinkOutcome,
+  ResourceCatalogSeed, ResourceTemplateSeed, ResourceType, OfficialStatus, LinkOutcome, TemplateField,
 } from '@lexhall/core';
 
 const ALL_TEMPLATES: ResourceTemplateSeed[] = [...TENANCY_TEMPLATES, ...NOTICE_TEMPLATES, ...TEMPLATES_SET_2];
@@ -1094,7 +1094,7 @@ export interface ResourceDetail extends ResourceCard {
   template: {
     version: string;
     body: string;
-    fields: Array<{ key: string; label: string; hint?: string }>;
+    fields: TemplateField[];
     beforeYouUse: string[];
     jurisdictionNotes: Array<{ heading: string; body: string }>;
     wordCount: number;
@@ -1192,7 +1192,7 @@ export function getResource(slug: string): ResourceDetail | null {
       ? {
         version: String(tplRow.version),
         body: String(tplRow.body),
-        fields: fromJson(String(tplRow.fields), [] as Array<{ key: string; label: string; hint?: string }>),
+        fields: fromJson(String(tplRow.fields), [] as TemplateField[]),
         beforeYouUse: fromJson(String(tplRow.beforeYouUse), [] as string[]),
         jurisdictionNotes: fromJson(String(tplRow.jurisdictionNotes), [] as Array<{ heading: string; body: string }>),
         wordCount: Number(tplRow.wordCount),
@@ -1383,6 +1383,23 @@ export function resourcesForMatter(matterSlug: string, limit = 8): ResourceCard[
   ).all(matterSlug, limit) as Array<Record<string, string | number | null>>).map(toCard);
 }
 
+/**
+ * Resources for a known, fixed set of slugs — e.g. the corporate document
+ * suite, which is curated by slug in resource-templates-2.ts rather than by
+ * a database category. Preserves the caller's ordering (the curated suite
+ * order) instead of whatever order SQLite happens to return.
+ */
+export function resourcesBySlug(slugs: readonly string[]): ResourceCard[] {
+  if (slugs.length === 0) return [];
+  const placeholders = slugs.map(() => '?').join(',');
+  const rows = db().prepare(
+    `SELECT ${CARD_COLUMNS} ${CARD_JOINS}
+      WHERE r.is_published = 1 AND r.deleted_at IS NULL AND r.slug IN (${placeholders})`,
+  ).all(...slugs) as Array<Record<string, string | number | null>>;
+  const bySlug = new Map(rows.map((r) => [String(r.slug), toCard(r)]));
+  return slugs.map((s) => bySlug.get(s)).filter((c): c is ResourceCard => Boolean(c));
+}
+
 /** Resources for a practice area, used to connect the marketplace to the library. */
 export function resourcesForPracticeArea(practiceAreaSlug: string, limit = 6): ResourceCard[] {
   return (db().prepare(
@@ -1407,6 +1424,30 @@ export function recordResourceEvent(slug: string, kind: ResourceEventKind): void
   h.prepare(`INSERT INTO resource_event (resource_id, kind, occurred_at) VALUES (?,?,?)`).run(row.id, kind, ts);
   const column = kind === 'download' ? 'download_count' : kind === 'preview' ? 'preview_count' : 'view_count';
   h.prepare(`UPDATE resource SET ${column} = ${column} + 1 WHERE id = ?`).run(row.id);
+}
+
+/**
+ * Counts only, never field values or completed text — see 018_document_builder.sql.
+ * Answers "is the document builder used, and does it work", nothing more.
+ */
+export interface DocumentFillInput {
+  slug: string;
+  templateVersion: string;
+  format: string;
+  fieldCount: number;
+  filledCount: number;
+  leftOpenCount: number;
+  mode: 'manual' | 'ai_assisted';
+}
+
+export function recordDocumentFill(input: DocumentFillInput): void {
+  const h = db();
+  const row = h.prepare(`SELECT id FROM resource WHERE slug = ?`).get(input.slug) as { id: number } | undefined;
+  if (!row) return;
+  h.prepare(
+    `INSERT INTO document_fill (resource_id, template_version, format, field_count, filled_count, left_open_count, mode, created_at)
+     VALUES (?,?,?,?,?,?,?,?)`,
+  ).run(row.id, input.templateVersion, input.format, input.fieldCount, input.filledCount, input.leftOpenCount, input.mode, now());
 }
 
 /**

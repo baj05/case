@@ -27,6 +27,14 @@ test('inferFieldType: a bare amount-like key is money', () => {
   assert.equal(inferFieldType({ key: 'AMOUNT_DUE' }), 'money');
 });
 
+test('inferFieldType: COMMISSION is a tribunal name, not money — found via the browser preview, not guessed', () => {
+  // The only real field with this exact key is `{ key: 'COMMISSION', label:
+  // 'Name of the District Commission' }` in the consumer-complaint template,
+  // used as `BEFORE THE [[COMMISSION]]`. Money-typing it would reject the
+  // tribunal's name the user is meant to type there.
+  assert.equal(inferFieldType({ key: 'COMMISSION' }), 'text');
+});
+
 test('inferFieldType: FEE_BASIS and FEE_MODE are NOT money, despite containing "FEE"', () => {
   // These describe a billing arrangement ("per hour", "fixed"), not a rupee
   // figure. Forcing money-type validation on them would reject the very

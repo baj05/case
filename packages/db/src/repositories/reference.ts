@@ -166,10 +166,14 @@ export function seedReferenceData(): { countries: number; locations: number; cou
       ['FEATURE_ARBITRATION', 'Arbitration workspace', 'Phase 3.'],
       ['FEATURE_AI_INTAKE', 'Plain-language intake routing', 'Enabled. Deterministic classifier only — no generative advice. ADR-006.'],
       ['FEATURE_INGEST_LIVE', 'Live crawling of public sources', 'Enabled for sources whose robots.txt permits it and whose terms have been reviewed.'],
+      ['FEATURE_CORPORATE', 'Corporate document builder and org accounts', 'Enabled. Deterministic template fill only; see FEATURE_AI_FIELD_EXTRACT for the separate, flagged extraction step.'],
+      ['FEATURE_AI_FIELD_EXTRACT', 'AI-assisted extraction of document field values from free text', 'Off by default. Extraction into pre-declared fields only, never generative document text; every value requires human confirmation before use. See COMPLIANCE_MATRIX C-17 and ADR-013.'],
     ];
     for (const [key, desc, gate] of FLAGS) {
       const envValue = process.env[key];
-      const enabled = envValue === undefined ? (key === 'FEATURE_AI_INTAKE' || key === 'FEATURE_INGEST_LIVE') : envValue === 'true';
+      const enabled = envValue === undefined
+        ? (key === 'FEATURE_AI_INTAKE' || key === 'FEATURE_INGEST_LIVE' || key === 'FEATURE_CORPORATE')
+        : envValue === 'true';
       h.prepare(
         `INSERT INTO feature_flag (key, enabled, description, gate_note, updated_at) VALUES (?,?,?,?,?)
          ON CONFLICT(key) DO UPDATE SET description=excluded.description, gate_note=excluded.gate_note, updated_at=excluded.updated_at`,

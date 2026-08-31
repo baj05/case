@@ -204,5 +204,45 @@ export const NAV: NavItem[] = [
       cta: 'How we verify',
     },
   },
+  {
+    href: '/corporate',
+    label: 'Corporate Suite',
+    columns: [
+      {
+        heading: 'Hiring and the workforce',
+        links: [
+          { href: '/corporate/employment-agreement', label: 'Employment agreement' },
+          { href: '/corporate/consultant-agreement', label: 'Consultant or contractor agreement' },
+          { href: '/corporate/resignation-and-relieving-request', label: 'Resignation & full and final settlement' },
+        ],
+      },
+      {
+        heading: 'Confidentiality and deals',
+        links: [
+          { href: '/corporate/mutual-nda', label: 'Mutual non-disclosure agreement' },
+        ],
+      },
+      {
+        heading: 'Founders and governance',
+        links: [
+          { href: '/corporate/founders-agreement', label: 'Founders’ agreement' },
+          { href: '/corporate/board-resolution-general', label: 'Board resolution (general form)' },
+        ],
+        footer: { href: '/corporate', label: 'All corporate documents' },
+      },
+      {
+        heading: 'Workplace compliance',
+        links: [
+          { href: '/corporate/posh-policy', label: 'POSH policy' },
+        ],
+      },
+    ],
+    feature: {
+      href: '/corporate',
+      label: 'Fill it in, not just download it',
+      body: 'Answer a short set of questions and get a completed NDA, offer letter or founders’ agreement — no blanks left in the document.',
+      cta: 'Open the document builder',
+    },
+  },
   { href: '/for-professionals', label: 'For lawyers' },
 ];

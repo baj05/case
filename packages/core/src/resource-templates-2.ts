@@ -1063,3 +1063,18 @@ F. AFTER REGISTRATION
 export const TEMPLATES_SET_2: ResourceTemplateSeed[] = [
   ...EMPLOYMENT_TEMPLATES, ...CORPORATE_TEMPLATES, ...COURT_TEMPLATES, ...CHECKLIST_TEMPLATES,
 ];
+
+/**
+ * The corporate document suite's own grouping, by what a company needs it
+ * for — not the same axis as `resource_category`, which groups by legal
+ * domain. This is an editorial grouping for the `/corporate` index only, so
+ * it lives as data here rather than being inferred from template metadata.
+ */
+export const CORPORATE_SUITE_GROUPS: Array<{ id: string; heading: string; slugs: string[] }> = [
+  { id: 'hiring', heading: 'Hiring and the workforce', slugs: ['employment-agreement', 'consultant-agreement', 'resignation-and-relieving-request'] },
+  { id: 'deals', heading: 'Confidentiality and deals', slugs: ['mutual-nda'] },
+  { id: 'governance', heading: 'Founders and governance', slugs: ['founders-agreement', 'board-resolution-general'] },
+  { id: 'workplace', heading: 'Workplace compliance', slugs: ['posh-policy'] },
+];
+
+export const CORPORATE_SUITE_SLUGS: string[] = CORPORATE_SUITE_GROUPS.flatMap((g) => g.slugs);

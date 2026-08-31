@@ -17,9 +17,10 @@ import {
   listDomains, listMatters, getMatter, listForums,
   listResourceCategories, resourceLibraryStats, featuredResources, searchResources,
   getResource as getResourceRepo, relatedResources, resourcesForMatter, resourcesForPracticeArea,
+  resourcesBySlug,
   listResourceKits, getResourceKit as getResourceKitRepo,
   listResourceCentres, getResourceCentre as getResourceCentreRepo,
-  recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  recordResourceEvent, recordDocumentFill, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
   getProfessionalReviewSummary, listReviewsForProfessional, eligibleExperiences,
   listModerationQueue, listReportedReviews, getOrganisationReviewSummary, listReviewsForOrganisation,
@@ -219,13 +220,14 @@ export const getResourceDetail = cache((slug: string) => getResourceRepo(slug));
 export const getRelatedResources = cache((id: number, limit?: number) => relatedResources(id, limit));
 export const getResourcesForMatter = cache((slug: string, limit?: number) => resourcesForMatter(slug, limit));
 export const getResourcesForPracticeArea = cache((slug: string, limit?: number) => resourcesForPracticeArea(slug, limit));
+export const getResourcesBySlug = cache((slugs: readonly string[]) => resourcesBySlug(slugs));
 
 export function runResourceSearch(filters: ResourceSearchFilters) {
   return searchResources(filters);
 }
 
 export {
-  recordResourceEvent, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
+  recordResourceEvent, recordDocumentFill, toggleResourceBookmark, listBookmarks, bookmarkedSlugs,
   suggestResources, adminResourceDashboard, adminReviewQueue, publishedResourceSlugs,
 };
 export type { ResourceSearchFilters };

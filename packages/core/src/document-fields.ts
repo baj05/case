@@ -27,9 +27,14 @@ function tokensOf(key: string): string[] {
   return key.split('_').filter(Boolean);
 }
 
+// Deliberately excludes 'COMMISSION': the only field with that exact key in
+// the real seed data is `{ key: 'COMMISSION', label: 'Name of the District
+// Commission' }` in the consumer-complaint template — a tribunal name, not a
+// monetary commission. A field for an actual fee-share would use a
+// COMMISSION_AMOUNT-style key, which still matches via the AMOUNT token.
 const MONEY_TOKENS = new Set([
   'AMOUNT', 'RENT', 'DEPOSIT', 'SALARY', 'WAGE', 'WAGES', 'CTC', 'ARREARS',
-  'COMPENSATION', 'REFUND', 'COMMISSION', 'FEE', 'FEES', 'DEDUCTION', 'PRICE',
+  'COMPENSATION', 'REFUND', 'FEE', 'FEES', 'DEDUCTION', 'PRICE',
   'STIPEND', 'PREMIUM',
 ]);
 // If the field's LAST token is one of these, it is not a bare amount even
