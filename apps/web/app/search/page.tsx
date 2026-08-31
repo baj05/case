@@ -1,10 +1,9 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import { DualSearch } from '@/components/DualSearch';
 import { ResultCard } from '@/components/ResultCard';
 import { FilterPanel, type FilterGroupSpec } from '@/components/FilterPanel';
-import { EmptyState, Notice, ResultSkeletonList } from '@/components/States';
+import { EmptyState, Notice } from '@/components/States';
 import { runSearch, getPracticeAreas, getCourts, getStates, recordSearchEvent, databaseReady } from '@/lib/data';
 import { formatNumber } from '@/lib/format';
 
@@ -209,29 +208,31 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </form>
           </div>
 
-          <Suspense fallback={<ResultSkeletonList />}>
-            {outcome.total === 0 ? (
-              <EmptyState
-                title="No professionals match that combination yet"
-                body={
-                  outcome.intake.practiceArea
-                    ? `We understood this as ${outcome.intake.practiceArea.value.name}. Practice areas are self-declared, so they only appear on profiles a professional has claimed — which is why a specific area can return nothing while the directory itself is large.`
-                    : 'Try widening the location, or search by name, court or Bar Council instead.'
-                }
-                actions={[
-                  ...outcome.recovery.map((r) => ({ label: r.label, href: r.href, detail: `${r.count}` })),
-                  { label: 'Browse legal matters', href: '/matters' },
-                  { label: 'Browse free resources', href: '/resources' },
-                ]}
-              />
-            ) : (
-              <div className="stack gap-3">
-                {outcome.hits.map((hit) => (
-                  <ResultCard key={hit.professional.id} hit={hit} showScore={filters.sort === 'relevance'} />
-                ))}
-              </div>
-            )}
-          </Suspense>
+          {/* No Suspense boundary here. `outcome` is resolved at the top of
+              this component, so a boundary around its output could never
+              suspend and the fallback was dead code that read as a loading
+              state. The real loading state for this route is loading.tsx. */}
+          {outcome.total === 0 ? (
+            <EmptyState
+              title="No professionals match that combination yet"
+              body={
+                outcome.intake.practiceArea
+                  ? `We understood this as ${outcome.intake.practiceArea.value.name}. Practice areas are self-declared, so they only appear on profiles a professional has claimed — which is why a specific area can return nothing while the directory itself is large.`
+                  : 'Try widening the location, or search by name, court or Bar Council instead.'
+              }
+              actions={[
+                ...outcome.recovery.map((r) => ({ label: r.label, href: r.href, detail: `${r.count}` })),
+                { label: 'Browse legal matters', href: '/matters' },
+                { label: 'Browse free resources', href: '/resources' },
+              ]}
+            />
+          ) : (
+            <div className="stack gap-3">
+              {outcome.hits.map((hit) => (
+                <ResultCard key={hit.professional.id} hit={hit} showScore={filters.sort === 'relevance'} />
+              ))}
+            </div>
+          )}
 
           {/* Thin-result recovery even when there ARE results. */}
           {outcome.total > 0 && outcome.recovery.length > 0 && (

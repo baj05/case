@@ -5,6 +5,10 @@ import { Footer } from '@/components/Footer';
 import { AdvoLauncher } from '@/components/AdvoLauncher';
 import { BRAND } from '@/lib/brand';
 import './globals.css';
+// Must come after globals.css: primitives.css consumes its tokens and
+// utilities, and an @import inside globals.css would be hoisted above the
+// very rules it depends on.
+import './primitives.css';
 
 /* Fonts are self-hosted at build time: no third-party request at runtime, and
    `display: swap` with a preloaded subset keeps CLS at zero. Only the weights

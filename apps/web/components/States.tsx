@@ -27,6 +27,28 @@ export function ResultSkeletonList({ count = 6 }: { count?: number }) {
 }
 
 /**
+ * Whole-page loading state, for a route's `loading.tsx`.
+ *
+ * One component rather than five bespoke skeletons: these pages differ in
+ * their content, not in the shape of "a heading and then a list", and five
+ * hand-written variants would drift apart the first time the token for a
+ * heading changed. `label` is what a screen reader is told; the bars
+ * themselves are decorative and hidden from it.
+ */
+export function PageSkeleton({ label = 'Loading', rows = 6 }: { label?: string; rows?: number }) {
+  return (
+    <div className="container section stack gap-5">
+      <span className="sr-only" role="status">{label}</span>
+      <div className="stack gap-2" aria-hidden="true">
+        <div className="skel skel-text" style={{ width: 'min(28ch, 70%)', height: '2em' }} />
+        <div className="skel skel-text" style={{ width: 'min(52ch, 90%)' }} />
+      </div>
+      <ResultSkeletonList count={rows} />
+    </div>
+  );
+}
+
+/**
  * Empty state that helps the user recover rather than announcing failure
  * (spec §35). Every action offered is verified to lead somewhere.
  */

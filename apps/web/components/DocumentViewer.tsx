@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { DialogFlush } from './ui/Dialog';
 
 export interface ViewerField { key: string; label: string; hint?: string }
 
@@ -37,12 +38,29 @@ export function DocumentViewer({
   const [showFields, setShowFields] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const reported = useRef(false);
+  const fsToggleRef = useRef<HTMLButtonElement>(null);
+  const wasFullscreen = useRef(false);
 
   useEffect(() => {
     if (reported.current) return;
     reported.current = true;
     onPreview?.();
   }, [onPreview]);
+
+  /**
+   * Return focus to the full-screen toggle after leaving full screen.
+   *
+   * The Dialog's own focus restore cannot do this: entering full screen
+   * moves the whole shell — the toggle button included — inside the dialog,
+   * so the node that had focus when the dialog opened is unmounted, and
+   * there is nothing left for the dialog to restore focus to. Without this,
+   * closing full screen drops focus on `<body>` and a keyboard user has to
+   * Tab from the top of the page to get back to where they were.
+   */
+  useEffect(() => {
+    if (wasFullscreen.current && !fullscreen) fsToggleRef.current?.focus();
+    wasFullscreen.current = fullscreen;
+  }, [fullscreen]);
 
   // Pagination is by line budget rather than rendered height: it is stable
   // across zoom levels and font loading, which real height measurement is not.
@@ -99,16 +117,12 @@ export function DocumentViewer({
       if (event.key === 'End') { event.preventDefault(); go(total); }
       if (event.key === '+' || event.key === '=') setZoom((z) => Math.min(200, z + 10));
       if (event.key === '-') setZoom((z) => Math.max(70, z - 10));
-      if (event.key === 'Escape' && fullscreen) setFullscreen(false);
+      // Escape while full screen is handled by the Dialog, which also
+      // restores focus to the trigger — doing it here as well would fight it.
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [total, go, step, fullscreen]);
-
-  useEffect(() => {
-    document.body.style.overflow = fullscreen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [fullscreen]);
+  }, [total, go, step]);
 
   const shell = (
     <div className="doc-shell" ref={shellRef} data-fullscreen={fullscreen}>
@@ -151,7 +165,7 @@ export function DocumentViewer({
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setZoom((z) => Math.max(70, z - 10))} aria-label="Zoom out">−</button>
           <span className="mono" style={{ minWidth: 46, textAlign: 'center' }}>{zoom}%</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setZoom((z) => Math.min(200, z + 10))} aria-label="Zoom in">+</button>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setFullscreen((f) => !f)}>
+          <button ref={fsToggleRef} type="button" className="btn btn-secondary btn-sm" onClick={() => setFullscreen((f) => !f)}>
             {fullscreen ? 'Exit' : 'Full screen'}
           </button>
         </div>
@@ -221,13 +235,15 @@ export function DocumentViewer({
 
   if (!fullscreen) return shell;
 
+  // Full screen goes through the Radix-backed Dialog rather than a
+  // hand-rolled overlay. The overlay this replaces had no focus trap, no
+  // scroll lock, and no focus restore on close — a keyboard user could Tab
+  // out of the "modal" into the page behind it, and nothing told a screen
+  // reader the rest of the page was inert.
   return (
-    <>
-      <div className="doc-backdrop" onClick={() => setFullscreen(false)} aria-hidden="true" />
-      <div className="doc-fullscreen" role="dialog" aria-modal="true" aria-label={`${title} — full screen`}>
-        {shell}
-      </div>
-    </>
+    <DialogFlush open onOpenChange={(open) => setFullscreen(open)} title={`${title} — full screen`}>
+      {shell}
+    </DialogFlush>
   );
 }
 

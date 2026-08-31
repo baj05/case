@@ -1,0 +1,250 @@
+/* ===========================================================================
+   Radix primitive styling.
+
+   Radix ships behaviour and zero CSS, so this file is the entire visual
+   layer for the primitives in components/ui/. It uses only tokens already
+   defined in globals.css — no new colour, radius, shadow or timing value is
+   introduced here, because a second source of design values is how a design
+   system quietly becomes two.
+
+   Imported in layout.tsx immediately AFTER globals.css. It is a separate
+   file rather than an @import inside globals.css because an @import has to
+   sit above every rule in the importing file, which would put these rules
+   before the tokens and utilities they depend on and invert the cascade.
+
+   Every class is prefixed `.ui-`. Radix sets `data-state` on its own
+   elements, and this codebase already uses `[data-loading]`, `[data-open]`
+   and `[data-state]` on its own components — the prefix keeps the two sets
+   of selectors from meeting.
+
+   Motion: the global `prefers-reduced-motion` kill-switch in globals.css
+   targets `*`, so the keyframes below are disabled for free under that
+   setting. No per-animation media query is needed here.
+   =========================================================================== */
+
+/* --- overlay ------------------------------------------------------------ */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
+  animation: ui-fade-in var(--t) var(--ease);
+}
+.ui-overlay[data-state='closed'] { animation: ui-fade-out var(--t-fast) var(--ease); }
+
+/* --- dialog ------------------------------------------------------------- */
+/* Phone-first: a bottom sheet, matching .drawer-sheet, including the
+   safe-area inset so the actions are not under the home indicator. */
+.ui-dialog {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 1);
+  left: 0; right: 0; bottom: 0;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-lowest);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  animation: ui-sheet-in var(--t-slow) var(--ease);
+}
+.ui-dialog[data-state='closed'] { animation: ui-sheet-out var(--t) var(--ease); }
+
+@media (min-width: 561px) {
+  .ui-dialog {
+    left: 50%; right: auto; bottom: auto; top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(640px, 92vw);
+    max-height: 88vh;
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--r-lg);
+    animation: ui-dialog-in var(--t) var(--ease);
+  }
+  .ui-dialog[data-state='closed'] { animation: ui-dialog-out var(--t-fast) var(--ease); }
+}
+
+/* A dialog sized to hold something large — the document viewer — rather
+   than a short confirmation. On a phone it is already a full-width sheet,
+   so this only has to do anything from the tablet breakpoint up. */
+@media (min-width: 561px) {
+  .ui-dialog-wide {
+    width: min(1100px, 96vw);
+    height: 92vh;
+    max-height: 92vh;
+  }
+}
+
+.ui-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--outline-variant);
+  flex: none;
+}
+.ui-dialog-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-dialog-desc {
+  margin: 0;
+  padding: 0 20px;
+  padding-top: 12px;
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+}
+.ui-dialog-body {
+  overflow: auto;
+  padding: 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/* For a body that owns its own padding and scrolling, e.g. the document
+   viewer, whose toolbar must stay pinned inside it. */
+.ui-dialog-body-flush {
+  overflow: hidden;
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- toast -------------------------------------------------------------- */
+.ui-toast-viewport {
+  position: fixed;
+  z-index: var(--z-toast);
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  list-style: none;
+  outline: none;
+  /* The viewport spans the screen so toasts can be centred on a phone, but
+     it must not swallow clicks on the page behind it. */
+  pointer-events: none;
+}
+.ui-toast-viewport > * { pointer-events: auto; }
+
+@media (min-width: 561px) {
+  .ui-toast-viewport {
+    bottom: 0; left: auto; right: 0;
+    width: min(420px, 92vw);
+    padding: 20px;
+  }
+}
+
+.ui-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-left: 3px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  animation: ui-toast-in var(--t-slow) var(--ease);
+}
+.ui-toast[data-state='closed'] { animation: ui-toast-out var(--t) var(--ease); }
+.ui-toast[data-swipe='move'] { transform: translateX(var(--radix-toast-swipe-move-x)); }
+.ui-toast[data-swipe='cancel'] { transform: translateX(0); transition: transform var(--t) var(--ease); }
+.ui-toast[data-swipe='end'] { animation: ui-toast-out var(--t) var(--ease); }
+
+.ui-toast[data-tone='ok'] { border-left-color: var(--primary); }
+.ui-toast[data-tone='error'] { border-left-color: var(--error); }
+
+.ui-toast-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+.ui-toast-desc {
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+}
+
+/* --- popover ------------------------------------------------------------ */
+.ui-popover {
+  z-index: calc(var(--z-modal) + 1);
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  background: var(--surface-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  animation: ui-pop-in var(--t-fast) var(--ease);
+}
+.ui-popover[data-state='closed'] { animation: ui-fade-out var(--t-fast) var(--ease); }
+.ui-popover-arrow { fill: var(--surface-lowest); }
+
+/* --- tooltip ------------------------------------------------------------ */
+/* --inverse-surface / --inverse-on-surface, not --trust-navy + white:
+   trust-navy inverts to a near-white in dark mode, which would put white
+   text on a white tooltip. The inverse pair is defined to flip together in
+   both themes, which is exactly what a contrasting tooltip needs. */
+.ui-tooltip {
+  z-index: calc(var(--z-modal) + 1);
+  max-width: 30ch;
+  padding: 6px 10px;
+  background: var(--inverse-surface);
+  color: var(--inverse-on-surface);
+  border-radius: var(--r-sm);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  box-shadow: var(--shadow-md);
+  animation: ui-pop-in var(--t-fast) var(--ease);
+}
+.ui-tooltip-arrow { fill: var(--inverse-surface); }
+
+/* --- keyframes ---------------------------------------------------------- */
+@keyframes ui-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ui-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes ui-sheet-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ui-sheet-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(12px); }
+}
+
+/* The centred variant is translate(-50%, -50%) at rest, so its keyframes
+   must carry that offset — animating `transform` from a bare translateY
+   would jump the dialog to the corner on the first frame. */
+@keyframes ui-dialog-in {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes ui-dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -46%) scale(0.98); }
+}
+
+@keyframes ui-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ui-toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes ui-pop-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}

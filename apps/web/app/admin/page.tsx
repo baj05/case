@@ -57,9 +57,10 @@ export default async function AdminPage() {
         <Link href="/admin/resources" className="btn btn-secondary btn-sm">Resource library →</Link>
       </div>
 
-      <Notice tone="warn" title="Prototype: this page is not access-controlled">
-        In production every panel here requires the <code className="mono">platform_admin</code> role
-        and writes an audit-log entry per action. Tracked as a release blocker in PROJECT_AUDIT.md.
+      <Notice tone="info" title="Access is restricted to platform administrators">
+        Reaching this page requires the <code className="mono">platform_admin</code> role, enforced
+        server-side before anything here is read. Not every action yet writes an audit-log entry —
+        that gap is tracked in PROJECT_AUDIT.md.
       </Notice>
 
       {/* ------------------------------------------------------------- tiles */}
