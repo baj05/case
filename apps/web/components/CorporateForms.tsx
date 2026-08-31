@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   corporateSignupAction, createOrganisationAction, inviteMemberAction,
   revokeInviteAction, setMemberRoleAction, removeMemberAction,
@@ -33,6 +33,14 @@ const ROLE_HINT: Record<string, string> = {
   read_only: 'Can see the account, and change nothing.',
 };
 
+/** `Field` renders a hint and an error with predictable ids but has no way
+ * to reach the control inside it to point at them — so every call site
+ * builds its own `aria-describedby` with this, rather than each one
+ * inventing (or forgetting) the association independently. */
+function describedBy(id: string, hasHint: boolean, hasError: boolean): string | undefined {
+  return [hasHint ? `${id}-hint` : null, hasError ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
+}
+
 /** Create the company and the account together, for a new visitor. */
 export function CorporateSignupForm() {
   const [state, formAction] = useActionState(corporateSignupAction, null);
@@ -42,20 +50,24 @@ export function CorporateSignupForm() {
     <form action={formAction} className="stack gap-4" noValidate>
       <FormError message={state?.ok ? undefined : state?.message} />
       <Field name="companyName" label="Company name" required error={err.companyName}>
-        <input id="companyName" name="companyName" className="input" required
-          defaultValue={val.companyName ?? ''} aria-invalid={Boolean(err.companyName)} />
+        <input id="companyName" name="companyName" className="input" autoComplete="organization" required
+          defaultValue={val.companyName ?? ''} aria-invalid={Boolean(err.companyName)}
+          aria-describedby={describedBy('companyName', false, Boolean(err.companyName))} />
       </Field>
       <Field name="fullName" label="Your name" required error={err.fullName}>
         <input id="fullName" name="fullName" className="input" autoComplete="name" required
-          defaultValue={val.fullName ?? ''} aria-invalid={Boolean(err.fullName)} />
+          defaultValue={val.fullName ?? ''} aria-invalid={Boolean(err.fullName)}
+          aria-describedby={describedBy('fullName', false, Boolean(err.fullName))} />
       </Field>
       <Field name="email" label="Work email" required error={err.email}>
         <input id="email" name="email" type="email" className="input" autoComplete="email" required
-          defaultValue={val.email ?? ''} aria-invalid={Boolean(err.email)} />
+          defaultValue={val.email ?? ''} aria-invalid={Boolean(err.email)}
+          aria-describedby={describedBy('email', false, Boolean(err.email))} />
       </Field>
       <Field name="password" label="Password" hint="At least 8 characters." required error={err.password}>
         <input id="password" name="password" type="password" className="input" autoComplete="new-password"
-          required minLength={8} aria-invalid={Boolean(err.password)} />
+          required minLength={8} aria-invalid={Boolean(err.password)}
+          aria-describedby={describedBy('password', true, Boolean(err.password))} />
       </Field>
       <SubmitButton pendingLabel="Creating…">Create the account</SubmitButton>
     </form>
@@ -71,12 +83,14 @@ export function CreateOrganisationForm() {
     <form action={formAction} className="stack gap-4" noValidate>
       <FormError message={state?.ok ? undefined : state?.message} />
       <Field name="name" label="Company name" required error={err.name}>
-        <input id="name" name="name" className="input" required
-          defaultValue={val.name ?? ''} aria-invalid={Boolean(err.name)} />
+        <input id="name" name="name" className="input" autoComplete="organization" required
+          defaultValue={val.name ?? ''} aria-invalid={Boolean(err.name)}
+          aria-describedby={describedBy('name', false, Boolean(err.name))} />
       </Field>
       <Field name="billingEmail" label="Billing email" hint="Optional." error={err.billingEmail}>
-        <input id="billingEmail" name="billingEmail" type="email" className="input"
-          defaultValue={val.billingEmail ?? ''} aria-invalid={Boolean(err.billingEmail)} />
+        <input id="billingEmail" name="billingEmail" type="email" className="input" autoComplete="email"
+          defaultValue={val.billingEmail ?? ''} aria-invalid={Boolean(err.billingEmail)}
+          aria-describedby={describedBy('billingEmail', true, Boolean(err.billingEmail))} />
       </Field>
       <SubmitButton pendingLabel="Creating…">Create the company account</SubmitButton>
     </form>
@@ -87,6 +101,10 @@ export function InviteMemberForm({ slug, roles }: { slug: string; roles: readonl
   const [state, formAction] = useActionState(inviteMemberAction, null);
   const err = state?.fieldErrors ?? {};
   const val = state?.values ?? {};
+  // Controlled, not read from `val` (which only reflects the LAST failed
+  // submission): the hint was permanently describing whatever role that
+  // submission carried, ignoring every change the visitor made afterwards.
+  const [role, setRole] = useState(val.role || 'member');
   return (
     <form action={formAction} className="stack gap-3" noValidate>
       <input type="hidden" name="slug" value={slug} />
@@ -96,12 +114,16 @@ export function InviteMemberForm({ slug, roles }: { slug: string; roles: readonl
       )}
       <div className="form-grid">
         <Field name="inviteEmail" label="Email address" required error={err.email}>
-          <input id="inviteEmail" name="email" type="email" className="input" required
-            defaultValue={val.email ?? ''} aria-invalid={Boolean(err.email)} />
+          {/* autoComplete off: this is a third party's address, not the
+              signed-in user's own — offering their own saved emails here
+              invites inviting the wrong person by autofill. */}
+          <input id="inviteEmail" name="email" type="email" className="input" autoComplete="off" required
+            defaultValue={val.email ?? ''} aria-invalid={Boolean(err.email)}
+            aria-describedby={describedBy('inviteEmail', false, Boolean(err.email))} />
         </Field>
-        <Field name="inviteRole" label="Role" required error={err.role}
-          hint={ROLE_HINT[val.role ?? 'member']}>
-          <select id="inviteRole" name="role" className="select" defaultValue={val.role || 'member'}>
+        <Field name="inviteRole" label="Role" required error={err.role} hint={ROLE_HINT[role]}>
+          <select id="inviteRole" name="role" className="select" value={role} onChange={(e) => setRole(e.target.value)}
+            aria-describedby={describedBy('inviteRole', true, Boolean(err.role))}>
             {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
           </select>
         </Field>
@@ -203,16 +225,19 @@ export function AcceptInviteSignupForm({ token, email }: { token: string; email:
       <FormError message={state?.ok ? undefined : state?.message} />
       <Field name="fullName" label="Your name" required error={err.fullName}>
         <input id="fullName" name="fullName" className="input" autoComplete="name" required
-          defaultValue={val.fullName ?? ''} aria-invalid={Boolean(err.fullName)} />
+          defaultValue={val.fullName ?? ''} aria-invalid={Boolean(err.fullName)}
+          aria-describedby={describedBy('fullName', false, Boolean(err.fullName))} />
       </Field>
       <Field name="email" label="Email" required
         hint={`This invitation was created for ${email}.`} error={err.email}>
         <input id="email" name="email" type="email" className="input" autoComplete="email" required
-          defaultValue={val.email ?? email} aria-invalid={Boolean(err.email)} />
+          defaultValue={val.email ?? email} aria-invalid={Boolean(err.email)}
+          aria-describedby={describedBy('email', true, Boolean(err.email))} />
       </Field>
       <Field name="password" label="Choose a password" hint="At least 8 characters." required error={err.password}>
         <input id="password" name="password" type="password" className="input" autoComplete="new-password"
-          required minLength={8} aria-invalid={Boolean(err.password)} />
+          required minLength={8} aria-invalid={Boolean(err.password)}
+          aria-describedby={describedBy('password', true, Boolean(err.password))} />
       </Field>
       <SubmitButton pendingLabel="Joining…">Create the account and join</SubmitButton>
     </form>

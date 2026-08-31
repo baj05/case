@@ -40,7 +40,7 @@
   position: fixed;
   z-index: calc(var(--z-modal) + 1);
   left: 0; right: 0; bottom: 0;
-  max-height: 88vh;
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
   background: var(--surface-lowest);
@@ -56,7 +56,7 @@
     left: 50%; right: auto; bottom: auto; top: 50%;
     transform: translate(-50%, -50%);
     width: min(640px, 92vw);
-    max-height: 88vh;
+    max-height: 88dvh;
     border: 1px solid var(--outline-variant);
     border-radius: var(--r-lg);
     animation: ui-dialog-in var(--t) var(--ease);
@@ -70,8 +70,8 @@
 @media (min-width: 561px) {
   .ui-dialog-wide {
     width: min(1100px, 96vw);
-    height: 92vh;
-    max-height: 92vh;
+    height: 92dvh;
+    max-height: 92dvh;
   }
 }
 
@@ -90,9 +90,14 @@
   font-size: 1rem;
   margin: 0;
   min-width: 0;
+  /* Two lines, not a single-line ellipsis: DocumentViewer's full-screen
+     title is "<document title> — full screen", and on a phone that
+     genuinely needs more than one line — a single-line clamp truncated it
+     to a few words with no way to read the rest. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .ui-dialog-desc {
   margin: 0;
@@ -164,6 +169,10 @@
 
 .ui-toast[data-tone='ok'] { border-left-color: var(--primary); }
 .ui-toast[data-tone='error'] { border-left-color: var(--error); }
+
+/* .btn-sm alone is 36px — under the 44px touch-target minimum on the one
+   control that clears an error toast someone actually needs to dismiss. */
+.ui-toast-close { min-height: 44px; min-width: 44px; }
 
 .ui-toast-title {
   font-family: var(--font-display);

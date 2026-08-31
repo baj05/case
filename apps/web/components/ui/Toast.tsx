@@ -69,6 +69,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={m.id}
             className="ui-toast"
             data-tone={m.tone}
+            // An error toast stays until dismissed — WCAG 2.2.1 (Timing
+            // Adjustable). The default 6s from the provider is fine for a
+            // routine confirmation, but a failure message disappearing on
+            // its own gives no chance to read and act on it.
+            duration={m.tone === 'error' ? Infinity : undefined}
             onOpenChange={(open) => { if (!open) dismiss(m.id); }}
           >
             <div className="stack gap-1" style={{ minWidth: 0, flex: 1 }}>
@@ -78,7 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               )}
             </div>
             <RadixToast.Close asChild>
-              <button type="button" className="btn btn-ghost btn-sm" aria-label="Dismiss">×</button>
+              <button type="button" className="btn btn-ghost btn-sm ui-toast-close" aria-label="Dismiss">×</button>
             </RadixToast.Close>
           </RadixToast.Root>
         ))}

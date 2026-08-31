@@ -59,7 +59,16 @@ export default function CorporateSuitePage() {
                         <Link href={`/corporate/${card.slug}`} style={{ textDecoration: 'none' }}>{card.title}</Link>
                       </h3>
                       <p className="t-body-sm ink-variant clamp-2">{card.description}</p>
-                      <Link href={`/corporate/${card.slug}`} className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start' }}>
+                      {/* Every card says "Fill it in" — a screen-reader
+                          user listing links by name alone hears that
+                          phrase once per document with no way to tell
+                          them apart. */}
+                      <Link
+                        href={`/corporate/${card.slug}`}
+                        className="btn btn-primary btn-sm"
+                        style={{ alignSelf: 'flex-start' }}
+                        aria-label={`Fill in ${card.title}`}
+                      >
                         Fill it in
                       </Link>
                     </div>

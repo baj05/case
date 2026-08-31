@@ -54,12 +54,22 @@ export function Field({
   );
 }
 
+/**
+ * Always renders the `role="alert"` container, even with no message — only
+ * the text inside is conditional. A live region that is CREATED at the same
+ * instant its text appears is exactly the case screen readers announce
+ * unreliably; one already present in the tree, whose content later changes,
+ * is the case they announce.
+ */
 export function FormError({ message }: { message?: string }) {
-  if (!message) return null;
   return (
-    <div className="notice notice-error" role="alert">
-      <span className="notice-icon" aria-hidden="true">!</span>
-      <span>{message}</span>
+    <div className="notice notice-error" role="alert" hidden={!message}>
+      {message && (
+        <>
+          <span className="notice-icon" aria-hidden="true">!</span>
+          <span>{message}</span>
+        </>
+      )}
     </div>
   );
 }
@@ -81,8 +91,11 @@ export function FormSuccess({ heading, message }: { heading?: string; message?: 
  * markup lives in exactly one place. */
 export function RatingRadios({ name, label, required = false, scale = 5 }: { name: string; label: string; required?: boolean; scale?: number }) {
   return (
-    <div className="field">
-      <label className="label">{label}</label>
+    // fieldset/legend, not a bare label with no htmlFor: without a real
+    // grouping element these five radios were announced as unrelated
+    // options with no group name to tell a screen-reader user why.
+    <fieldset className="field" style={{ border: 0, margin: 0, padding: 0 }}>
+      <legend className="label" style={{ padding: 0 }}>{label}</legend>
       <div className="row gap-2">
         {Array.from({ length: scale }, (_, i) => i + 1).map((n) => (
           <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
@@ -91,6 +104,6 @@ export function RatingRadios({ name, label, required = false, scale = 5 }: { nam
           </label>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }

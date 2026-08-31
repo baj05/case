@@ -2041,8 +2041,21 @@ details[open] > .filter-summary::after { content: '–'; }
   position: sticky; top: 0; z-index: 2;
 }
 
+/* The toolbar's glyph-only controls (‹ › − +) are .btn-sm at 36px with a
+   character-sized glyph — under the 44px touch minimum on the viewer's
+   most-used affordances. Widened only where the pointer is coarse, so the
+   compact desktop density is unaffected. */
+@media (pointer: coarse) {
+  .doc-toolbar .btn-sm { min-height: 44px; min-width: 44px; }
+}
+
 .doc-search { flex: 1 1 180px; min-width: 140px; max-width: 320px; }
-.doc-search .input { min-height: 34px; }
+/* The shrunken height is a deliberate density choice for a mouse — a coarse
+   pointer (touch) keeps the standard 44px .input floor, since a smaller
+   target there is exactly the accidental-tap risk the floor exists to avoid. */
+@media (pointer: fine) {
+  .doc-search .input { min-height: 34px; }
+}
 
 .doc-findbar {
   padding: 8px 14px;
@@ -2130,7 +2143,9 @@ details[open] > .filter-summary::after { content: '–'; }
   .doc-toolbar { gap: 6px; padding: 8px; row-gap: 6px; }
   .doc-toolbar > .row { flex: 0 0 auto; }
   .doc-search { flex-basis: 100%; order: 3; max-width: none; }
-  .doc-search .input { min-height: 32px; }
+  /* No shrunken min-height here: a screen this narrow is virtually always a
+     touch device, which should keep the full 44px .input floor rather than
+     the mouse-only density override above. */
   .doc-stage { padding: 8px; max-height: 66vh; }
   .doc-page { padding: 18px 14px; }
   .doc-foot { padding: 8px 10px; }

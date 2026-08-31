@@ -111,6 +111,16 @@ export function DocumentViewer({
         if (event.key === 'Escape') (target as HTMLInputElement).blur();
         return;
       }
+      // Listening on `document` only makes sense in full screen, where the
+      // rest of the page is already inert behind the dialog. Embedded
+      // inline — the normal case, e.g. a resource preview sitting in the
+      // middle of a page of prose — this used to hijack ArrowLeft/Right,
+      // Home/End and PageUp/Down for the WHOLE PAGE regardless of where
+      // focus actually was, breaking ordinary keyboard navigation and
+      // radio-group arrow keys anywhere else on that page. Requiring focus
+      // to be inside this component's own shell is what confines it.
+      if (!fullscreen && !shellRef.current?.contains(target)) return;
+
       if (event.key === 'ArrowRight' || event.key === 'PageDown') { event.preventDefault(); step(1); }
       if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); step(-1); }
       if (event.key === 'Home') { event.preventDefault(); go(1); }
@@ -122,7 +132,7 @@ export function DocumentViewer({
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [total, go, step]);
+  }, [total, go, step, fullscreen]);
 
   const shell = (
     <div className="doc-shell" ref={shellRef} data-fullscreen={fullscreen}>
@@ -191,7 +201,10 @@ export function DocumentViewer({
         </div>
       )}
 
-      <div className="doc-stage">
+      {/* tabIndex so a keyboard user can actually reach and scroll this box —
+          it held only static text with nothing focusable inside it, and the
+          keyboard shortcuts above have nothing to attach to without this. */}
+      <div className="doc-stage" tabIndex={0} role="group" aria-label={`${title} content`}>
         <div
           className="doc-page"
           style={{ fontSize: `${zoom / 100 * 0.8125}rem` }}
