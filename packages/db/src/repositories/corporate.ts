@@ -133,12 +133,18 @@ export interface OrgMembership {
 
 /** Organisations this user belongs to, for an account switcher. */
 export function listOrgsForUser(userId: number): OrgMembership[] {
+  // Restricted to kind='corporate' — see getOrgMembershipBySlug just above
+  // for why. This module's whole OrgRole/capability model (owner/admin/
+  // member/billing/read_only, mapped through lib/org.ts's `can()`) was
+  // designed for corporate tenants specifically; a differently-purposed
+  // org_member row on a law firm or LPO listing must not be interpreted
+  // through it, e.g. as a grant of booking.manage over that firm's bookings.
   return db().prepare(
     `SELECT o.id AS organisationId, o.slug, o.name, o.kind, m.role,
             o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt
        FROM org_member m
        JOIN organisation o ON o.id = m.organisation_id
-      WHERE m.user_id = ? AND o.deleted_at IS NULL
+      WHERE m.user_id = ? AND o.kind = 'corporate' AND o.deleted_at IS NULL
       ORDER BY o.name`,
   ).all(userId) as unknown as OrgMembership[];
 }
@@ -151,12 +157,19 @@ export function listOrgsForUser(userId: number): OrgMembership[] {
  * an enumeration oracle for which companies have accounts.
  */
 export function getOrgMembershipBySlug(userId: number, slug: string): OrgMembership | null {
+  // Restricted to kind='corporate'. org_member is currently empty for every
+  // other kind, so this is latent rather than live — but getCorporateOrgBySlug
+  // already restricts the platform-admin read path the same way, and without
+  // this restriction here too, an org_member row against a public law-firm or
+  // LPO listing (which isAuthorizedToRespond treats as how a firm answers its
+  // own reviews) would confer invite/roster-management capabilities over that
+  // public listing through the corporate tenant actions.
   const row = db().prepare(
     `SELECT o.id AS organisationId, o.slug, o.name, o.kind, m.role,
             o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt
        FROM organisation o
        JOIN org_member m ON m.organisation_id = o.id AND m.user_id = ?
-      WHERE o.slug = ? AND o.deleted_at IS NULL`,
+      WHERE o.slug = ? AND o.kind = 'corporate' AND o.deleted_at IS NULL`,
   ).get(userId, slug) as unknown as OrgMembership | undefined;
   return row ?? null;
 }
@@ -489,7 +502,8 @@ export function createDomainClaim(input: {
   const challenge = `caseadvo-domain-verification=${randomBytes(16).toString('hex')}`;
   const ts = now();
 
-  const info = db().prepare(
+  const h = db();
+  h.prepare(
     `INSERT INTO org_domain_claim (organisation_id, domain, method, challenge, created_by_user_id, created_at)
      VALUES (?,?, 'dns_txt', ?,?,?)
      ON CONFLICT (organisation_id, domain) DO UPDATE
@@ -504,8 +518,18 @@ export function createDomainClaim(input: {
     reason: 'Domain claim started',
   });
 
+  // Re-selected rather than trusting `lastInsertRowid`: on the UPDATE branch
+  // of ON CONFLICT DO UPDATE, SQLite does not perform an insert at all, so
+  // that value is left over from whatever the connection's last real INSERT
+  // was — possibly an unrelated row entirely. A caller who then passed the
+  // wrong id into markDomainClaimVerified would fail with CLAIM_NOT_FOUND,
+  // or worse, verify a different claim of the same organisation.
+  const row = h.prepare(
+    `SELECT id FROM org_domain_claim WHERE organisation_id = ? AND domain = ?`,
+  ).get(input.orgId, domain) as { id: number };
+
   return {
-    id: Number(info.lastInsertRowid), domain, method: 'dns_txt', challenge,
+    id: row.id, domain, method: 'dns_txt', challenge,
     verifiedAt: null, lastCheckedAt: null,
   };
 }

@@ -389,23 +389,50 @@ export function isAuthorizedToRespond(reviewId: number, userId: number): boolean
 }
 
 export function respondToReview(reviewId: number, authorUserId: number, body: string): number {
-  const ts = now();
-  const result = db().prepare(
-    `INSERT INTO review_response (review_id, author_user_id, body, moderation_status, created_at, updated_at)
-     VALUES (?,?,?,'pending',?,?)`,
-  ).run(reviewId, authorUserId, body.trim(), ts, ts);
-  return Number(result.lastInsertRowid);
+  return transaction(() => {
+    const h = db();
+    if (!h.prepare(`SELECT 1 FROM review WHERE id = ?`).get(reviewId)) {
+      throw new ReviewActionError('REVIEW_NOT_FOUND');
+    }
+    // One unmoderated response per author per review — without this, nothing
+    // stopped the same person resubmitting indefinitely, queuing an
+    // unbounded number of duplicate responses for moderation.
+    const pending = h.prepare(
+      `SELECT 1 FROM review_response WHERE review_id = ? AND author_user_id = ? AND moderation_status = 'pending'`,
+    ).get(reviewId, authorUserId);
+    if (pending) throw new ReviewActionError('RESPONSE_ALREADY_PENDING');
+
+    const ts = now();
+    const result = h.prepare(
+      `INSERT INTO review_response (review_id, author_user_id, body, moderation_status, created_at, updated_at)
+       VALUES (?,?,?,'pending',?,?)`,
+    ).run(reviewId, authorUserId, body.trim(), ts, ts);
+    return Number(result.lastInsertRowid);
+  });
 }
 
 export function voteHelpful(reviewId: number, userId: number, vote: 1 | -1): void {
+  const h = db();
+  // Only a published review can be voted on, and not by its own author — a
+  // review's own author upvoting it is not a real signal of anyone else
+  // finding it helpful, and voting on an unmoderated review would let its
+  // "helpful" count start accumulating before anyone has seen it publicly.
+  const row = h.prepare(
+    `SELECT author_user_id AS authorUserId FROM review WHERE id = ? AND moderation_status = 'published'`,
+  ).get(reviewId) as { authorUserId: number } | undefined;
+  if (!row || row.authorUserId === userId) return;
+
   const ts = now();
-  db().prepare(
+  h.prepare(
     `INSERT INTO review_vote (review_id, user_id, vote, created_at, updated_at) VALUES (?,?,?,?,?)
      ON CONFLICT(review_id, user_id) DO UPDATE SET vote = excluded.vote, updated_at = excluded.updated_at`,
   ).run(reviewId, userId, vote, ts, ts);
 }
 
-export class ReportError extends Error {
+/** A simple, code-carrying error for review-moderation actions — reporting
+ * and responding both throw this rather than a bare Error, so the action
+ * layer can switch on `.code` instead of matching a message string. */
+export class ReviewActionError extends Error {
   code: string;
   constructor(code: string) { super(code); this.code = code; }
 }
@@ -429,12 +456,12 @@ export function reportReview(
   return transaction(() => {
     const h = db();
     const exists = h.prepare(`SELECT 1 FROM review WHERE id = ?`).get(reviewId);
-    if (!exists) throw new ReportError('REVIEW_NOT_FOUND');
+    if (!exists) throw new ReviewActionError('REVIEW_NOT_FOUND');
 
     const already = h.prepare(
       `SELECT 1 FROM content_report WHERE subject_type='review' AND subject_id=? AND reporter_user_id=?`,
     ).get(reviewId, input.reporterUserId);
-    if (already) throw new ReportError('ALREADY_REPORTED');
+    if (already) throw new ReviewActionError('ALREADY_REPORTED');
 
     const ts = now();
     const result = h.prepare(

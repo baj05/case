@@ -41,6 +41,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return new Response('That resource is not published.', { status: 404 });
   }
 
+  // A generous cap on a form that is only ever text fields (the wizard sets
+  // no enctype, so this is always application/x-www-form-urlencoded in
+  // practice): request.formData() buffers the whole body in memory before
+  // any field is looked at, and unlike the sibling extract route this had
+  // no limit at all — an unauthenticated multi-hundred-MB POST was fully
+  // accepted before failing on something else.
+  const MAX_BODY_BYTES = 100_000;
+  const declaredLength = Number(request.headers.get('content-length') ?? 0);
+  if (declaredLength > MAX_BODY_BYTES) return new Response('Too large.', { status: 413 });
+
   const form = await request.formData();
   const formatRaw = String(form.get('format') ?? 'docx').toLowerCase();
   const format = formatRaw === 'txt' ? 'txt' : 'docx';
@@ -55,6 +65,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const result = fillTemplate(resource.template.body, fields, values, { mode: 'strict' });
   const failed = result.missingRequired.length > 0 || Object.keys(result.fieldErrors).length > 0;
 
+  const noIndexHeaders = { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex', 'x-content-type-options': 'nosniff' } as const;
+
+  if (failed) {
+    // Not recorded as a document_fill: that table means a document was
+    // actually produced, and counting a rejected submission under
+    // filledCount/leftOpenCount would silently overstate how often the
+    // builder is used successfully.
+    return Response.json(
+      { ok: false, missingRequired: result.missingRequired.map((f) => f.key), fieldErrors: result.fieldErrors },
+      { status: 422, headers: noIndexHeaders },
+    );
+  }
+
   try {
     recordDocumentFill({
       slug,
@@ -67,15 +90,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     });
   } catch {
     // Never let a counter failure block the response.
-  }
-
-  const noIndexHeaders = { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex', 'x-content-type-options': 'nosniff' } as const;
-
-  if (failed) {
-    return Response.json(
-      { ok: false, missingRequired: result.missingRequired.map((f) => f.key), fieldErrors: result.fieldErrors },
-      { status: 422, headers: noIndexHeaders },
-    );
   }
 
   const generated = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });

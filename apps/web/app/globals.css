@@ -203,6 +203,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; padding: 0; }
 
+/* An in-body link — the piece the base `a` rule above deliberately leaves
+ * out, because most links in this codebase are whole clickable cards or
+ * nav items styled by their own component classes, where inheriting plain
+ * text colour is correct. A link sitting INSIDE a paragraph or a <dl> is
+ * different: with nothing to mark it, it is visually identical to the
+ * surrounding text and a reader has no way to know it is clickable at all. */
+.link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link:hover { text-decoration-thickness: 2px; }
+
 /* Visible focus everywhere. WCAG 2.2 AA (2.4.11 Focus Appearance). */
 :focus-visible {
   outline: 3px solid var(--primary);

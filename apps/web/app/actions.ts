@@ -21,6 +21,8 @@ import {
 import type { OrgRole } from '@lexhall/db';
 import { setSessionCookie, clearSessionCookie, sessionCookieValue, currentUser } from '@/lib/auth';
 import { orgActionContext, can } from '@/lib/org';
+import { sessionOwnsBooking } from '@/lib/booking-entitlement';
+import { getFlags } from '@/lib/data';
 import { resolveMeetingPlace } from '@lexhall/core';
 
 export interface ActionResult {
@@ -42,6 +44,22 @@ function str(form: FormData, key: string, max = 2000): string {
 function rating(form: FormData, key: string): number | undefined {
   const n = Number(form.get(key));
   return n >= 1 && n <= 5 ? n : undefined;
+}
+
+/**
+ * A form field restricted to a known set of values, or a fallback.
+ *
+ * Several fields here used to be read with `str(form, key) as SomeUnion` —
+ * a cast, not a check, so a POST could send `basePath=https://evil.example`
+ * or `reviewerType=` anything at all and it sailed straight through to
+ * `redirect()`/`revalidatePath()`/a repository call as if it had been
+ * validated. `as never` is worse still: it defeats the type checker
+ * entirely rather than merely asserting a specific shape. This is the one
+ * place that actually checks.
+ */
+function oneOf<const T extends readonly string[]>(form: FormData, key: string, allowed: T, fallback: T[number]): T[number] {
+  const raw = str(form, key, 40);
+  return (allowed as readonly string[]).includes(raw) ? (raw as T[number]) : fallback;
 }
 
 /**
@@ -335,44 +353,74 @@ export async function cancelBooking(_prev: ActionResult | null, form: FormData):
   const email = str(form, 'email', 200);
   const reason = str(form, 'reason', 500);
 
+  // One message for "no such reference" and "wrong email" alike — telling
+  // them apart turns this action into an oracle an unauthenticated caller
+  // could use to check which booking references are real.
+  const CANNOT_CANCEL = { ok: false, message: 'We could not cancel that booking. Check the reference and the email you booked with.' };
+
   const booking = getBooking(reference);
-  if (!booking) return { ok: false, message: 'We could not find that booking.' };
+  if (!booking) return CANNOT_CANCEL;
 
   /*
    * Three ways to be entitled to cancel, checked strongest first.
    *
-   * (c) — the email comparison — MUST STAY. Bookings can be made without an
-   * account at all, and every booking made before accounts existed has a
-   * NULL client_user_id. Deleting the email path would strand all of them
-   * with no way for the person who made them to cancel.
+   * The email fallback MUST STAY. Bookings can be made without an account
+   * at all, and every booking made before accounts existed has a NULL
+   * client_user_id. Removing it would strand all of them with no way for
+   * the person who made them to cancel.
    */
   const user = await currentUser();
-  const bookingUserId = booking.client_user_id === null ? null : Number(booking.client_user_id);
-  const bookingOrgId = booking.organisation_id === null ? null : Number(booking.organisation_id);
+  let entitled = sessionOwnsBooking(booking, user);
 
-  // (a) the signed-in owner of the booking
-  let entitled = Boolean(user && bookingUserId !== null && bookingUserId === user.id);
-
-  // (b) someone who can manage this organisation's bookings
-  if (!entitled && user && bookingOrgId !== null) {
-    entitled = listOrgsForUser(user.id).some(
-      (m) => m.organisationId === bookingOrgId && can(m.role, 'booking.manage'),
-    );
-  }
-
-  // (c) the address the booking was made with
   if (!entitled) {
-    if (String(booking.client_email).toLowerCase() !== email.toLowerCase()) {
-      return { ok: false, message: 'That email does not match the booking. Please use the address you booked with.' };
-    }
+    if (String(booking.client_email).toLowerCase() !== email.toLowerCase()) return CANNOT_CANCEL;
     entitled = true;
   }
-  if (!entitled) return { ok: false, message: 'You cannot cancel that booking.' };
 
   const done = setBookingStatus(reference, 'cancelled_by_client', reason || 'Cancelled by the client.', 'client');
   if (!done) return { ok: false, message: 'That booking can no longer be cancelled.' };
   revalidatePath(`/bookings/${reference}`);
   return { ok: true, message: 'Your booking has been cancelled and the slot released.' };
+}
+
+/**
+ * Reveal a booking's confidential fields (the matter brief and any meeting
+ * address) to an anonymous visitor who knows the email it was made with.
+ *
+ * The booking page never renders these fields for a request it cannot
+ * attribute to a session — see lib/booking-entitlement.ts for why the
+ * reference alone was not enough. This is the fallback for the no-account
+ * booking flow: the email is not derivable from the reference, so knowing
+ * both is a real (if modest) proof of having made the booking, unlike
+ * knowing the reference on its own.
+ */
+export interface BookingRevealResult {
+  ok: boolean;
+  message?: string;
+  brief?: string;
+  meetingKind?: string | null;
+  meetingAddress?: string | null;
+}
+
+export async function revealBookingDetailsAction(_prev: BookingRevealResult | null, form: FormData): Promise<BookingRevealResult> {
+  const reference = str(form, 'reference', 40);
+  const email = str(form, 'email', 200);
+  const NOT_FOUND = { ok: false, message: 'We could not find that booking with that email.' };
+
+  const booking = getBooking(reference);
+  if (!booking) return NOT_FOUND;
+
+  const user = await currentUser();
+  const entitled = sessionOwnsBooking(booking, user)
+    || String(booking.client_email).toLowerCase() === email.toLowerCase();
+  if (!entitled) return NOT_FOUND;
+
+  return {
+    ok: true,
+    brief: booking.brief,
+    meetingKind: booking.meeting_kind,
+    meetingAddress: booking.meeting_address,
+  };
 }
 
 // ------------------------------------------------------------------------ auth
@@ -433,9 +481,10 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
   const slug = str(form, 'slug', 120);
   const bookingId = Number(form.get('bookingId')) || undefined;
   const consultationRequestId = Number(form.get('consultationRequestId')) || undefined;
-  const displayMode = (str(form, 'displayMode') || 'attributed') as 'attributed' | 'pseudonymous' | 'anonymous';
-  const reviewerType = (str(form, 'reviewerType') || 'client') as never;
-  const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
+  const displayMode = oneOf(form, 'displayMode', ['attributed', 'pseudonymous', 'anonymous'] as const, 'attributed');
+  const reviewerType = oneOf(form, 'reviewerType', ['client', 'former_client', 'current_client', 'lawyer', 'referring_lawyer', 'corporate_legal_team', 'vendor', 'other'] as const, 'client');
+  const wouldRecommendRaw = str(form, 'wouldRecommend');
+  const wouldRecommend = wouldRecommendRaw ? oneOf(form, 'wouldRecommend', ['yes', 'no', 'maybe'] as const, 'maybe') : undefined;
   const body = str(form, 'body', 4000);
   // Not str() — a data-URL avatar can run to ~150k chars, and str() trims to
   // a 2000-char default meant for text fields. createReview re-validates
@@ -474,11 +523,14 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
   if (!user) return { ok: false, message: 'Please sign in to leave a review.' };
 
   const slug = str(form, 'slug', 120);
-  const basePath = str(form, 'basePath', 20) as '/firms' | '/lpo';
-  const displayMode = (str(form, 'displayMode') || 'attributed') as 'attributed' | 'pseudonymous' | 'anonymous';
-  const reviewerType = (str(form, 'reviewerType') || 'corporate_legal_team') as never;
-  const experienceCategory = (str(form, 'experienceCategory') || 'legal_matter') as never;
-  const wouldRecommend = (str(form, 'wouldRecommend') || undefined) as 'yes' | 'no' | 'maybe' | undefined;
+  // basePath used to be an unvalidated cast fed straight into redirect() —
+  // a POST could send an absolute URL and be sent off-site after review. Now checked.
+  const basePath = oneOf(form, 'basePath', ['/firms', '/lpo'] as const, '/firms');
+  const displayMode = oneOf(form, 'displayMode', ['attributed', 'pseudonymous', 'anonymous'] as const, 'attributed');
+  const reviewerType = oneOf(form, 'reviewerType', ['client', 'former_client', 'current_client', 'lawyer', 'referring_lawyer', 'corporate_legal_team', 'vendor', 'other'] as const, 'corporate_legal_team');
+  const experienceCategory = oneOf(form, 'experienceCategory', ['consultation', 'booking', 'appointment', 'legal_matter'] as const, 'legal_matter');
+  const wouldRecommendRaw = str(form, 'wouldRecommend');
+  const wouldRecommend = wouldRecommendRaw ? oneOf(form, 'wouldRecommend', ['yes', 'no', 'maybe'] as const, 'maybe') : undefined;
   const body = str(form, 'body', 4000);
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
@@ -550,13 +602,26 @@ export async function respondToReviewAction(_prev: ActionResult | null, form: Fo
   const user = await currentUser();
   if (!user) return { ok: false, message: 'Please sign in as the professional to respond.' };
   const reviewId = Number(form.get('reviewId'));
-  if (user.platformRole !== 'platform_admin' && !isAuthorizedToRespond(reviewId, user.id)) {
+  // No platform_admin bypass. isAuthorizedToRespond checks that this user IS
+  // the claimed professional, or a member of the reviewed organisation —
+  // an admin posting AS one of them, with nothing to say the real
+  // professional ever saw or approved the wording, is not the same act as
+  // moderating content and does not belong on this path.
+  if (!isAuthorizedToRespond(reviewId, user.id)) {
     return { ok: false, message: 'Only the reviewed professional or organisation can respond.' };
   }
   const slug = str(form, 'slug', 120);
   const body = str(form, 'body', 2000);
   if (body.trim().length < 5) return { ok: false, message: 'Write a short response.' };
-  respondToReview(reviewId, user.id, body);
+  try {
+    respondToReview(reviewId, user.id, body);
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === 'RESPONSE_ALREADY_PENDING') {
+      return { ok: false, message: 'You already have a response awaiting moderation on this review.' };
+    }
+    return { ok: false, message: 'That review could not be found.' };
+  }
   revalidateReviewSubject(reviewId, slug);
   return { ok: true, message: 'Your response has been submitted for moderation.' };
 }
@@ -622,7 +687,7 @@ export async function deleteReviewAction(form: FormData): Promise<void> {
  * review dataset. Open to signed-out visitors, unlike a professional review. */
 export async function submitSiteFeedbackAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   const user = await currentUser();
-  const displayMode = (str(form, 'displayMode') || 'anonymous') as 'attributed' | 'anonymous';
+  const displayMode = oneOf(form, 'displayMode', ['attributed', 'anonymous'] as const, 'anonymous');
   const recommendRaw = form.get('recommendScore');
   const recommendScore = recommendRaw != null && recommendRaw !== '' ? Number(recommendRaw) : undefined;
   const improvementArea = (str(form, 'improvementArea') || undefined) as never;
@@ -670,6 +735,11 @@ export async function recordAdvoSession(facts: unknown, transcript: unknown, res
  * 'professional' to mean "belongs to a company" would conflate the two.
  */
 export async function createOrganisationAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  // Creation has no existing membership for orgActionContext to gate, so the
+  // flag is checked directly — otherwise, with FEATURE_CORPORATE off, a
+  // direct POST here still created a real tenant for a feature every page
+  // reports as not existing.
+  if (!getFlags().FEATURE_CORPORATE) return { ok: false, message: 'This feature is not available.' };
   const user = await currentUser();
   if (!user) return { ok: false, message: 'Please sign in first.' };
 
@@ -700,6 +770,7 @@ export async function createOrganisationAction(_prev: ActionResult | null, form:
 
 /** Sign up and create the company in one step, for someone with no account. */
 export async function corporateSignupAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  if (!getFlags().FEATURE_CORPORATE) return { ok: false, message: 'This feature is not available.' };
   const values = keep(form, ['fullName', 'email', 'password', 'companyName'] as const);
   const fieldErrors: Record<string, string> = {};
   if (values.fullName.length < 2) fieldErrors.fullName = 'Enter your name.';

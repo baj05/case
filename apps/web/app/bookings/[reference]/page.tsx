@@ -5,6 +5,9 @@ import { Notice } from '@/components/States';
 import { getBooking, formatMinor } from '@lexhall/db';
 import { databaseReady } from '@/lib/data';
 import { formatDate } from '@/lib/format';
+import { currentUser } from '@/lib/auth';
+import { sessionOwnsBooking } from '@/lib/booking-entitlement';
+import { RevealBookingDetails, CancelBookingForm } from '@/components/BookingActions';
 import { MEETING_MODE_LABEL, meetingKindMeta } from '@lexhall/core';
 import type { MeetingMode } from '@lexhall/core';
 
@@ -23,17 +26,38 @@ const STATUS_COPY: Record<string, { tone: 'ok' | 'info' | 'warn' | 'error'; titl
   expired: { tone: 'warn', title: 'Expired', body: 'The slot passed without being confirmed. Nothing is owed. You can book another time.' },
 };
 
+const TERMINAL = new Set(['completed', 'cancelled_by_client', 'cancelled_by_professional', 'declined', 'expired']);
+
 export default async function BookingPage({ params }: { params: Promise<{ reference: string }> }) {
   if (!databaseReady()) notFound();
   const { reference } = await params;
   const b = getBooking(decodeURIComponent(reference));
   if (!b) notFound();
 
+  const user = await currentUser();
+  // The reference alone is not treated as proof of ownership — see
+  // lib/booking-entitlement.ts. A session that owns this booking sees the
+  // confidential fields directly; anyone else sees a reveal form asking to
+  // confirm the email it was made with, so brief text and a home or office
+  // address are not readable by anyone who merely has (or guesses) the URL.
+  const entitled = sessionOwnsBooking(b, user);
+
   const copy = STATUS_COPY[b.status] ?? STATUS_COPY.pending!;
-  const when = new Date(b.starts_at_utc).toLocaleString('en-IN', {
-    timeZone: b.client_timezone, weekday: 'long', day: 'numeric', month: 'long',
-    hour: '2-digit', minute: '2-digit', hour12: true,
-  });
+
+  // client_timezone is stored from a form field and was never validated
+  // against a real IANA zone; an invalid value used to throw inside
+  // toLocaleString and 500 this page permanently for that one booking.
+  let when: string;
+  try {
+    when = new Date(b.starts_at_utc).toLocaleString('en-IN', {
+      timeZone: b.client_timezone, weekday: 'long', day: 'numeric', month: 'long',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+  } catch {
+    when = `${new Date(b.starts_at_utc).toLocaleString('en-IN', {
+      timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: true,
+    })} UTC`;
+  }
 
   return (
     <div className="container section" style={{ maxWidth: 780 }}>
@@ -49,7 +73,7 @@ export default async function BookingPage({ params }: { params: Promise<{ refere
           <h2 className="t-title">Appointment</h2>
           <dl className="fact-grid">
             <div><dt>Professional</dt><dd>
-              <Link href={`/advocates/${b.professionalSlug}`} style={{ textDecoration: 'underline' }}>{b.professionalName}</Link>
+              <Link href={`/advocates/${b.professionalSlug}`} className="link">{b.professionalName}</Link>
             </dd></div>
             <div><dt>When</dt><dd>{when}</dd></div>
             <div><dt>Timezone</dt><dd>{b.client_timezone}</dd></div>
@@ -59,9 +83,12 @@ export default async function BookingPage({ params }: { params: Promise<{ refere
                 <dt>Where</dt>
                 <dd style={{ whiteSpace: 'pre-line' }}>
                   {meetingKindMeta(b.meeting_kind)?.label ?? b.meeting_kind}
-                  {b.meeting_address ? `\n${b.meeting_address}` : ''}
-                  {b.meeting_kind === 'chamber' && !b.meeting_address
+                  {entitled && b.meeting_address ? `\n${b.meeting_address}` : ''}
+                  {entitled && b.meeting_kind === 'chamber' && !b.meeting_address
                     ? '\nThe advocate will confirm the address.'
+                    : ''}
+                  {!entitled && (b.meeting_address || b.meeting_kind === 'chamber')
+                    ? '\nConfirm your email below to see this.'
                     : ''}
                 </dd>
               </div>
@@ -101,29 +128,48 @@ export default async function BookingPage({ params }: { params: Promise<{ refere
 
           <hr className="divider" />
 
-          <div className="stack gap-1">
-            <span className="t-label-mono ink-variant">What you told them</span>
-            <p className="t-body-sm" style={{ whiteSpace: 'pre-wrap' }}>{b.brief}</p>
-          </div>
+          {/* CONFIDENTIAL — see lib/booking-entitlement.ts. Never rendered
+              server-side for a request this page could not attribute to a
+              session; RevealBookingDetails asks the visitor to confirm the
+              booking email before it appears at all. */}
+          {entitled ? (
+            <div className="stack gap-1">
+              <span className="t-label-mono ink-variant">What you told them</span>
+              <p className="t-body-sm" style={{ whiteSpace: 'pre-wrap' }}>{b.brief}</p>
+            </div>
+          ) : (
+            <RevealBookingDetails reference={b.reference} />
+          )}
         </div>
+
+        {!TERMINAL.has(b.status) && (
+          <div className="card stack gap-2" style={{ padding: 20 }}>
+            <h2 className="t-title">Manage this booking</h2>
+            <CancelBookingForm reference={b.reference} />
+          </div>
+        )}
 
         {/* Activity timeline — spec §67. */}
         <div className="card stack gap-3" style={{ padding: 20 }}>
           <h2 className="t-title">History</h2>
-          <ol className="stack gap-3">
-            {b.events.map((e, i) => (
-              <li key={i} className="row gap-3" style={{ alignItems: 'flex-start' }}>
-                <span aria-hidden="true" className="ink-primary" style={{ fontWeight: 700, flex: 'none' }}>◆</span>
-                <span className="stack gap-1">
-                  <span className="t-body-sm" style={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                    {e.kind.replace(/_/g, ' ')} <span className="t-caption" style={{ fontWeight: 400 }}>by {e.actor}</span>
+          {b.events.length === 0 ? (
+            <p className="t-body-sm ink-variant">Nothing recorded yet.</p>
+          ) : (
+            <ol className="stack gap-3">
+              {b.events.map((e, i) => (
+                <li key={i} className="row gap-3" style={{ alignItems: 'flex-start' }}>
+                  <span aria-hidden="true" className="ink-primary" style={{ fontWeight: 700, flex: 'none' }}>◆</span>
+                  <span className="stack gap-1">
+                    <span className="t-body-sm" style={{ fontWeight: 600, textTransform: 'capitalize' }}>
+                      {e.kind.replace(/_/g, ' ')} <span className="t-caption" style={{ fontWeight: 400 }}>by {e.actor}</span>
+                    </span>
+                    <span className="t-caption">{e.detail}</span>
+                    <span className="t-caption mono">{formatDate(e.occurredAt)}</span>
                   </span>
-                  <span className="t-caption">{e.detail}</span>
-                  <span className="t-caption mono">{formatDate(e.occurredAt)}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
 
         <div className="row wrap gap-2">

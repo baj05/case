@@ -60,7 +60,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ state: next, results, sort: body.sort ?? 'match' });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    // Logged, not returned: the raw message can carry internal detail (a
+    // column name, a stack fragment) that has no business in a client
+    // response, and this is a public, unauthenticated endpoint.
+    console.error('advo turn failed', error);
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }
 

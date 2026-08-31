@@ -115,6 +115,13 @@ export interface Slot { startUtc: string; endUtc: string; mode: string; feeSched
  * downstream guesses.
  */
 export function generateSlots(professionalId: number, fromIso: string, days = 14): Slot[] {
+  // Nothing in this prototype runs a scheduled task (no daemons — see the
+  // project's own constraint), and 'pending' is one of the statuses that
+  // still holds its slot against the unique index, so an abandoned pending
+  // booking used to block that instant forever with nothing to ever expire
+  // it. Reads are the one place guaranteed to run before every booking
+  // attempt, so this is where the self-healing happens instead of a cron.
+  expireStaleBookings();
   const h = db();
   const rules = h.prepare(
     `SELECT weekday, start_minute AS s, end_minute AS e, mode, slot_minutes AS len, timezone
@@ -329,6 +336,13 @@ export function createBooking(input: CreateBookingInput): { id: number; referenc
     ).get(input.professionalId) as { id: number; accepts_consultations: number } | undefined;
     if (!target) throw new Error('PROFESSIONAL_NOT_AVAILABLE');
     if (target.accepts_consultations !== 1) throw new Error('NOT_ACCEPTING');
+
+    // Defence in depth alongside the same call in generateSlots: a caller
+    // that reaches createBooking without having generated slots first
+    // (a direct API call, a retried request) must not have its overlap
+    // check blocked by a booking that only LOOKS live because nothing ever
+    // expired it.
+    expireStaleBookings();
 
     assertSlotBookable(h, {
       professionalId: input.professionalId,

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getOrgMembershipBySlug, getCorporateOrgBySlug, orgEntitlements } from '@lexhall/db';
 import type { OrgRole, OrgMembership, OrgEntitlements } from '@lexhall/db';
 import { currentUser, requireUser } from './auth';
+import { getFlags } from './data';
 import type { ActionResult } from '@/components/Forms';
 
 /**
@@ -126,6 +127,16 @@ export async function orgActionContext(
   slug: string,
   capability: Capability,
 ): Promise<{ ctx: OrgContext } | { error: ActionResult }> {
+  // Every corporate page checks FEATURE_CORPORATE before rendering; the
+  // Server Actions behind them did not, so with the flag off a direct POST
+  // to e.g. inviteMemberAction still worked for a feature the UI reported
+  // as not existing at all. Checked first, and with the same generic
+  // message as everything else here — a flag being off should look
+  // identical to not having permission, not like a distinct error.
+  if (!getFlags().FEATURE_CORPORATE) {
+    return { error: { ok: false, message: 'You do not have permission to do that.' } };
+  }
+
   const ctx = await currentOrgContext(slug);
   // One message for signed-out, non-member and insufficient-capability, so
   // the response cannot be used to probe membership or the slug space.
