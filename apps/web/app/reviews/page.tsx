@@ -84,7 +84,6 @@ export default function ReviewsHubPage() {
                   key={r.id}
                   review={r}
                   subject={{ name: r.subjectName, href: `${subjectBasePath(r.subjectKind)}/${r.subjectSlug}#reviews` }}
-                  clampBody
                 />
               ))}
             </div>

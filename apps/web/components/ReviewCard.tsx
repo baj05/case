@@ -31,54 +31,52 @@ export interface ReviewCardData {
  * doesn't need to know about ReviewListItem's extra fields or the review
  * server actions.
  *
- * The second line under the name shows `@handle` only when the reviewer
+ * Deliberately minimal, tweet-embed-style header: name + a small verified
+ * mark, then one quiet second line — never more than that crammed next to
+ * the name. That second line shows `@handle` only when the reviewer
  * actually set one (a real, optional field — see normaliseHandle in
- * @lexhall/db) — never a fabricated one. Absent a handle, it falls back to
- * the experience category, exactly as this card always showed.
+ * @lexhall/db); absent a handle it falls back to the experience category,
+ * never a fabricated one. Rating, verification detail and (on the hub
+ * feed) who the review is about all move to one quiet footer line instead
+ * of piling into the header.
  */
 export function ReviewCard({
-  review, subject, detail, clampBody = false,
+  review, subject, detail,
 }: {
   review: ReviewCardData;
   subject?: { name: string; href: string };
   detail?: ReactNode;
-  clampBody?: boolean;
 }) {
   const secondary = review.handle ? `@${review.handle}` : (EXPERIENCE_LABEL[review.experienceCategory] ?? 'Experience');
+  const verifiedLabel = review.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience';
 
   return (
     <article className="review-post">
-      {review.overallSatisfaction != null && (
-        <span className="review-post-rating" aria-label={`Rated ${review.overallSatisfaction} out of 5`}>
-          <span aria-hidden="true">★</span> {review.overallSatisfaction}
-        </span>
-      )}
-      <img className="review-post-avatar" src={avatarSrc(review.displayMode, review.avatarUrl)} alt="" width={44} height={44} />
-      <div className="stack gap-2" style={{ minWidth: 0, flex: 1 }}>
-        <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <span className="stack" style={{ gap: 2, minWidth: 0 }}>
-            <span className="row wrap gap-1" style={{ alignItems: 'center' }}>
-              <strong>{review.displayName}</strong>
-              {review.verified && (
-                <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
-                  <span aria-hidden="true">✓</span>{' '}
-                  {review.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
-                </span>
-              )}
-            </span>
-            <span className="t-caption ink-variant">
-              {secondary}
-              {subject && <> · on <Link href={subject.href}>{subject.name}</Link></>}
-            </span>
+      <img className="review-post-avatar" src={avatarSrc(review.displayMode, review.avatarUrl)} alt="" width={48} height={48} />
+      <div className="stack gap-1" style={{ minWidth: 0, flex: 1 }}>
+        <div className="stack" style={{ gap: 2 }}>
+          <span className="row gap-1" style={{ alignItems: 'center' }}>
+            <strong className="review-post-name">{review.displayName}</strong>
+            {review.verified && (
+              <span className="review-post-check" role="img" aria-label={verifiedLabel} title={verifiedLabel}>✓</span>
+            )}
           </span>
-          <span className="t-caption" style={{ flex: 'none' }}>
-            {relativeDate(review.createdAt)}{review.edited ? ' · edited' : ''}
-          </span>
+          <span className="review-post-handle">{secondary}</span>
         </div>
 
-        <p className={`t-body${clampBody ? ' clamp-3' : ''}`} style={{ wordBreak: 'break-word' }}>{review.body}</p>
+        <p className="t-body-lg review-post-body" style={{ wordBreak: 'break-word' }}>{review.body}</p>
 
         {detail}
+
+        <div className="review-post-footer">
+          <span>
+            {review.overallSatisfaction != null && <>★ {review.overallSatisfaction}/5</>}
+            {review.overallSatisfaction != null && review.verified && ' · '}
+            {review.verified && verifiedLabel}
+            {subject && <> · on <Link href={subject.href}>{subject.name}</Link></>}
+          </span>
+          <span>{relativeDate(review.createdAt)}{review.edited ? ' · edited' : ''}</span>
+        </div>
       </div>
     </article>
   );

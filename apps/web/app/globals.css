@@ -2225,63 +2225,71 @@ details[open] > .filter-summary::after { content: '–'; }
   .emblem-label-huge { font-size: 2.5rem; padding-inline: 18px; }
 }
 
-/* --- review post card (boxed "experience card") --------------------------
-   Avatar + content side by side, like a social post: a photo/preset/anon
-   icon anchors the left edge, everything else — name, badges, body,
-   ratings, actions — reads as one continuous block to its right. The
-   action row (Helpful/Report/Respond) is deliberately understated until
-   hovered, matching how a social feed keeps its icon row quiet by default.
-   Boxed with real elevation (shadow-md at rest) rather than the flatter
-   list-row look this used to have, plus a small 3D hover lift — still
-   built entirely from existing tokens, no new colour values. */
+/* --- review post card (minimal tweet-embed style) -------------------------
+   Deliberately spare, like a real social embed: avatar, name + a small
+   verified mark, one quiet second line (handle or context), the review
+   text as the one hero element, and a single quiet footer line for
+   rating/verification/subject/date. Nothing else crowds the header —
+   earlier drafts stacked a verified pill, a category label, a subject
+   link and a floating corner badge all next to the name at once, which
+   read as a cluttered admin table rather than a real tweet. Generous
+   padding and a big radius give it room to breathe; still built entirely
+   from existing tokens, no new colour values. */
 .review-post {
-  position: relative;
   display: flex;
-  gap: 12px;
-  padding: 20px;
+  gap: 16px;
+  padding: 28px;
   background: var(--surface-lowest);
   border: 1px solid var(--outline-variant);
   border-radius: var(--r-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .review-post { transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease); }
-  .review-post:hover { transform: perspective(600px) translateY(-4px) rotateX(1.5deg); box-shadow: var(--shadow-lg); }
+  .review-post:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 }
 .review-post-avatar {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   flex: none;
   object-fit: cover;
   background: var(--surface-high);
 }
+.review-post-name { font-family: var(--font-display); font-size: 1rem; }
+/* A small verified mark, not a pill: the checkmark shape itself (not
+   colour alone) carries the meaning, and the aria-label/title on the
+   element carry it for anyone who can't see the icon at all. */
+.review-post-check {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--electric-lime);
+  color: var(--on-lime);
+  font-size: 0.625rem;
+  font-weight: 700;
+  flex: none;
+}
+.review-post-handle { font-size: 0.875rem; color: var(--on-surface-variant); }
+.review-post-body { margin: 8px 0 4px; }
+.review-post-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--outline-variant);
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+}
 .review-post-actions { opacity: 0.75; transition: opacity var(--t) var(--ease); }
 .review-post:hover .review-post-actions,
 .review-post:focus-within .review-post-actions { opacity: 1; }
-/* The rating accent floats half off the card's top-right corner — only
-   rendered when a real overallSatisfaction exists (never a fabricated or
-   empty rating, see app/trust/reviews). Built from the brand's own
-   primary/action-orange pair, not an arbitrary colour. */
-.review-post-rating {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 10px;
-  border-radius: var(--r-full);
-  background: linear-gradient(155deg, var(--action-orange), var(--primary));
-  color: var(--on-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: var(--shadow-md);
-}
 @media (max-width: 480px) {
-  .review-post { gap: 10px; padding: 14px; }
-  .review-post-avatar { width: 36px; height: 36px; }
-  .review-post-rating { top: -8px; right: -8px; font-size: 0.6875rem; padding: 3px 8px; }
+  .review-post { gap: 12px; padding: 18px; }
+  .review-post-avatar { width: 40px; height: 40px; }
 }
 
 /* --- homepage judicial strip ------------------------------------------- */
