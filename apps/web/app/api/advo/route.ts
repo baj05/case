@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadIntakeVocabulary, shortlist, saveIntakeSession, formatMinor } from '@lexhall/db';
+import { loadIntakeVocabulary, shortlist, saveIntakeSession, formatMinor, nextAvailabilityDays } from '@lexhall/db';
 import { startSession, advance, type AdvoState, type ShortlistSort } from '@lexhall/core';
 import { databaseReady } from '@/lib/data';
 
@@ -68,7 +68,13 @@ export async function POST(request: Request) {
   }
 }
 
-/** Format money server-side so the client never invents a currency format. */
+/**
+ * Format money server-side so the client never invents a currency format,
+ * and attach a real next-availability strip per entry (actual bookable slots
+ * from the advocate's own availability rules — never a fabricated calendar).
+ * Only ever called for a shortlist of at most 12 entries, so the extra
+ * per-entry slot query is bounded and cheap.
+ */
 function decorate(entries: ReturnType<typeof shortlist>) {
   return entries.map((e) => ({
     ...e,
@@ -77,5 +83,6 @@ function decorate(entries: ReturnType<typeof shortlist>) {
       : e.maxConsultMinor && e.maxConsultMinor !== e.minConsultMinor
         ? `${formatMinor(e.minConsultMinor, e.currencyCode)}–${formatMinor(e.maxConsultMinor, e.currencyCode)}`
         : formatMinor(e.minConsultMinor, e.currencyCode),
+    availability: e.acceptsConsultations ? nextAvailabilityDays(e.id) : [],
   }));
 }

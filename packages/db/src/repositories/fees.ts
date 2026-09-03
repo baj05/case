@@ -201,6 +201,28 @@ export function generateSlots(professionalId: number, fromIso: string, days = 14
   return out.sort((a, b) => a.startUtc.localeCompare(b.startUtc));
 }
 
+export interface AvailabilityDay { date: string; count: number; hasVideo: boolean }
+
+/**
+ * Buckets `generateSlots` into per-calendar-day counts for a short-range
+ * "next available" strip on a shortlist/search card. Bucketing is by UTC
+ * calendar date deliberately — the strip is a coarse "does this day have
+ * anything" signal, not a booking surface, so it does not need the advocate's
+ * timezone the way `generateSlots` itself does.
+ */
+export function nextAvailabilityDays(professionalId: number, days = 9): AvailabilityDay[] {
+  const slots = generateSlots(professionalId, new Date().toISOString(), days);
+  const byDate = new Map<string, AvailabilityDay>();
+  for (const s of slots) {
+    const date = s.startUtc.slice(0, 10);
+    const bucket = byDate.get(date) ?? { date, count: 0, hasVideo: false };
+    bucket.count += 1;
+    if (s.mode === 'video') bucket.hasVideo = true;
+    byDate.set(date, bucket);
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /** Offset in minutes for a named zone at a given instant, via Intl. */
 function zoneOffsetMinutes(timeZone: string, at: Date): number {
   try {

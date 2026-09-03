@@ -7,6 +7,8 @@ import { SHORTLIST_SORTS, ADVO_DISCLAIMER, type AdvoState, type ShortlistSort } 
 import { initials } from '@lexhall/core';
 import { VerificationBadge } from './Badges';
 
+interface AvailabilityDay { date: string; count: number; hasVideo: boolean }
+
 interface Entry {
   slug: string; displayName: string; bodyRole: string | null; photoUrl: string | null;
   verificationLevel: number; claimStatus: string; locationName: string | null;
@@ -14,6 +16,51 @@ interface Entry {
   minConsultMinor: number | null; currencyCode: string; hasFilingFees: boolean;
   serviceCount: number; practiceAreas: string[]; courts: string[];
   score: number; reasons: string[]; caveats: string[]; feeLabel: string;
+  availability: AvailabilityDay[];
+}
+
+const DAY_LABEL = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });
+const DATE_LABEL = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+/**
+ * Next-available strip: real bookable slots from `generateSlots`, bucketed
+ * per day server-side (see `/api/advo`'s `decorate`) — never a placeholder
+ * calendar. A day with zero slots is shown greyed-out rather than omitted,
+ * so "nothing soon" is a visible fact, not a gap the user has to guess at.
+ */
+function AvailabilityStrip({ days, slug }: { days: AvailabilityDay[]; slug: string }) {
+  if (days.length === 0) return null;
+  return (
+    <div className="row gap-1" style={{ overflowX: 'auto', paddingBottom: 2 }}>
+      {days.slice(0, 6).map((d) => {
+        const cellStyle = {
+          flex: '0 0 auto', minWidth: 64, textAlign: 'center' as const, padding: '6px 8px',
+          borderRadius: 'var(--r-sm)', textDecoration: 'none',
+          background: d.count > 0 ? 'var(--electric-lime)' : 'var(--surface-container)',
+          color: d.count > 0 ? 'var(--on-lime)' : 'var(--on-surface-variant)',
+        };
+        const label = DAY_LABEL.format(new Date(`${d.date}T00:00:00Z`));
+        const date = DATE_LABEL.format(new Date(`${d.date}T00:00:00Z`));
+        const countLabel = d.count > 0 ? `${d.count} slot${d.count === 1 ? '' : 's'}` : 'No slots';
+        if (d.count === 0) {
+          return (
+            <div key={d.date} className="stack gap-0" style={cellStyle} aria-label={`${label} ${date}: no slots`}>
+              <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
+              <span className="t-caption">{date}</span>
+              <span className="t-caption">{countLabel}</span>
+            </div>
+          );
+        }
+        return (
+          <Link key={d.date} href={`/advocates/${slug}/book`} className="stack gap-0" style={cellStyle}>
+            <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
+            <span className="t-caption">{date}</span>
+            <span className="t-caption">{countLabel}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 /**
@@ -24,7 +71,15 @@ interface Entry {
  * entry carries why it is there AND what might not suit, because a
  * recommendation that hides its downsides is not a recommendation.
  */
-export function AdvoChat({ compact = false }: { compact?: boolean } = {}) {
+export function AdvoChat({ compact = false, pendingMessage, onConsumePending }: {
+  compact?: boolean;
+  /** A message queued by something outside the chat (e.g. a quick-start
+   * card). Consumed on the next render once the conversation is ready to
+   * receive free text, then cleared via `onConsumePending` so it cannot
+   * resend itself. */
+  pendingMessage?: string | null;
+  onConsumePending?: () => void;
+} = {}) {
   const [state, setState] = useState<AdvoState | null>(null);
   const [results, setResults] = useState<Entry[]>([]);
   const [sort, setSort] = useState<ShortlistSort>('match');
@@ -35,6 +90,16 @@ export function AdvoChat({ compact = false }: { compact?: boolean } = {}) {
 
   useEffect(() => { void call({ action: 'start' }); }, []);
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [state, results.length]);
+
+  // Fires once the greeting turn has landed and the box is free to accept
+  // text — a quick-start click before that would race the initial 'start' call.
+  useEffect(() => {
+    if (pendingMessage && state && !busy) {
+      send(pendingMessage);
+      onConsumePending?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMessage, state, busy]);
 
   async function call(payload: Record<string, unknown>) {
     setBusy(true);
@@ -227,6 +292,8 @@ export function AdvoChat({ compact = false }: { compact?: boolean } = {}) {
                   {e.practiceAreas.slice(0, 3).map((a) => <span key={a} className="chip chip-primary">{a}</span>)}
                 </div>
               )}
+
+              <AvailabilityStrip days={e.availability} slug={e.slug} />
 
               {e.reasons.length > 0 && (
                 <ul className="stack gap-1">

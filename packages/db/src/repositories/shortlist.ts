@@ -12,7 +12,7 @@ import { rebuildFeeSummary } from './fees.ts';
 import { rebuildSearchIndex, applyPublishGate, recomputeConfidence } from './professionals.ts';
 
 export interface ShortlistEntry {
-  slug: string; displayName: string; bodyRole: string | null; photoUrl: string | null;
+  id: number; slug: string; displayName: string; bodyRole: string | null; photoUrl: string | null;
   verificationLevel: number; claimStatus: string; locationName: string | null;
   yearsExperience: number | null; enrolmentYear: number | null;
   acceptsConsultations: boolean;
@@ -71,7 +71,7 @@ export function shortlist(facts: CollectedFacts, sort: ShortlistSort = 'match', 
     if (facts.minExperienceYears !== null && years !== null && years < facts.minExperienceYears) continue;
 
     entries.push({
-      slug: p.slug, displayName: p.displayName, bodyRole: p.bodyRole, photoUrl: p.photoUrl,
+      id: p.id, slug: p.slug, displayName: p.displayName, bodyRole: p.bodyRole, photoUrl: p.photoUrl,
       verificationLevel: p.verificationLevel, claimStatus: p.claimStatus,
       locationName: p.locationName, yearsExperience: years, enrolmentYear: p.enrolmentYear,
       acceptsConsultations: p.acceptsConsultations,

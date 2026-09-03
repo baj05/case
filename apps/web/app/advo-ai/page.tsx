@@ -1,9 +1,7 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Notice } from '@/components/States';
-import { AdvoOpener } from './AdvoOpener';
 import { databaseReady } from '@/lib/data';
-import { QuickStartCards } from './QuickStartCards';
+import { AdvoAIExperience } from './AdvoAIExperience';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default function AdvoAiLanding() {
-
   if (!databaseReady()) {
     return (
       <div className="container section">
@@ -26,90 +23,35 @@ export default function AdvoAiLanding() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Hero Section */}
-      <div
-        className="container section"
-        style={{
-          textAlign: 'center',
-          paddingTop: '60px',
-          paddingBottom: '40px',
-        }}
-      >
-        <div className="stack gap-4" style={{ maxWidth: 760, margin: '0 auto' }}>
-          {/* Badge */}
-          <div
-            style={{
-              display: 'inline-block',
-              padding: '6px 12px',
-              background: 'var(--surface-container)',
-              borderRadius: 'var(--r-full)',
-              fontSize: '0.875rem',
-              color: 'var(--on-surface)',
-              fontWeight: 500,
-            }}
-          >
-            ◆ Deterministic filter · not a lawyer
-          </div>
-
-          {/* Main Heading */}
-          <h1
-            className="t-headline-xl"
-            style={{
-              lineHeight: 1.2,
-              marginBottom: '16px',
-            }}
-          >
-            Describe your legal matter
-          </h1>
-
-          {/* Subheading */}
-          <p
-            className="t-body-lg ink-variant"
-            style={{
-              maxWidth: 600,
-              margin: '0 auto',
-              lineHeight: 1.5,
-            }}
-          >
-            Tell me what happened, in your own words. No legal terms needed. I will work out the area of law, the jurisdiction, and who can help.
-          </p>
-        </div>
-      </div>
-
-      {/* Quick Start Cards */}
-      <QuickStartCards />
-
-      {/* Main CTA Section */}
-      <div
-        className="container"
-        style={{
-          paddingTop: '40px',
-          paddingBottom: '60px',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-        }}
-      >
+    <div className="container section stack gap-6">
+      <div className="stack gap-3" style={{ textAlign: 'center', maxWidth: 700, margin: '0 auto' }}>
         <div
           style={{
-            maxWidth: 600,
-            margin: '0 auto',
-            textAlign: 'center',
+            display: 'inline-block',
+            padding: '6px 12px',
+            background: 'var(--surface-container)',
+            borderRadius: 'var(--r-full)',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            alignSelf: 'center',
           }}
         >
-          <AdvoOpener />
-          <p
-            className="t-caption ink-variant"
-            style={{
-              marginTop: '24px',
-            }}
-          >
-            Advo AI shortlists from our directory of professionals listed on official Bar Council registers. It does not give legal advice, and nothing it says creates a lawyer–client relationship.
-          </p>
+          ◆ Deterministic filter · not a lawyer
         </div>
+        <h1 className="t-headline-lg">Describe your legal matter</h1>
+        <p className="t-body-lg ink-variant">
+          Tell me what happened, in your own words. No legal terms needed. I will work out the
+          area of law, the jurisdiction, and who can help.
+        </p>
       </div>
+
+      <AdvoAIExperience />
+
+      <Notice tone="info">
+        Advo AI shortlists from our directory of professionals listed on official Bar Council
+        registers. It does not represent them, cannot receive money on their behalf, and never
+        ranks paid entries higher than unpaid ones.
+      </Notice>
     </div>
   );
 }
