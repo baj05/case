@@ -2225,23 +2225,29 @@ details[open] > .filter-summary::after { content: '–'; }
   .emblem-label-huge { font-size: 2.5rem; padding-inline: 18px; }
 }
 
-/* --- review post card (feed-style, not a boxed testimonial) --------------
+/* --- review post card (boxed "experience card") --------------------------
    Avatar + content side by side, like a social post: a photo/preset/anon
    icon anchors the left edge, everything else — name, badges, body,
    ratings, actions — reads as one continuous block to its right. The
    action row (Helpful/Report/Respond) is deliberately understated until
-   hovered, matching how a social feed keeps its icon row quiet by default. */
+   hovered, matching how a social feed keeps its icon row quiet by default.
+   Boxed with real elevation (shadow-md at rest) rather than the flatter
+   list-row look this used to have, plus a small 3D hover lift — still
+   built entirely from existing tokens, no new colour values. */
 .review-post {
+  position: relative;
   display: flex;
   gap: 12px;
-  padding: 16px;
+  padding: 20px;
   background: var(--surface-lowest);
   border: 1px solid var(--outline-variant);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--t) var(--ease);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
 }
-.review-post:hover { box-shadow: var(--shadow-md); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .review-post { transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease); }
+  .review-post:hover { transform: perspective(600px) translateY(-4px) rotateX(1.5deg); box-shadow: var(--shadow-lg); }
+}
 .review-post-avatar {
   width: 44px;
   height: 44px;
@@ -2253,9 +2259,29 @@ details[open] > .filter-summary::after { content: '–'; }
 .review-post-actions { opacity: 0.75; transition: opacity var(--t) var(--ease); }
 .review-post:hover .review-post-actions,
 .review-post:focus-within .review-post-actions { opacity: 1; }
+/* The rating accent floats half off the card's top-right corner — only
+   rendered when a real overallSatisfaction exists (never a fabricated or
+   empty rating, see app/trust/reviews). Built from the brand's own
+   primary/action-orange pair, not an arbitrary colour. */
+.review-post-rating {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: linear-gradient(155deg, var(--action-orange), var(--primary));
+  color: var(--on-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
 @media (max-width: 480px) {
   .review-post { gap: 10px; padding: 14px; }
   .review-post-avatar { width: 36px; height: 36px; }
+  .review-post-rating { top: -8px; right: -8px; font-size: 0.6875rem; padding: 3px 8px; }
 }
 
 /* --- homepage judicial strip ------------------------------------------- */

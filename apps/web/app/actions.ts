@@ -13,7 +13,7 @@ import {
   getProfessionalBySlug, createBooking, getBooking, setBookingStatus, BookingRejectedError,
   saveIntakeSession,
   createUser, authenticate, createSession, deleteSession, AuthError,
-  createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview,
+  createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview, normaliseHandle,
   createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS, submitSiteFeedback, getReviewSubjectPath,
   createCorporateOrganisation, createOrgInvite, revokeInvite, setMemberRole, removeMember,
   acceptInvite, peekInvite, INVITABLE_ROLES, listOrgsForUser,
@@ -491,6 +491,13 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
   // the exact shape server-side regardless (sanitizeAvatarUrl).
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
+  const handleRaw = str(form, 'handle', 24);
+  let handle: string | null;
+  try {
+    handle = normaliseHandle(handleRaw);
+  } catch {
+    return { ok: false, message: 'Please correct the highlighted field.', fieldErrors: { handle: 'Usernames are 3–20 characters: letters, numbers and underscores only.' } };
+  }
 
   const professional = getProfessionalBySlug(slug);
   if (!professional) return { ok: false, message: 'That profile is no longer available.' };
@@ -505,7 +512,7 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
         professionalism: rating(form, 'professionalism'), processClarity: rating(form, 'processClarity'),
         overallSatisfaction: rating(form, 'overallSatisfaction'),
       },
-      wouldRecommend, body, avatarUrl,
+      wouldRecommend, body, avatarUrl, handle,
     });
   } catch (error) {
     const code = (error as Error).message;
@@ -534,6 +541,13 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
   const body = str(form, 'body', 4000);
   const avatarUrlRaw = form.get('avatarUrl');
   const avatarUrl = typeof avatarUrlRaw === 'string' && avatarUrlRaw.length > 0 ? avatarUrlRaw : undefined;
+  const handleRaw = str(form, 'handle', 24);
+  let handle: string | null;
+  try {
+    handle = normaliseHandle(handleRaw);
+  } catch {
+    return { ok: false, message: 'Please correct the highlighted field.', fieldErrors: { handle: 'Usernames are 3–20 characters: letters, numbers and underscores only.' } };
+  }
 
   // Restricted to reviewable kinds: slugs share one namespace across every
   // organisation kind, and a Server Action is invocable directly without the
@@ -552,7 +566,7 @@ export async function submitOrganisationReviewAction(_prev: ActionResult | null,
         professionalism: rating(form, 'professionalism'), processClarity: rating(form, 'processClarity'),
         overallSatisfaction: rating(form, 'overallSatisfaction'),
       },
-      wouldRecommend, body, avatarUrl,
+      wouldRecommend, body, avatarUrl, handle,
     });
   } catch (error) {
     if ((error as Error).message === 'ALREADY_REVIEWED') {

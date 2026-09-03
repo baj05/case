@@ -67,6 +67,11 @@ export function OrgReviewForm({ slug, basePath, kind }: { slug: string; basePath
         retained internally for accountability, even when displayed anonymously.
       </p>
 
+      <Field name="handle" label="Username (optional)" hint="Shown as @yourhandle on your review. Letters, numbers and underscores only. Leave blank to skip." error={state?.fieldErrors?.handle}>
+        <input id="handle" name="handle" className="input" maxLength={24} placeholder="legal_eagle_22"
+          aria-describedby={`handle-hint${state?.fieldErrors?.handle ? ' handle-error' : ''}`} />
+      </Field>
+
       <AvatarPicker name="avatarUrl" disabled={displayMode === 'anonymous'} />
 
       <SubmitButton pendingLabel="Submitting…">Submit for moderation</SubmitButton>

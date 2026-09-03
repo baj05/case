@@ -44,6 +44,7 @@ export interface CreateReviewInput {
   wouldRecommend?: WouldRecommend;
   body: string;
   avatarUrl?: string | null;
+  handle?: string | null;
 }
 
 const PRESET_AVATAR_PATHS = new Set(Array.from({ length: 10 }, (_, i) => `/img/avatars/preset-${String(i + 1).padStart(2, '0')}.svg`));
@@ -62,6 +63,24 @@ function sanitizeAvatarUrl(raw: string | null | undefined): string | null {
   if (PRESET_AVATAR_PATHS.has(raw)) return raw;
   if (raw.length <= MAX_AVATAR_DATA_URL_LENGTH && DATA_URL_RE.test(raw)) return raw;
   return null;
+}
+
+const HANDLE_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+/**
+ * Normalises a reviewer-chosen display handle (e.g. "@legal_eagle_22" or
+ * "legal_eagle_22"): strips an optional leading '@', trims, lowercases.
+ * Blank/absent input is fine — the handle is optional — and returns null.
+ * Anything present but malformed throws, rather than being silently dropped
+ * like a bad avatar upload: unlike an avatar, a handle is chosen text with
+ * no fallback rendering, so a typo should surface as a real field error
+ * instead of quietly vanishing from the published review.
+ */
+export function normaliseHandle(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? '').trim().replace(/^@/, '');
+  if (trimmed.length === 0) return null;
+  if (!HANDLE_RE.test(trimmed)) throw new Error('INVALID_HANDLE');
+  return trimmed.toLowerCase();
 }
 
 // --------------------------------------------------------------- eligibility
@@ -211,22 +230,25 @@ export function createReview(input: CreateReviewInput): { id: number; moderation
     // avatar is ever stored against an anonymous review regardless of what
     // was submitted.
     const avatarUrl = input.displayMode === 'anonymous' ? null : sanitizeAvatarUrl(input.avatarUrl);
+    // Independent of display_mode: a handle the reviewer chose themselves
+    // identifies nothing real, so it shows even on an anonymous review.
+    const handle = normaliseHandle(input.handle);
 
     const result = h.prepare(
       `INSERT INTO review (
          professional_id, author_user_id, consultation_request_id, appointment_id, matter_id, booking_id,
          basis, display_mode, reviewer_type, experience_category,
          rating_communication, rating_responsiveness, rating_professionalism, rating_process_clarity,
-         overall_satisfaction, would_recommend, body, avatar_url,
+         overall_satisfaction, would_recommend, body, avatar_url, handle,
          moderation_status, trust_signals, trust_score, created_at, updated_at
-       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)`,
+       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)`,
     ).run(
       input.professionalId, input.authorUserId,
       input.consultationRequestId ?? null, input.appointmentId ?? null, input.matterId ?? null, input.bookingId ?? null,
       basis, input.displayMode, input.reviewerType, experienceCategory,
       input.ratings.communication ?? null, input.ratings.responsiveness ?? null,
       input.ratings.professionalism ?? null, input.ratings.processClarity ?? null,
-      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl,
+      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl, handle,
       moderationStatus,
       toJson({ tier: risk.tier, signals: risk.signals, privacyHits }), risk.score, ts, ts,
     );
@@ -245,6 +267,7 @@ export interface CreateOrganisationReviewInput {
   wouldRecommend?: WouldRecommend;
   body: string;
   avatarUrl?: string | null;
+  handle?: string | null;
 }
 
 /**
@@ -294,19 +317,20 @@ export function createOrganisationReview(input: CreateOrganisationReviewInput): 
     const moderationStatus = privacyHits.length > 0 ? 'in_review' : risk.tier === 'high' ? 'auto_flagged' : 'pending';
     const ts = now();
     const avatarUrl = input.displayMode === 'anonymous' ? null : sanitizeAvatarUrl(input.avatarUrl);
+    const handle = normaliseHandle(input.handle);
 
     const result = h.prepare(
       `INSERT INTO review (
          organisation_id, author_user_id, basis, display_mode, reviewer_type, experience_category,
          rating_communication, rating_responsiveness, rating_professionalism, rating_process_clarity,
-         overall_satisfaction, would_recommend, body, avatar_url,
+         overall_satisfaction, would_recommend, body, avatar_url, handle,
          moderation_status, trust_signals, trust_score, created_at, updated_at
-       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)`,
+       ) VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)`,
     ).run(
       input.organisationId, input.authorUserId, basis, input.displayMode, input.reviewerType, input.experienceCategory,
       input.ratings.communication ?? null, input.ratings.responsiveness ?? null,
       input.ratings.professionalism ?? null, input.ratings.processClarity ?? null,
-      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl,
+      input.ratings.overallSatisfaction ?? null, input.wouldRecommend ?? null, input.body.trim(), avatarUrl, handle,
       moderationStatus, toJson({ tier: risk.tier, signals: risk.signals, privacyHits }), risk.score, ts, ts,
     );
     return { id: Number(result.lastInsertRowid), moderationStatus };
@@ -480,7 +504,7 @@ export function reportReview(
 // ------------------------------------------------------------ discovery feed
 
 export interface RecentReviewFeedItem {
-  id: number; body: string; verified: boolean; verifiedVia: 'booking' | 'domain'; displayName: string; avatarUrl: string | null; displayMode: string; experienceCategory: string;
+  id: number; body: string; verified: boolean; verifiedVia: 'booking' | 'domain'; displayName: string; handle: string | null; avatarUrl: string | null; displayMode: string; experienceCategory: string;
   overallSatisfaction: number | null; createdAt: string;
   subjectName: string; subjectSlug: string;
   // 'organisation' alone isn't enough to build a link — a firm and an LPO
@@ -496,6 +520,7 @@ export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedIte
   const rows = db().prepare(
     `SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.experience_category AS experienceCategory,
             r.overall_satisfaction AS overallSatisfaction, r.created_at AS createdAt, r.avatar_url AS avatarUrl,
+            r.handle AS handle,
             u.full_name AS authorFullName,
             COALESCE(p.display_name, o.name) AS subjectName,
             COALESCE(p.slug, o.slug) AS subjectSlug,
@@ -514,6 +539,7 @@ export function listRecentReviewsAcrossPlatform(limit = 12): RecentReviewFeedIte
     verified: isVerifiedBasis(String(r.basis)),
     verifiedVia: verifiedVia(r.subjectKind !== 'professional'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
+    handle: r.handle as string | null,
     avatarUrl: r.displayMode === 'anonymous' ? null : (r.avatarUrl as string | null),
     displayMode: String(r.displayMode),
     experienceCategory: String(r.experienceCategory),
@@ -533,6 +559,7 @@ export function listModerationQueue(status?: string) {
     SELECT r.id, r.body, r.basis, r.display_mode AS displayMode, r.moderation_status AS moderationStatus,
            r.trust_score AS trustScore, r.trust_signals AS trustSignalsJson, r.created_at AS createdAt,
            r.experience_category AS experienceCategory, r.reviewer_type AS reviewerType, r.avatar_url AS avatarUrl,
+           r.handle AS handle,
            COALESCE(p.display_name, o.name) AS professionalName,
            COALESCE(p.slug, o.slug) AS professionalSlug,
            CASE WHEN r.organisation_id IS NOT NULL THEN o.kind ELSE 'professional' END AS subjectKind,
@@ -682,6 +709,7 @@ export interface ReviewListItem {
   verified: boolean;
   verifiedVia: 'booking' | 'domain';
   displayName: string;
+  handle: string | null;
   avatarUrl: string | null;
   displayMode: string;
   reviewerType: string;
@@ -730,7 +758,7 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
             r.rating_responsiveness AS responsiveness, r.rating_professionalism AS professionalism,
             r.rating_process_clarity AS processClarity, r.overall_satisfaction AS overallSatisfaction,
             r.would_recommend AS wouldRecommend, r.created_at AS createdAt, r.edited_at AS editedAt,
-            r.avatar_url AS avatarUrl,
+            r.avatar_url AS avatarUrl, r.handle AS handle,
             u.full_name AS authorFullName,
             (SELECT count(*) FROM review_vote v WHERE v.review_id = r.id AND v.vote = 1) AS helpfulCount,
             (SELECT count(*) FROM review_vote v WHERE v.review_id = r.id AND v.vote = -1) AS notHelpfulCount,
@@ -749,6 +777,7 @@ function listReviewsForSubject(subject: ReviewSubject, subjectId: number, opts?:
     verified: isVerifiedBasis(String(r.basis)),
     verifiedVia: verifiedVia(subject === 'organisation_id'),
     displayName: displayName(String(r.displayMode), String(r.authorFullName)),
+    handle: r.handle as string | null,
     // Defense in depth: even if a row somehow carried an avatar_url with
     // display_mode='anonymous' (it shouldn't — createReview/createOrganisationReview
     // never store one), never surface it.

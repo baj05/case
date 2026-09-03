@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getFlags, getRecentReviewFeed } from '@/lib/data';
-import { relativeDate } from '@/lib/format';
-import { avatarSrc } from '@/lib/avatars';
 import { Notice } from '@/components/States';
+import { ReviewCard } from '@/components/ReviewCard';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -79,29 +78,14 @@ export default function ReviewsHubPage() {
           {feed.length === 0 ? (
             <p className="t-body ink-variant">No published experiences yet.</p>
           ) : (
-            <div className="stack gap-3">
+            <div className="grid-auto-lg">
               {feed.map((r) => (
-                <article key={r.id} className="review-post">
-                  <img className="review-post-avatar" src={avatarSrc(r.displayMode, r.avatarUrl)} alt="" width={44} height={44} />
-                  <div className="stack gap-2" style={{ minWidth: 0, flex: 1 }}>
-                    <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span className="row wrap gap-2" style={{ alignItems: 'baseline' }}>
-                        <strong>{r.displayName}</strong>
-                        {r.verified && (
-                          <span className="chip chip-lime" style={{ fontSize: '0.6875rem' }}>
-                            {r.verifiedVia === 'domain' ? 'Verified — company domain' : 'Verified experience'}
-                          </span>
-                        )}
-                        <span className="t-caption">on{' '}
-                          <Link href={`${subjectBasePath(r.subjectKind)}/${r.subjectSlug}#reviews`}>{r.subjectName}</Link>
-                        </span>
-                      </span>
-                      <span className="t-caption">{relativeDate(r.createdAt)}</span>
-                    </div>
-                    <p className="t-body clamp-3" style={{ wordBreak: 'break-word' }}>{r.body}</p>
-                    {r.overallSatisfaction != null && <span className="t-caption">{r.overallSatisfaction}/5 overall</span>}
-                  </div>
-                </article>
+                <ReviewCard
+                  key={r.id}
+                  review={r}
+                  subject={{ name: r.subjectName, href: `${subjectBasePath(r.subjectKind)}/${r.subjectSlug}#reviews` }}
+                  clampBody
+                />
               ))}
             </div>
           )}
