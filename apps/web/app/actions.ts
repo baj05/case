@@ -516,7 +516,7 @@ export async function submitReviewAction(_prev: ActionResult | null, form: FormD
     });
   } catch (error) {
     const code = (error as Error).message;
-    if (code === 'REVIEW_REQUIRES_EXACTLY_ONE_INTERACTION' || code === 'INELIGIBLE_INTERACTION') {
+    if (code === 'REVIEW_REQUIRES_AT_MOST_ONE_INTERACTION' || code === 'INELIGIBLE_INTERACTION') {
       return { ok: false, message: 'We could not verify a completed experience with this professional to review.' };
     }
     return { ok: false, message: 'You have already reviewed this experience.' };

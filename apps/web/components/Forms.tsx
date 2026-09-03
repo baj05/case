@@ -96,11 +96,13 @@ export function RatingRadios({ name, label, required = false, scale = 5 }: { nam
     // options with no group name to tell a screen-reader user why.
     <fieldset className="field" style={{ border: 0, margin: 0, padding: 0 }}>
       <legend className="label" style={{ padding: 0 }}>{label}</legend>
-      <div className="row gap-2">
+      {/* Each option is a real 44px tap target (WCAG 2.5.8) and the row
+          wraps, so five options never overflow a narrow column. */}
+      <div className="row wrap gap-1">
         {Array.from({ length: scale }, (_, i) => i + 1).map((n) => (
-          <label key={n} className="row gap-1" style={{ alignItems: 'center' }}>
+          <label key={n} className="rating-option">
             <input type="radio" name={name} value={n} required={required} />
-            <span className="t-caption">{n}</span>
+            <span>{n}</span>
           </label>
         ))}
       </div>

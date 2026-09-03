@@ -168,12 +168,34 @@ function assessFraudRisk(input: { authorUserId: number; subject: ReviewSubject; 
 export function createReview(input: CreateReviewInput): { id: number; moderationStatus: string } {
   const boundCount = [input.bookingId, input.consultationRequestId, input.appointmentId, input.matterId]
     .filter((v) => v != null).length;
-  if (boundCount !== 1) throw new Error('REVIEW_REQUIRES_EXACTLY_ONE_INTERACTION');
+  // More than one would be ambiguous (which interaction is this actually
+  // about?), so that's still rejected. Zero is allowed on purpose: not
+  // every reviewer has a completed booking on this platform, and refusing
+  // them a review outright — with no path at all — was a harder line than
+  // organisation reviews already draw (createOrganisationReview has never
+  // required an interaction). A review submitted with none of these bound
+  // simply publishes with basis='unverified', same as it always could for
+  // an organisation, and the UI must keep that distinction visible rather
+  // than blurring it with a verified one.
+  if (boundCount > 1) throw new Error('REVIEW_REQUIRES_AT_MOST_ONE_INTERACTION');
 
   return transaction(() => {
     const h = db();
     let basis = 'unverified';
     let experienceCategory: ExperienceCategory = 'consultation';
+
+    if (boundCount === 0) {
+      // Unverified professional reviews have no interaction row to key a
+      // uniqueness index off, so — mirroring createOrganisationReview's own
+      // ALREADY_REVIEWED check — this is enforced here instead of via a
+      // partial unique index, or the same author could submit an unlimited
+      // number of unverified reviews of the same professional.
+      const existing = h.prepare(
+        `SELECT 1 FROM review WHERE author_user_id = ? AND professional_id = ? AND booking_id IS NULL
+           AND consultation_request_id IS NULL AND appointment_id IS NULL AND matter_id IS NULL`,
+      ).get(input.authorUserId, input.professionalId);
+      if (existing) throw new Error('ALREADY_REVIEWED');
+    }
 
     /*
      * SECURITY: every branch below binds `input.professionalId` into the

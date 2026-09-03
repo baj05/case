@@ -29,15 +29,15 @@ export default async function WriteReviewPage({ params }: { params: Promise<{ sl
         <h1 className="t-headline-lg">Write a review</h1>
       </div>
 
-      {experiences.length === 0 ? (
-        <Notice tone="info" title="No verified experience found yet">
+      {experiences.length === 0 && (
+        <Notice tone="info" title="No verified experience found">
           We could not find a completed booking or consultation between your account and{' '}
-          {p.displayName}. A review must be tied to a real, completed interaction.
+          {p.displayName}. You can still share your experience below — it will publish as an{' '}
+          <strong>unverified</strong> review, clearly labelled as such, rather than a verified one.
           {' '}<Link href={`/advocates/${slug}`} style={{ textDecoration: 'underline' }}>Back to the profile</Link>.
         </Notice>
-      ) : (
-        <ReviewForm slug={slug} experiences={experiences} />
       )}
+      <ReviewForm slug={slug} experiences={experiences} />
     </div>
   );
 }

@@ -95,11 +95,39 @@ check('one-review-per-booking is enforced', () => {
   } catch { return true; }
 });
 
-check('review with no bound interaction is rejected', () => {
+// A completed booking is no longer the ONLY way to review a professional —
+// not every real reviewer has one, and organisation reviews never required
+// one either. No bound interaction now publishes as an honestly-labelled
+// unverified review, rather than refusing the reviewer outright.
+check('review with no bound interaction is accepted as unverified', () => {
+  const r = createReview({
+    professionalId: 1, authorUserId: client.id, displayMode: 'attributed',
+    reviewerType: 'client', ratings: {}, body: 'no completed booking, but sharing an experience anyway',
+  });
+  return typeof r.id === 'number' && r.id > 0 && r.moderationStatus === 'pending';
+});
+
+check('an unverified review is stored with basis=unverified, never a verified one', () =>
+  h.prepare(`SELECT basis FROM review WHERE body = ?`).get('no completed booking, but sharing an experience anyway')?.basis === 'unverified');
+
+check('a second unverified review from the same author for the same professional is rejected', () => {
   try {
-    createReview({ professionalId: 1, authorUserId: client.id, displayMode: 'attributed', reviewerType: 'client', ratings: {}, body: 'no interaction' });
+    createReview({
+      professionalId: 1, authorUserId: client.id, displayMode: 'attributed',
+      reviewerType: 'client', ratings: {}, body: 'trying to leave a second unverified review',
+    });
     return false;
-  } catch { return true; }
+  } catch (e) { return e.message === 'ALREADY_REVIEWED'; }
+});
+
+check('more than one bound interaction is still rejected as ambiguous', () => {
+  try {
+    createReview({
+      professionalId: 1, authorUserId: client.id, bookingId: 1, consultationRequestId: 999,
+      displayMode: 'attributed', reviewerType: 'client', ratings: {}, body: 'ambiguous interaction',
+    });
+    return false;
+  } catch (e) { return e.message === 'REVIEW_REQUIRES_AT_MOST_ONE_INTERACTION'; }
 });
 
 // --- SECURITY REGRESSION: a completed booking with professional A cannot be
