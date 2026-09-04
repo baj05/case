@@ -18,11 +18,18 @@ import { useEffect, useState } from 'react';
  * reference line — which always has an answer once the reference line has
  * passed at least one section.
  */
-export function ProfileTabs({ tabs }: { tabs: Array<{ href: string; label: string }> }) {
+export function ProfileTabs({ tabs }: { tabs: Array<{ href: string; label: string; trackActive?: boolean }> }) {
   const [active, setActive] = useState<string>(tabs[0]?.href ?? '');
 
   useEffect(() => {
-    const ids = tabs.map((t) => t.href.slice(1));
+    // A target inside the sticky sidebar (trackActive: false — e.g.
+    // #consultation) stays pinned near the reference line for the rest of
+    // the scroll once it first reaches its sticky position, which would
+    // otherwise permanently win the "largest top <= reference line" check
+    // below and freeze every later section as "active: Consultation".
+    // It's still a real, working link — just excluded from the scan that
+    // decides which underline lights up.
+    const ids = tabs.filter((t) => t.trackActive !== false).map((t) => t.href.slice(1));
     const REFERENCE_LINE = 120; // px from viewport top a section must cross to count as "current"
     let raf = 0;
 

@@ -1034,13 +1034,17 @@ details[open] > .filter-summary::after { content: '–'; }
 
 .profile-layout { display: grid; gap: var(--gutter); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 1000px) {
-  .profile-layout { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+  /* 2fr:1fr ~= an 8:4-column split, main content roughly double the sidebar's
+     width — proportional rather than a fixed sidebar px, so the ratio holds
+     as the viewport widens; minmax(340px, 1fr) keeps the sidebar from
+     shrinking below a usable width just above the breakpoint. */
+  .profile-layout { grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr); align-items: start; }
   .profile-layout > aside { position: sticky; top: 84px; }
 }
 
 /* Flat underline section nav — real anchor links; the active underline
-   tracks scroll position via IntersectionObserver (ProfileTabs.tsx), not a
-   hardcoded state. Works as plain links with no JS. */
+   tracks scroll position (ProfileTabs.tsx), not a hardcoded state. Works as
+   plain links with no JS. */
 .profile-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--outline-variant); overflow-x: auto; }
 .profile-tab {
   padding: 12px 2px; font-size: 1rem; color: var(--on-surface-variant);

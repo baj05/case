@@ -102,10 +102,13 @@ export default async function ProfilePage({
   const tabs = [
     { href: '#overview', label: 'Overview' },
     ...(detail?.bio ? [{ href: '#about', label: 'About' }] : []),
-    { href: '#practice', label: 'Practice areas' },
+    { href: '#practice-areas', label: 'Practice areas' },
     { href: '#fees', label: 'Fees' },
     ...(flags.FEATURE_REVIEWS ? [{ href: '#reviews', label: 'Reviews' }] : []),
     ...(profileResources.length > 0 ? [{ href: '#resources', label: 'Resources' }] : []),
+    // Lives in the sticky sidebar, not the main reading column — a real
+    // link, but excluded from scroll-tracking (see ProfileTabs.tsx).
+    { href: '#consultation', label: 'Consultation', trackActive: false },
   ];
 
   /* Structured data. Only sourced, factual fields — no aggregateRating, because
@@ -243,7 +246,7 @@ export default async function ProfilePage({
             )}
 
             {/* practice areas */}
-            <section className="stack gap-3" id="practice">
+            <section className="stack gap-3" id="practice-areas">
               <h2 className="t-headline-md">Practice areas</h2>
               {p.practiceAreas.length > 0 ? (
                 <>
@@ -266,7 +269,7 @@ export default async function ProfilePage({
             </section>
 
             {/* courts */}
-            <section className="stack gap-3">
+            <section className="stack gap-3" id="courts">
               <h2 className="t-headline-md">Courts and chambers</h2>
               {detail && detail.chambers.length > 0 ? (
                 <div className="scroll-x">
@@ -300,7 +303,7 @@ export default async function ProfilePage({
             </section>
 
             {/* enrolment */}
-            <section className="stack gap-3">
+            <section className="stack gap-3" id="enrolment">
               <h2 className="t-headline-md">Enrolment</h2>
               {detail && detail.enrolments.length > 0 ? (
                 <div className="stack gap-2">
@@ -336,7 +339,7 @@ export default async function ProfilePage({
 
             {/* office */}
             {detail?.publicOffice && (
-              <section className="stack gap-3">
+              <section className="stack gap-3" id="office">
                 <h2 className="t-headline-md">Professional address</h2>
                 <p className="t-body">{detail.publicOffice}</p>
                 <p className="t-caption">
@@ -430,7 +433,7 @@ export default async function ProfilePage({
                 those matters. Only appears when a matter has been claimed —
                 otherwise there is nothing honest to show here. */}
             {declaredMatters.length > 0 && (
-              <section className="stack gap-3">
+              <section className="stack gap-3" id="matters">
                 <h2 className="t-headline-md">Matters this advocate handles</h2>
                 <p className="t-body-sm ink-variant">
                   Declared by the professional. Practice areas are self-declared
@@ -469,7 +472,7 @@ export default async function ProfilePage({
 
             {/* related */}
             {related.length > 0 && (
-              <section className="stack gap-3">
+              <section className="stack gap-3" id="related">
                 <h2 className="t-headline-md">Other professionals in the same register</h2>
                 <p className="t-body-sm ink-variant">
                   Listed for navigation only. This is not a comparison or a recommendation.
@@ -492,7 +495,7 @@ export default async function ProfilePage({
             {/* primary action widget — first thing in the sidebar, sticky,
                 so it is visible alongside whichever section the visitor has
                 scrolled to, exactly like the booking widget it is modelled on. */}
-            <div className="card stack gap-3" style={{ padding: 20 }}>
+            <div className="card stack gap-3" style={{ padding: 20 }} id="consultation">
               <h2 className="t-title">Book a consultation</h2>
               {p.acceptsConsultations ? (
                 <>
@@ -524,7 +527,7 @@ export default async function ProfilePage({
             </div>
 
             {/* provenance — the trust core of the product (spec §60) */}
-            <div className="card stack gap-3" style={{ padding: 18 }}>
+            <div className="card stack gap-3" style={{ padding: 20 }}>
               <h2 className="t-title">Where this came from</h2>
               <dl className="stack gap-2">
                 <div className="stack gap-1">
@@ -562,7 +565,7 @@ export default async function ProfilePage({
             </div>
 
             {/* verification ladder */}
-            <div className="card stack gap-3" style={{ padding: 18 }}>
+            <div className="card stack gap-3" style={{ padding: 20 }}>
               <h2 className="t-title">Verification</h2>
               <p className="t-body-sm ink-variant">{meta.checked}</p>
               <ol className="stack gap-2">
@@ -587,7 +590,7 @@ export default async function ProfilePage({
 
             {/* languages */}
             {p.languages.length > 0 && (
-              <div className="card stack gap-2" style={{ padding: 18 }}>
+              <div className="card stack gap-2" style={{ padding: 20 }}>
                 <h2 className="t-title">Languages</h2>
                 <div className="row wrap gap-1">
                   {p.languages.map((l) => <span key={l} className="chip chip-outline">{l}</span>)}
