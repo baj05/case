@@ -954,10 +954,15 @@ ul, ol { list-style: none; padding: 0; }
 @media (max-width: 520px) { .result-card { padding: 14px; gap: 12px; } }
 
 /* Profile facts (left) vs. availability + book (right) — stacks under 860px
-   rather than squeezing a day-strip into a narrow column. */
+   rather than squeezing a day-strip into a narrow column. When a
+   professional isn't taking bookings there is no second column to render
+   (see ResultCard.tsx), and reserving its 260px track anyway would leave a
+   dead strip of whitespace on every such card — :only-child collapses the
+   grid back to one full-width column exactly when that's true. */
 .result-card-body { display: grid; grid-template-columns: 1fr; gap: 16px; min-width: 0; }
 @media (min-width: 860px) {
   .result-card-body { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
+  .result-card-body:has(> :only-child) { grid-template-columns: 1fr; }
 }
 
 /* --- filter panel ----------------------------------------------------- */
