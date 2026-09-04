@@ -135,6 +135,38 @@ export function AdvoChat({ compact = false, pendingMessage, onConsumePending }: 
 
   const q = state?.nextQuestion ?? null;
 
+  /**
+   * Quick refinements offered once the shortlist is up. Each one resends a
+   * STRUCTURED answer (the same `answering` key the original question used),
+   * not free text — `advance()` only re-parses practice area/location/urgency
+   * from free text after `done` (see advoai.ts's `advance`), so a chip
+   * promising "show cheaper options" via a typed sentence would silently do
+   * nothing. Resending a structured key updates the fact and re-filters even
+   * after `done`, because `nextQuestion`'s `asked` set only gates which
+   * question comes NEXT, not whether an answer is accepted.
+   *
+   * Deliberately NOT a Zocdoc-style "what's the difference between X and Y"
+   * chip: that promises a free-text explanation, and this engine generates
+   * no free text by design (ADR-006) — offering it would be a broken promise,
+   * not a feature. Every chip here is a lever the state machine already has.
+   */
+  const refinementChips: Array<{ label: string; value: string; answering: string; display: string }> = [];
+  if (state?.done) {
+    const f = state.facts;
+    if (f.budgetMaxMinor === null || f.budgetMaxMinor > 250_000) {
+      refinementChips.push({ label: 'Cap fees at ₹2,500', value: '250000', answering: 'budget', display: 'Up to ₹2,500' });
+    }
+    if ((f.minExperienceYears ?? 0) < 10) {
+      refinementChips.push({ label: '10+ years experience only', value: '10', answering: 'experience', display: '10+ years' });
+    }
+    if (f.preferredMode !== 'video') {
+      refinementChips.push({ label: 'Switch to video call', value: 'video', answering: 'mode', display: 'Video call' });
+    }
+    if (f.urgency !== 'emergency') {
+      refinementChips.push({ label: 'Mark as urgent', value: 'emergency', answering: 'urgency', display: 'Today or tomorrow' });
+    }
+  }
+
   return (
     <div className={compact ? 'advo-layout advo-compact' : 'advo-layout'}>
       {/* ------------------------------------------------------ conversation */}
@@ -189,6 +221,17 @@ export function AdvoChat({ compact = false, pendingMessage, onConsumePending }: 
                   Skip
                 </button>
               )}
+            </div>
+          )}
+
+          {refinementChips.length > 0 && (
+            <div className="row wrap gap-2" style={{ marginBottom: 10 }}>
+              {refinementChips.map((c) => (
+                <button key={c.answering} type="button" className="chip chip-button chip-outline"
+                  disabled={busy} onClick={() => send(c.value, c.answering, c.display)}>
+                  {c.label}
+                </button>
+              ))}
             </div>
           )}
 
