@@ -190,7 +190,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                 : `${formatNumber(start)}–${formatNumber(end)} of ${formatNumber(outcome.total)}`}
               <span className="mono"> · {outcome.latencyMs}ms</span>
             </p>
-            <form method="get" className="row gap-2">
+            <form method="get" className="row wrap gap-2">
               {Object.entries(sp).map(([k, v]) => {
                 const val = one(v);
                 return k === 'sort' || !val ? null : <input key={k} type="hidden" name={k} value={val} />;

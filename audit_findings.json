@@ -1,0 +1,307 @@
+{
+  "findings": [
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 0 did not expand",
+      "description": "aria-expanded did not flip to 'true' after click.",
+      "steps": [
+        "Click nav trigger #0",
+        "Check aria-expanded"
+      ],
+      "screenshot": "nav-dropdown-0-fail-desktop-1920x1080.png",
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 1 did not expand",
+      "description": "aria-expanded did not flip to 'true' after click.",
+      "steps": [
+        "Click nav trigger #1",
+        "Check aria-expanded"
+      ],
+      "screenshot": "nav-dropdown-1-fail-desktop-1920x1080.png",
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 2 did not expand",
+      "description": "aria-expanded did not flip to 'true' after click.",
+      "steps": [
+        "Click nav trigger #2",
+        "Check aria-expanded"
+      ],
+      "screenshot": "nav-dropdown-2-fail-desktop-1920x1080.png",
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 3 did not expand",
+      "description": "aria-expanded did not flip to 'true' after click.",
+      "steps": [
+        "Click nav trigger #3",
+        "Check aria-expanded"
+      ],
+      "screenshot": "nav-dropdown-3-fail-desktop-1920x1080.png",
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 4 did not expand",
+      "description": "aria-expanded did not flip to 'true' after click.",
+      "steps": [
+        "Click nav trigger #4",
+        "Check aria-expanded"
+      ],
+      "screenshot": "nav-dropdown-4-fail-desktop-1920x1080.png",
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 5 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(5)\n    - locator resolved to <button type=\"button\" aria-expanded=\"false\" aria-controls=\"mobile-nav\" class=\"btn btn-secondary btn-pill btn-sm hide-desktop\">Menu</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #5"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Search Filters",
+      "type": "Functional",
+      "title": "Filters interaction threw",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\"button\").filter(has_text=re.compile(r\"^Filters\")).first\n    - locator resolved to <button type=\"button\" aria-expanded=\"false\" class=\"btn btn-secondary btn-block\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click Filters"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Profile Tabs",
+      "type": "Functional",
+      "title": "Tab click loop threw",
+      "description": "'top'",
+      "steps": [
+        "Click each .profile-tab"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 0 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").first\n    - locator resolved to <button type=\"button\" class=\"nav-caret\" aria-expanded=\"false\" data-menu-trigger=\"Find a lawyer\" aria-label=\"Show Find a lawyer menu\" aria-controls=\"megamenu-find-a-lawyer\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #0"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 1 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(1)\n    - locator resolved to <button type=\"button\" class=\"nav-caret\" aria-expanded=\"false\" data-menu-trigger=\"Legal matters\" aria-label=\"Show Legal matters menu\" aria-controls=\"megamenu-legal-matters\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #1"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 2 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(2)\n    - locator resolved to <button type=\"button\" class=\"nav-caret\" aria-expanded=\"false\" data-menu-trigger=\"Resources & guides\" aria-controls=\"megamenu-resources-guides\" aria-label=\"Show Resources & guides menu\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #2"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 3 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(3)\n    - locator resolved to <button type=\"button\" class=\"nav-caret\" aria-expanded=\"false\" data-menu-trigger=\"Reviews\" aria-label=\"Show Reviews menu\" aria-controls=\"megamenu-reviews\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #3"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 4 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(4)\n    - locator resolved to <button type=\"button\" class=\"nav-caret\" aria-expanded=\"false\" data-menu-trigger=\"Corporate Suite\" aria-label=\"Show Corporate Suite menu\" aria-controls=\"megamenu-corporate-suite\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #4"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Navigation",
+      "type": "Functional",
+      "title": "Nav trigger 5 click failed",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".site-header button[aria-expanded]\").nth(5)\n    - locator resolved to <button type=\"button\" aria-expanded=\"true\" aria-controls=\"mobile-nav\" class=\"btn btn-secondary btn-pill btn-sm hide-desktop\">Close</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div aria-hidden=\"true\" class=\"drawer-backdrop hide-desktop\"></div> intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div aria-hidden=\"true\" class=\"drawer-backdrop hide-desktop\"></div> intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div aria-hidden=\"true\" class=\"drawer-backdrop hide-desktop\"></div> intercepts pointer events\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click nav trigger #5"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Search Results",
+      "type": "Visual",
+      "title": "Horizontal overflow",
+      "description": "document.scrollWidth (381px) exceeds window.innerWidth (375px) at mobile-375x812.",
+      "steps": [
+        "Load http://localhost:3000/search?location=delhi at mobile-375x812",
+        "Check document.documentElement.scrollWidth vs window.innerWidth"
+      ],
+      "screenshot": "Search Results-horizontal-overflow-mobile-375x812.png",
+      "severity": "High"
+    },
+    {
+      "section": "Search Filters",
+      "type": "Functional",
+      "title": "Filters interaction threw",
+      "description": "Locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\".drawer-backdrop\")\n    - locator resolved to <div aria-hidden=\"true\" class=\"drawer-backdrop\"></div>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <button type=\"button\" aria-pressed=\"false\" class=\"filter-option\">\u2026</button> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Filters\" class=\"drawer drawer-sheet\">\u2026</div> subtree intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <button type=\"button\" aria-pressed=\"false\" class=\"filter-option\">\u2026</button> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Filters\" class=\"drawer drawer-sheet\">\u2026</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    6 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <button type=\"button\" aria-pressed=\"false\" class=\"filter-option\">\u2026</button> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Filters\" class=\"drawer drawer-sheet\">\u2026</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 500ms\n",
+      "steps": [
+        "Click Filters"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Profile Tabs",
+      "type": "Functional",
+      "title": "Tab click loop threw",
+      "description": "'top'",
+      "steps": [
+        "Click each .profile-tab"
+      ],
+      "screenshot": null,
+      "severity": "Medium"
+    },
+    {
+      "section": "Signup Form",
+      "type": "Functional",
+      "title": "fullName=valid: validation mismatch",
+      "description": "Expected error shown=False, actual error_shown=True, final url=http://localhost:3000/signup",
+      "steps": [
+        "Fill fullName with 'Test User'",
+        "Submit"
+      ],
+      "screenshot": "signup-fullName-valid-fail.png",
+      "severity": "High"
+    },
+    {
+      "section": "Signup Form",
+      "type": "Functional",
+      "title": "password=valid: validation mismatch",
+      "description": "Expected error shown=False, actual error_shown=True, final url=http://localhost:3000/signup",
+      "steps": [
+        "Fill password with 'ValidPass123!'",
+        "Submit"
+      ],
+      "screenshot": "signup-password-valid-fail.png",
+      "severity": "High"
+    }
+  ],
+  "sections_tested": [
+    "Advocate Profile",
+    "Footer",
+    "Homepage",
+    "Homepage Search Form",
+    "Login Form",
+    "Navigation",
+    "Review Submission Form",
+    "Search Results",
+    "Signup Form",
+    "Site Feedback Form"
+  ],
+  "form_matrix": [
+    [
+      "Signup",
+      "fullName",
+      "(empty)",
+      "Validation error shown",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Signup",
+      "fullName",
+      "<script>alert(1)</script>",
+      "Validation error shown",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Signup",
+      "fullName",
+      "Test User",
+      "Accepted / navigated",
+      "Error shown",
+      "\ud83d\udd34 Bug"
+    ],
+    [
+      "Signup",
+      "email",
+      "not-an-email",
+      "Validation error shown",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Signup",
+      "email",
+      "qa-audit-test@example.com",
+      "Accepted / navigated",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Signup",
+      "password",
+      "abc",
+      "Validation error shown",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Signup",
+      "password",
+      "ValidPass123!",
+      "Accepted / navigated",
+      "Error shown",
+      "\ud83d\udd34 Bug"
+    ],
+    [
+      "Login",
+      "email+password",
+      "wrong credentials",
+      "Error message shown",
+      "Error shown",
+      "OK"
+    ],
+    [
+      "Rate Us",
+      "feedback textarea",
+      "<script>alert(1)</script>",
+      "Escaped / rejected / accepted safely",
+      "Safe",
+      "OK"
+    ]
+  ]
+}
