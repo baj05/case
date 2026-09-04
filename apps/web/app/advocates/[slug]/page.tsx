@@ -15,6 +15,7 @@ import { LEGAL_COPY } from '@/lib/brand';
 import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexhall/core';
 import { ReviewSection, experienceLabel } from '@/components/ReviewSection';
 import { ReviewCard } from '@/components/ReviewCard';
+import { ProfileTabs } from '@/components/ProfileTabs';
 import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -218,14 +219,10 @@ export default async function ProfilePage({
               </div>
             )}
 
-            {/* section tab bar — real anchors to sections below, not JS tabs,
-                so every one of them stays a plain, shareable, deep-linkable
-                URL fragment even with JavaScript disabled. */}
-            <nav aria-label="Profile sections" className="row wrap gap-1" style={{ borderBottom: '1px solid var(--outline-variant)', paddingBottom: 4 }}>
-              {tabs.map((t) => (
-                <a key={t.href} href={t.href} className="chip chip-button chip-outline">{t.label}</a>
-              ))}
-            </nav>
+            {/* section tab bar — real anchors to sections below; the active
+                underline tracks scroll position, it does not gate navigation
+                (see ProfileTabs). */}
+            <ProfileTabs tabs={tabs} />
 
             {/* practice areas */}
             <section className="stack gap-3" id="practice">
