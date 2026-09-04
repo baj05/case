@@ -14,6 +14,7 @@ import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/fo
 import { LEGAL_COPY } from '@/lib/brand';
 import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexhall/core';
 import { ReviewSection, experienceLabel } from '@/components/ReviewSection';
+import { ReviewCard } from '@/components/ReviewCard';
 import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -62,8 +63,47 @@ export default async function ProfilePage({
   const fsum = feeSummary(p.id);
   const availabilityDays = p.acceptsConsultations ? nextAvailabilityDays(p.id) : [];
   const reviewSummary = getReviewSummary(p.id);
+  const hasReviewScore = reviewSummary.band === 'early' || reviewSummary.band === 'established';
+  // One representative quote for the glance card — the single most-helpful
+  // published review, independent of the `?reviewFilter=/&reviewSort=` the
+  // visitor may have set for the full list further down. Only fetched when
+  // there is a real score to attach it to, so it never appears floating
+  // with nothing to back it.
+  const topReview = hasReviewScore && flags.FEATURE_REVIEWS ? getReviews(p.id, { sort: 'helpful', limit: 1 })[0] : undefined;
   const meta = verificationMeta(p.verificationLevel);
   const isUnclaimed = p.claimStatus === 'unclaimed' || p.claimStatus === 'claim_pending';
+
+  // Real, non-fabricated highlight facts only — each one true or omitted,
+  // never a placeholder. Deliberately excludes verification level and
+  // recommend %, both already shown once (hero badge; rating glance card)
+  // — repeating them here would be the same fact twice, not a new one.
+  const highlights: Array<{ mark: string; label: string; caption: string }> = [];
+  if (p.yearsExperience) {
+    highlights.push({
+      mark: '✓', label: `${p.yearsExperience} years at the Bar`,
+      caption: p.enrolmentYear ? `Enrolled ${p.enrolmentYear}` : 'Per the Bar Council register',
+    });
+  }
+  if (availabilityDays.some((d) => d.count > 0)) {
+    highlights.push({ mark: '◆', label: 'Accepting new consultations', caption: 'Slots open this week' });
+  }
+  if (fees.length > 0) {
+    highlights.push({ mark: '✓', label: 'Fees published', caption: `${fees.length} service${fees.length === 1 ? '' : 's'} listed, before you book` });
+  }
+  if (detail && detail.chambers.length > 0) {
+    highlights.push({
+      mark: '✓', label: `${detail.chambers.length} court${detail.chambers.length === 1 ? '' : 's'} of practice`,
+      caption: detail.chambers[0]?.courtName ?? 'See courts and chambers',
+    });
+  }
+
+  const tabs = [
+    { href: '#overview', label: 'Overview' },
+    { href: '#practice', label: 'Practice areas' },
+    { href: '#fees', label: 'Fees' },
+    ...(flags.FEATURE_REVIEWS ? [{ href: '#reviews', label: 'Reviews' }] : []),
+    ...(profileResources.length > 0 ? [{ href: '#resources', label: 'Resources' }] : []),
+  ];
 
   /* Structured data. Only sourced, factual fields — no aggregateRating, because
      we publish no ratings, and asserting one would be fabrication. */
@@ -82,109 +122,17 @@ export default async function ProfilePage({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {/* ------------------------------------------------------------- hero */}
-      <section className="container section-tight">
+      <section className="container section-tight" style={{ paddingBottom: 0 }}>
         <nav aria-label="Breadcrumb" className="t-caption" style={{ marginBottom: 16 }}>
           <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
           <Link href="/search">Professionals</Link> <span aria-hidden="true">/</span>{' '}
           <span aria-current="page">{p.displayName}</span>
         </nav>
-
-        <div className="card" style={{ padding: 'clamp(20px, 4vw, 32px)' }}>
-          <div className="profile-hero">
-            <Avatar name={p.displayName} src={p.photoUrl} size={128} priority />
-
-            <div className="stack gap-3" style={{ minWidth: 0 }}>
-              <div className="stack gap-2">
-                <h1 className="t-headline-lg">{p.displayName}</h1>
-                {p.bodyRole && <p className="t-body-lg ink-variant">{p.bodyRole}</p>}
-              </div>
-
-              <div className="row wrap gap-2">
-                <KindChip kind={p.kind} />
-                <VerificationBadge level={p.verificationLevel} />
-                <ClaimChip status={p.claimStatus} />
-              </div>
-
-              <dl className="fact-grid">
-                {p.professionalBodyName && (
-                  <div><dt>Bar Council</dt><dd>{p.professionalBodyName}</dd></div>
-                )}
-                {p.jurisdictionName && (
-                  <div><dt>Jurisdiction</dt><dd>{p.jurisdictionName}</dd></div>
-                )}
-                {p.locationName && (
-                  <div><dt>Based in</dt><dd>{p.locationName}</dd></div>
-                )}
-                {p.enrolmentYear && (
-                  <div><dt>Enrolled</dt><dd>{p.enrolmentYear}</dd></div>
-                )}
-                <div><dt>Register checked</dt><dd>{relativeDate(p.lastVerifiedAt)}</dd></div>
-              </dl>
-
-              <div className="row wrap gap-2">
-                {p.acceptsConsultations ? (
-                  <>
-                    <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary">
-                      Book a consultation
-                      {fsum?.minConsultMinor != null && ` · from ${formatMinor(fsum.minConsultMinor, fsum.currencyCode)}`}
-                    </Link>
-                    <Link href={`/advocates/${p.slug}/consult`} className="btn btn-secondary">Send an enquiry instead</Link>
-                  </>
-                ) : (
-                  <span className="btn btn-secondary" aria-disabled="true" title="This professional has not enabled consultation requests">
-                    Not accepting requests
-                  </span>
-                )}
-                {isUnclaimed && (
-                  <Link href={`/advocates/${p.slug}/claim`} className="btn btn-navy">Is this you? Claim this profile</Link>
-                )}
-                <Link href={`/legal/data-request?profile=${p.slug}`} className="btn btn-ghost btn-sm">
-                  Report an inaccuracy
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
-
-      {/* --------------------------------------------- rating glance strip
-          Shown immediately under the hero, mirroring where review-marketplace
-          profiles put trust signals — but only once there is a real number:
-          `early`/`established` are the only bands with a computed
-          overallSatisfaction (see summarizeSubject). `none`/`new` show
-          nothing here rather than a hollow card, and are explained in full
-          by ReviewSection further down — one honest message, not two. */}
-      {flags.FEATURE_REVIEWS && (reviewSummary.band === 'early' || reviewSummary.band === 'established') && (
-        <section className="container section-tight" style={{ paddingTop: 0 }}>
-          <Link href="#reviews" className="card row wrap gap-4" style={{ padding: 20, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
-            <span className="row gap-2" style={{ alignItems: 'baseline' }}>
-              <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-                {reviewSummary.overallSatisfaction}
-              </strong>
-              <span className="t-body ink-variant">/ 5</span>
-            </span>
-            <span className="stack" style={{ gap: 0 }}>
-              <strong className="t-title-sm">{experienceLabel(reviewSummary.overallSatisfaction ?? null)}</strong>
-              <span className="t-caption">
-                {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}
-                {reviewSummary.band === 'early' && ' · early feedback'}
-              </span>
-            </span>
-            {reviewSummary.recommendPercent != null && (
-              <span className="stack" style={{ gap: 0 }}>
-                <strong className="t-title-sm">{reviewSummary.recommendPercent}%</strong>
-                <span className="t-caption">would recommend</span>
-              </span>
-            )}
-            <span className="t-caption" style={{ marginLeft: 'auto', textDecoration: 'underline' }}>Read experiences</span>
-          </Link>
-        </section>
-      )}
 
       {/* ------------------------------------------------- unclaimed notice */}
       {isUnclaimed && (
-        <section className="container">
+        <section className="container section-tight" style={{ paddingBottom: 0 }}>
           <Notice tone="warn" title="This profile has not been confirmed by the professional">
             {LEGAL_COPY.unclaimedProfile}{' '}
             <Link href={`/advocates/${p.slug}/claim`} style={{ textDecoration: 'underline' }}>Claim it</Link>{' '}
@@ -195,11 +143,92 @@ export default async function ProfilePage({
       )}
 
       <div className="container section-tight">
+        {/* Two-column from the very top: profile content on the left, a
+            sticky booking widget on the right — the widget is the primary
+            action, not an afterthought at the bottom of a sidebar. */}
         <div className="profile-layout">
           {/* ------------------------------------------------------ main col */}
-          <div className="stack gap-6" style={{ minWidth: 0 }}>
+          <div className="stack gap-6" style={{ minWidth: 0 }} id="overview">
+            {/* compact hero: identity only. Booking lives in the sidebar widget,
+                so this card doesn't repeat it. */}
+            <div className="card" style={{ padding: 'clamp(20px, 4vw, 32px)' }}>
+              <div className="profile-hero">
+                <Avatar name={p.displayName} src={p.photoUrl} size={112} priority />
+                <div className="stack gap-2" style={{ minWidth: 0 }}>
+                  <h1 className="t-headline-lg">{p.displayName}</h1>
+                  {p.bodyRole && <p className="t-body-lg ink-variant">{p.bodyRole}</p>}
+                  <div className="row wrap gap-2">
+                    <KindChip kind={p.kind} />
+                    <VerificationBadge level={p.verificationLevel} />
+                    <ClaimChip status={p.claimStatus} />
+                  </div>
+                  <p className="t-caption ink-variant">
+                    {[p.locationName, p.jurisdictionName].filter(Boolean).join(' · ')}
+                    {p.locationName || p.jurisdictionName ? ' · ' : ''}Register checked {relativeDate(p.lastVerifiedAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* rating glance — real number only; see hasReviewScore above */}
+            {flags.FEATURE_REVIEWS && hasReviewScore && (
+              <div className="card stack gap-3" style={{ padding: 20 }}>
+                <div className="row wrap gap-4" style={{ alignItems: 'baseline' }}>
+                  <span className="row gap-2" style={{ alignItems: 'baseline' }}>
+                    <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+                      {reviewSummary.overallSatisfaction}
+                    </strong>
+                    <span className="t-body ink-variant">/ 5</span>
+                  </span>
+                  <span className="stack" style={{ gap: 0 }}>
+                    <strong className="t-title-sm">{experienceLabel(reviewSummary.overallSatisfaction ?? null)}</strong>
+                    <span className="t-caption">
+                      {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}
+                      {reviewSummary.band === 'early' && ' · early feedback'}
+                    </span>
+                  </span>
+                  {reviewSummary.recommendPercent != null && (
+                    <span className="stack" style={{ gap: 0 }}>
+                      <strong className="t-title-sm">{reviewSummary.recommendPercent}%</strong>
+                      <span className="t-caption">would recommend</span>
+                    </span>
+                  )}
+                  <Link href="#reviews" className="t-caption" style={{ marginLeft: 'auto', textDecoration: 'underline' }}>See all experiences</Link>
+                </div>
+                {topReview && (
+                  <ReviewCard
+                    review={{ ...topReview, overallSatisfaction: topReview.ratings.overallSatisfaction, edited: topReview.edited }}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* highlights — only real, non-repeated facts; see computation above */}
+            {highlights.length > 0 && (
+              <div className="grid-auto">
+                {highlights.map((h) => (
+                  <div key={h.label} className="row gap-3" style={{ alignItems: 'flex-start' }}>
+                    <span aria-hidden="true" style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: '1.1rem', flex: 'none' }}>{h.mark}</span>
+                    <span className="stack" style={{ gap: 2 }}>
+                      <strong className="t-body-sm">{h.label}</strong>
+                      <span className="t-caption ink-variant">{h.caption}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* section tab bar — real anchors to sections below, not JS tabs,
+                so every one of them stays a plain, shareable, deep-linkable
+                URL fragment even with JavaScript disabled. */}
+            <nav aria-label="Profile sections" className="row wrap gap-1" style={{ borderBottom: '1px solid var(--outline-variant)', paddingBottom: 4 }}>
+              {tabs.map((t) => (
+                <a key={t.href} href={t.href} className="chip chip-button chip-outline">{t.label}</a>
+              ))}
+            </nav>
+
             {/* practice areas */}
-            <section className="stack gap-3">
+            <section className="stack gap-3" id="practice">
               <h2 className="t-headline-md">Practice areas</h2>
               {p.practiceAreas.length > 0 ? (
                 <>
@@ -407,7 +436,7 @@ export default async function ProfilePage({
             )}
 
             {profileResources.length > 0 && (
-              <section className="stack gap-3">
+              <section className="stack gap-3" id="resources">
                 <div className="row gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <h2 className="t-headline-md">Free documents for these matters</h2>
                   <Link href="/resources" className="btn btn-secondary btn-sm">All resources</Link>
@@ -445,6 +474,40 @@ export default async function ProfilePage({
 
           {/* ----------------------------------------------------- side col */}
           <aside className="stack gap-4" style={{ minWidth: 0 }}>
+            {/* primary action widget — first thing in the sidebar, sticky,
+                so it is visible alongside whichever section the visitor has
+                scrolled to, exactly like the booking widget it is modelled on. */}
+            <div className="card stack gap-3" style={{ padding: 20 }}>
+              <h2 className="t-title">Book a consultation</h2>
+              {p.acceptsConsultations ? (
+                <>
+                  {fsum?.minConsultMinor != null && (
+                    <p className="t-body-sm">
+                      From <strong>{formatMinor(fsum.minConsultMinor, fsum.currencyCode)}</strong> for a first consultation
+                    </p>
+                  )}
+                  {availabilityDays.length > 0 && (
+                    <>
+                      <AvailabilityStrip days={availabilityDays} slug={p.slug} max={9} />
+                      <p className="t-caption">Slot counts shown; exact times and timezone appear on the booking page.</p>
+                    </>
+                  )}
+                  <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary btn-block">Book a consultation</Link>
+                  <Link href={`/advocates/${p.slug}/consult`} className="btn btn-secondary btn-block">Send an enquiry instead</Link>
+                </>
+              ) : (
+                <span className="btn btn-secondary btn-block" aria-disabled="true" title="This professional has not enabled consultation requests">
+                  Not accepting requests
+                </span>
+              )}
+              {isUnclaimed && (
+                <Link href={`/advocates/${p.slug}/claim`} className="btn btn-navy btn-block">Is this you? Claim this profile</Link>
+              )}
+              <Link href={`/legal/data-request?profile=${p.slug}`} className="t-caption" style={{ textAlign: 'center', textDecoration: 'underline' }}>
+                Report an inaccuracy
+              </Link>
+            </div>
+
             {/* provenance — the trust core of the product (spec §60) */}
             <div className="card stack gap-3" style={{ padding: 18 }}>
               <h2 className="t-title">Where this came from</h2>
@@ -506,16 +569,6 @@ export default async function ProfilePage({
                 })}
               </ol>
             </div>
-
-            {/* next availability */}
-            {availabilityDays.length > 0 && (
-              <div className="card stack gap-2" style={{ padding: 18 }}>
-                <h2 className="t-title">Next available</h2>
-                <AvailabilityStrip days={availabilityDays} slug={p.slug} max={9} />
-                <p className="t-caption">Slot counts shown; exact times and timezone appear on the booking page.</p>
-                <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary btn-sm btn-block">See all times</Link>
-              </div>
-            )}
 
             {/* languages */}
             {p.languages.length > 0 && (
