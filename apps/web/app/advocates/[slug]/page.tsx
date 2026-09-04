@@ -16,6 +16,7 @@ import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexh
 import { ReviewSection, experienceLabel } from '@/components/ReviewSection';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ProfileTabs } from '@/components/ProfileTabs';
+import { ShareProfileButton } from '@/components/ShareProfileButton';
 import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -100,6 +101,7 @@ export default async function ProfilePage({
 
   const tabs = [
     { href: '#overview', label: 'Overview' },
+    ...(detail?.bio ? [{ href: '#about', label: 'About' }] : []),
     { href: '#practice', label: 'Practice areas' },
     { href: '#fees', label: 'Fees' },
     ...(flags.FEATURE_REVIEWS ? [{ href: '#reviews', label: 'Reviews' }] : []),
@@ -156,7 +158,10 @@ export default async function ProfilePage({
               <div className="profile-hero">
                 <Avatar name={p.displayName} src={p.photoUrl} size={112} priority />
                 <div className="stack gap-2" style={{ minWidth: 0 }}>
-                  <h1 className="t-headline-lg">{p.displayName}</h1>
+                  <div className="row wrap gap-2" style={{ justifyContent: 'space-between' }}>
+                    <h1 className="t-headline-lg">{p.displayName}</h1>
+                    <ShareProfileButton name={p.displayName} path={`/advocates/${p.slug}`} />
+                  </div>
                   {p.bodyRole && <p className="t-body-lg ink-variant">{p.bodyRole}</p>}
                   <div className="row wrap gap-2">
                     <KindChip kind={p.kind} />
@@ -223,6 +228,19 @@ export default async function ProfilePage({
                 underline tracks scroll position, it does not gate navigation
                 (see ProfileTabs). */}
             <ProfileTabs tabs={tabs} />
+
+            {/* about — the professional's own words, self-declared like the
+                practice areas below, shown only when they have actually
+                written one (bio is a real, currently-empty-by-default column;
+                most profiles will not have this section, which is correct —
+                it is not filled with a generated placeholder). */}
+            {detail?.bio && (
+              <section className="stack gap-3" id="about">
+                <h2 className="t-headline-md">About {p.displayName}</h2>
+                <p className="t-body" style={{ whiteSpace: 'pre-wrap' }}>{detail.bio}</p>
+                <p className="t-caption"><EvidenceChip basis="self_declared" /> Written by the professional.</p>
+              </section>
+            )}
 
             {/* practice areas */}
             <section className="stack gap-3" id="practice">
