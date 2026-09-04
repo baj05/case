@@ -7,12 +7,13 @@ import { ResultCard } from '@/components/ResultCard';
 import { ResourceCard } from '@/components/ResourceCard';
 import { Notice } from '@/components/States';
 import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter, getReviewSummary, getReviews } from '@/lib/data';
-import { listFees, feeSummary, formatMinor, generateSlots } from '@lexhall/db';
+import { listFees, feeSummary, formatMinor, nextAvailabilityDays } from '@lexhall/db';
+import { AvailabilityStrip } from '@/components/AvailabilityStrip';
 import type { ReviewFilter, ReviewSort } from '@lexhall/db';
 import { formatDate, relativeDate, searchHref, COURT_TIER_LABEL } from '@/lib/format';
 import { LEGAL_COPY } from '@/lib/brand';
 import { verificationMeta, VERIFICATION_LEVELS, CONSULTATION_MODES } from '@lexhall/core';
-import { ReviewSection } from '@/components/ReviewSection';
+import { ReviewSection, experienceLabel } from '@/components/ReviewSection';
 import { currentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,8 @@ export default async function ProfilePage({
   const flags = getFlags();
   const fees = listFees(p.id);
   const fsum = feeSummary(p.id);
-  const nextSlots = p.acceptsConsultations ? generateSlots(p.id, new Date().toISOString(), 14).slice(0, 4) : [];
+  const availabilityDays = p.acceptsConsultations ? nextAvailabilityDays(p.id) : [];
+  const reviewSummary = getReviewSummary(p.id);
   const meta = verificationMeta(p.verificationLevel);
   const isUnclaimed = p.claimStatus === 'unclaimed' || p.claimStatus === 'claim_pending';
 
@@ -145,6 +147,40 @@ export default async function ProfilePage({
           </div>
         </div>
       </section>
+
+      {/* --------------------------------------------- rating glance strip
+          Shown immediately under the hero, mirroring where review-marketplace
+          profiles put trust signals — but only once there is a real number:
+          `early`/`established` are the only bands with a computed
+          overallSatisfaction (see summarizeSubject). `none`/`new` show
+          nothing here rather than a hollow card, and are explained in full
+          by ReviewSection further down — one honest message, not two. */}
+      {flags.FEATURE_REVIEWS && (reviewSummary.band === 'early' || reviewSummary.band === 'established') && (
+        <section className="container section-tight" style={{ paddingTop: 0 }}>
+          <Link href="#reviews" className="card row wrap gap-4" style={{ padding: 20, alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+            <span className="row gap-2" style={{ alignItems: 'baseline' }}>
+              <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+                {reviewSummary.overallSatisfaction}
+              </strong>
+              <span className="t-body ink-variant">/ 5</span>
+            </span>
+            <span className="stack" style={{ gap: 0 }}>
+              <strong className="t-title-sm">{experienceLabel(reviewSummary.overallSatisfaction ?? null)}</strong>
+              <span className="t-caption">
+                {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}
+                {reviewSummary.band === 'early' && ' · early feedback'}
+              </span>
+            </span>
+            {reviewSummary.recommendPercent != null && (
+              <span className="stack" style={{ gap: 0 }}>
+                <strong className="t-title-sm">{reviewSummary.recommendPercent}%</strong>
+                <span className="t-caption">would recommend</span>
+              </span>
+            )}
+            <span className="t-caption" style={{ marginLeft: 'auto', textDecoration: 'underline' }}>Read experiences</span>
+          </Link>
+        </section>
+      )}
 
       {/* ------------------------------------------------- unclaimed notice */}
       {isUnclaimed && (
@@ -330,7 +366,7 @@ export default async function ProfilePage({
               {flags.FEATURE_REVIEWS ? (
                 <ReviewSection
                   basePath="/advocates" slug={p.slug}
-                  summary={getReviewSummary(p.id)} reviews={getReviews(p.id, { filter: reviewFilter, sort: reviewSort, limit: 20 })}
+                  summary={reviewSummary} reviews={getReviews(p.id, { filter: reviewFilter, sort: reviewSort, limit: 20 })}
                   currentUserId={user?.id} isAdmin={user?.platformRole === 'platform_admin'}
                   filter={reviewFilter} sort={reviewSort}
                 />
@@ -472,21 +508,11 @@ export default async function ProfilePage({
             </div>
 
             {/* next availability */}
-            {nextSlots.length > 0 && (
+            {availabilityDays.length > 0 && (
               <div className="card stack gap-2" style={{ padding: 18 }}>
                 <h2 className="t-title">Next available</h2>
-                {nextSlots.map((s2) => (
-                  <div key={s2.startUtc} className="row gap-2" style={{ justifyContent: 'space-between' }}>
-                    <span className="t-body-sm">
-                      {new Date(s2.startUtc).toLocaleString('en-IN', {
-                        timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short',
-                        hour: '2-digit', minute: '2-digit', hour12: true,
-                      })}
-                    </span>
-                    <span className="t-caption" style={{ textTransform: 'capitalize' }}>{s2.mode.replace(/_/g, ' ')}</span>
-                  </div>
-                ))}
-                <p className="t-caption">Shown in India Standard Time. The booking page uses your own timezone.</p>
+                <AvailabilityStrip days={availabilityDays} slug={p.slug} max={9} />
+                <p className="t-caption">Slot counts shown; exact times and timezone appear on the booking page.</p>
                 <Link href={`/advocates/${p.slug}/book`} className="btn btn-primary btn-sm btn-block">See all times</Link>
               </div>
             )}

@@ -11,7 +11,7 @@ const DIMENSIONS: Array<{ key: 'communication' | 'responsiveness' | 'professiona
 ];
 
 /** Qualitative label for the overall score — never just a bare number. */
-function experienceLabel(score: number | null): string {
+export function experienceLabel(score: number | null): string {
   if (score == null) return '';
   if (score >= 4.6) return 'Excellent experience';
   if (score >= 4.0) return 'Very good experience';
