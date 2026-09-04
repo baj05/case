@@ -953,6 +953,13 @@ ul, ol { list-style: none; padding: 0; }
 .result-card:hover { border-color: var(--outline); box-shadow: var(--shadow-md); }
 @media (max-width: 520px) { .result-card { padding: 14px; gap: 12px; } }
 
+/* Profile facts (left) vs. availability + book (right) — stacks under 860px
+   rather than squeezing a day-strip into a narrow column. */
+.result-card-body { display: grid; grid-template-columns: 1fr; gap: 16px; min-width: 0; }
+@media (min-width: 860px) {
+  .result-card-body { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
+}
+
 /* --- filter panel ----------------------------------------------------- */
 .filter-group { border-bottom: 1px solid var(--outline-variant); padding-block: 14px; }
 .filter-group:last-child { border-bottom: 0; }

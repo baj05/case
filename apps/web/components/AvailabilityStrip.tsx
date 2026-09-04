@@ -14,10 +14,18 @@ const DATE_LABEL = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'nume
  * greyed-out rather than omitted, so "nothing soon" is a visible fact, not a
  * gap the viewer has to guess at.
  *
- * Shared between the Advo AI shortlist card and the advocate profile
- * sidebar, so both surfaces show availability the same way.
+ * Shared between the Advo AI shortlist card, the advocate profile sidebar,
+ * and the search results list, so every surface shows availability the
+ * same way.
  */
-export function AvailabilityStrip({ days, slug, max = 6 }: { days: AvailabilityDay[]; slug: string; max?: number }) {
+export function AvailabilityStrip({ days, slug, max = 6, onSelectDay }: {
+  days: AvailabilityDay[]; slug: string; max?: number;
+  /** When given, a day with slots calls this instead of navigating to the
+   * booking page — e.g. the search results list opens a booking drawer
+   * in place rather than leaving the list. Days with zero slots are never
+   * clickable either way; there is nothing to book that day. */
+  onSelectDay?: (date: string) => void;
+}) {
   if (days.length === 0) return null;
   return (
     <div className="row gap-1" style={{ overflowX: 'auto', paddingBottom: 2 }}>
@@ -27,6 +35,7 @@ export function AvailabilityStrip({ days, slug, max = 6 }: { days: AvailabilityD
           borderRadius: 'var(--r-sm)', textDecoration: 'none',
           background: d.count > 0 ? 'var(--electric-lime)' : 'var(--surface-container)',
           color: d.count > 0 ? 'var(--on-lime)' : 'var(--on-surface-variant)',
+          border: 'none', font: 'inherit', cursor: d.count > 0 ? 'pointer' : 'default',
         };
         const label = DAY_LABEL.format(new Date(`${d.date}T00:00:00Z`));
         const date = DATE_LABEL.format(new Date(`${d.date}T00:00:00Z`));
@@ -38,6 +47,15 @@ export function AvailabilityStrip({ days, slug, max = 6 }: { days: AvailabilityD
               <span className="t-caption">{date}</span>
               <span className="t-caption">{countLabel}</span>
             </div>
+          );
+        }
+        if (onSelectDay) {
+          return (
+            <button key={d.date} type="button" className="stack gap-0" style={cellStyle} onClick={() => onSelectDay(d.date)}>
+              <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
+              <span className="t-caption">{date}</span>
+              <span className="t-caption">{countLabel}</span>
+            </button>
           );
         }
         return (

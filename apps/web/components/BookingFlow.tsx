@@ -36,13 +36,19 @@ function money(minor: number, currency: string): string {
  * mistaken for the total.
  */
 export function BookingFlow({
-  slug, professionalName, slots, fees, areas, chamberAddress = null,
+  slug, professionalName, slots, fees, areas, chamberAddress = null, initialDate = null,
 }: {
   slug: string; professionalName: string;
   slots: SlotDTO[]; fees: FeeDTO[]; areas: AreaDTO[];
   /** The professional's published office address, when they have one. Never
    * invented — see chamberAddressNotice for what is shown when it is absent. */
   chamberAddress?: string | null;
+  /** Pre-select this day (YYYY-MM-DD, local calendar date) instead of the
+   * earliest available one — set when the flow was opened from a specific
+   * day's availability chip (e.g. the search results drawer) rather than
+   * a plain "book" link. Falls back to the earliest day if this date turns
+   * out to have no eligible slots for the chosen fee. */
+  initialDate?: string | null;
 }) {
   const [state, formAction] = useActionState(submitBooking, null);
   const err = state?.fieldErrors ?? {};
@@ -75,7 +81,9 @@ export function BookingFlow({
   }, [eligible, timezone]);
 
   const days = [...byDay.keys()].sort();
-  const [day, setDay] = useState<string | null>(days[0] ?? null);
+  const [day, setDay] = useState<string | null>(
+    (initialDate && days.includes(initialDate)) ? initialDate : (days[0] ?? null),
+  );
   const [slot, setSlot] = useState<SlotDTO | null>(null);
   const [step, setStep] = useState(0);
 
