@@ -1052,16 +1052,26 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 @media (min-width: 1240px) { .state-map-card { display: block; } }
 .state-map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-.state-map-svg { width: 100%; aspect-ratio: 1 / 1; overflow: visible; }
-.state-map-dot {
-  fill: var(--secondary); fill-opacity: 0.16; stroke: var(--secondary); stroke-width: 0.6;
-  cursor: pointer; transition: fill-opacity var(--t-fast, 120ms) ease, transform var(--t-fast, 120ms) ease;
-  transform-box: fill-box; transform-origin: center;
-}
-.state-map-dot:hover, .state-map-dot.is-hover { fill-opacity: 0.32; transform: scale(1.12); }
-.state-map-dot.is-active { fill: var(--primary); stroke: var(--primary); fill-opacity: 0.85; }
-.state-map-dot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.state-map-leaflet { width: 100%; height: 340px; border-radius: var(--r); overflow: hidden; background: var(--surface-low); }
 .state-map-note { margin-top: 10px; }
+
+/* Leaflet chrome, restyled to this site's palette instead of its own blue defaults. */
+.state-map-leaflet .leaflet-control-zoom a {
+  background: var(--surface-lowest); color: var(--on-surface); border-color: var(--outline-variant);
+}
+.state-map-leaflet .leaflet-control-attribution {
+  background: rgba(250, 248, 255, 0.85); font-size: 10px; color: var(--on-surface-variant);
+}
+
+/* Custom marker: a plain div (no default Leaflet pin), so no icon assets to
+   ship and no visual trace of Leaflet's or anyone else's default pin shape. */
+.map-marker {
+  background: var(--secondary); opacity: 0.82; border: 2px solid var(--surface-lowest);
+  border-radius: 50%; box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+.map-marker:hover { opacity: 1; transform: scale(1.12); }
+.map-marker.is-active { background: var(--primary); opacity: 1; }
 
 /* --- profile page ------------------------------------------------------ */
 .profile-hero { display: grid; gap: 20px; grid-template-columns: 1fr; }
