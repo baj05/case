@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Avatar } from './Avatar';
-import { VerificationBadge, KindChip } from './Badges';
+import { VerificationBadge, ClaimChip, KIND_LABEL } from './Badges';
 import { MatchScore } from './MatchScore';
 import { ResultBooking } from './ResultBooking';
 import { relativeDate } from '@/lib/format';
@@ -44,20 +44,53 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
       <div className="result-card-body">
         {/* -------------------------------------------------- left: profile */}
         <div className="stack gap-2" style={{ minWidth: 0 }}>
-          <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div className="stack gap-1" style={{ minWidth: 0 }}>
-              <h3 className="t-title">
-                <Link href={`/advocates/${p.slug}`} style={{ textDecoration: 'none' }}>{p.displayName}</Link>
-              </h3>
-              {p.bodyRole && <p className="t-body-sm ink-variant clamp-2">{p.bodyRole}</p>}
-            </div>
-            <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} compact />
+          {/* Status badge sits above the name — the one thing worth leading
+              with, and never a paid-placement label: no listing here is
+              ever ranked or marked for a fee (spec — no "Sponsored" tag). */}
+          <div className="row wrap gap-2" style={{ alignItems: 'center' }}>
+            <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} />
+            {p.claimStatus === 'claimed' && <ClaimChip status={p.claimStatus} />}
           </div>
 
-          <div className="row wrap gap-2">
-            <KindChip kind={p.kind} />
-            {p.locationName && <span className="chip chip-outline">{p.locationName}</span>}
-            {p.professionalBodyShort && <span className="chip chip-outline">Bar Council of {p.professionalBodyShort}</span>}
+          <div className="stack gap-1" style={{ minWidth: 0 }}>
+            <h3 className="t-title">
+              <Link href={`/advocates/${p.slug}`} style={{ textDecoration: 'none' }}>{p.displayName}</Link>
+            </h3>
+            {p.bodyRole && <p className="t-body-sm ink-variant clamp-2">{p.bodyRole}</p>}
+          </div>
+
+          {/* Real client feedback only — never a manufactured star rating. */}
+          {reviewSummary && !reviewSummary.insufficientSample && (
+            <p className="row gap-1" style={{ alignItems: 'center' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.5l2.47 5.18 5.53.65-4.08 3.9 1.06 5.6L12 15.9l-5-2.87 1.06-5.6-4.08-3.9 5.53-.65L12 3.5z" fill="var(--action-orange)" />
+              </svg>
+              <span className="t-body-sm" style={{ fontWeight: 600 }}>{reviewSummary.overallSatisfaction}</span>
+              <span className="t-body-sm ink-variant">· {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}</span>
+            </p>
+          )}
+
+          {p.locationName && (
+            <p className="row gap-1 t-body-sm ink-variant" style={{ alignItems: 'center' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z" stroke="currentColor" strokeWidth="1.7" />
+                <circle cx="12" cy="9.5" r="2.3" stroke="currentColor" strokeWidth="1.7" />
+              </svg>
+              {p.locationName}
+              {p.jurisdictionName && p.jurisdictionName !== p.locationName ? `, ${p.jurisdictionName}` : ''}
+            </p>
+          )}
+
+          {/* Credential-style badges: real Bar Council body, kind, courts,
+              declared practice areas — the honest equivalent of the
+              affiliation badges a medical directory would show. */}
+          <div className="row wrap gap-1">
+            <span className="badge-credential"><KindIcon />{KIND_LABEL[p.kind]}</span>
+            {p.professionalBodyShort && <span className="badge-credential"><BadgeIcon />Bar Council of {p.professionalBodyShort}</span>}
+            {primaryCourts.map((c) => (
+              <span key={c.id} className="badge-credential"><CourtIcon />{c.shortName ?? c.name}</span>
+            ))}
+            {p.courts.length > 3 && <span className="badge-credential">+{p.courts.length - 3} more courts</span>}
           </div>
 
           {p.practiceAreas.length > 0 ? (
@@ -69,14 +102,6 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
           ) : (
             <p className="t-caption">
               Practice areas not stated — they appear once this professional claims the profile.
-            </p>
-          )}
-
-          {primaryCourts.length > 0 && (
-            <p className="t-body-sm ink-variant">
-              <span className="t-label-mono">Courts </span>
-              {primaryCourts.map((c) => c.shortName ?? c.name).join(' · ')}
-              {p.courts.length > 3 && ` +${p.courts.length - 3}`}
             </p>
           )}
 
@@ -104,14 +129,6 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
               <span className="fact-item">
                 <span className="fact-label">Filing charges</span>
                 <span className="fact-value">Published</span>
-              </span>
-            )}
-            {reviewSummary && !reviewSummary.insufficientSample && (
-              <span className="fact-item">
-                <span className="fact-label">Client rated</span>
-                <span className="fact-value">
-                  {reviewSummary.overallSatisfaction} · {reviewSummary.count} experience{reviewSummary.count === 1 ? '' : 's'}
-                </span>
               </span>
             )}
           </div>
@@ -158,5 +175,28 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
         )}
       </div>
     </article>
+  );
+}
+
+function KindIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v18M5 7l-3 6a3 3 0 0 0 6 0l-3-6zm14 0l-3 6a3 3 0 0 0 6 0l-3-6zM4 7h16M9 3h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function BadgeIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M9 13.5L7 21l5-2.5 5 2.5-2-7.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CourtIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 21h16M5 21V10M19 21V10M3 10l9-5 9 5M8 10v7M12 10v7M16 10v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

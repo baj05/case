@@ -963,6 +963,14 @@ ul, ol { list-style: none; padding: 0; }
 .avail-cell-more span:first-child { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: var(--on-surface); }
 .avail-cell-more:hover { border-color: var(--outline); }
 
+/* --- credential badge (result card affiliation row) --------------------- */
+.badge-credential {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: var(--r-sm);
+  background: var(--secondary-container); color: var(--on-secondary-container);
+  font-size: 0.75rem; font-weight: 600; line-height: 1.2;
+}
+
 /* --- result card ------------------------------------------------------ */
 .result-card {
   display: grid;

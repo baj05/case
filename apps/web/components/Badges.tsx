@@ -29,7 +29,7 @@ export function VerificationBadge({
   );
 }
 
-const KIND_LABEL: Record<ProfessionalKind, string> = {
+export const KIND_LABEL: Record<ProfessionalKind, string> = {
   advocate: 'Advocate',
   senior_advocate: 'Senior Advocate',
   law_firm: 'Law firm',
