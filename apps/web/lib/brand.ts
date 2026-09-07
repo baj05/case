@@ -14,14 +14,20 @@ export const BRAND = {
 /** Copy that carries legal weight, kept in one place for counsel to review. */
 export const LEGAL_COPY = {
   noEndorsement:
-    'Listings are compiled from official public registers. Inclusion is not a recommendation, '
-    + 'endorsement or comparison of any professional, and no fee is charged for placement.',
+    'Listings are compiled from official public registers and public case records, with source '
+    + 'attribution on every profile. Inclusion is not a recommendation, endorsement or comparison of '
+    + 'any professional, and no fee is charged for placement.',
   notAdvice:
     'Information on this platform is general and is not legal advice. Only a qualified legal '
     + 'professional who has considered your circumstances can advise you.',
   unclaimedProfile:
     'This profile was compiled from an official public register and has not yet been confirmed by '
     + 'the professional. Details may be out of date.',
+  /** Same notice, worded for a profile sourced from a public case record rather than a Bar Council
+   * register — the two provenances carry different weight and must not be described the same way. */
+  unclaimedProfileFromCaseRecord:
+    'This profile was compiled from a name appearing in a public case record, not a Bar Council '
+    + 'register, and has not yet been confirmed by the professional. Details may be incomplete.',
   reviewsGated:
     'Reviews are not published on this platform pending completion of a professional-conduct and '
     + 'data-protection review.',

@@ -8,11 +8,21 @@ import type { ClaimStatus, ProfessionalKind } from '@lexhall/core';
  * (WCAG 1.4.1). The tooltip states exactly what was checked — a badge that
  * cannot explain itself is decoration, and spec §140 forbids that.
  */
-export function VerificationBadge({ level, compact = false }: { level: number; compact?: boolean }) {
+export function VerificationBadge({
+  level, compact = false, sourceAuthority = null,
+}: { level: number; compact?: boolean; sourceAuthority?: string | null }) {
   const meta = verificationMeta(level);
   const icon = level >= 3 ? '✓' : level >= 1 ? '◐' : '○';
+  // Level 0's default copy says "an official register" — true for Bar Council
+  // sourced records, not for a name pulled from a public case listing. Only
+  // the tooltip changes; the badge label stays generic at every level.
+  const isOfficialSource = sourceAuthority === 'official_regulator'
+    || sourceAuthority === 'official_court' || sourceAuthority === 'government';
+  const checked = meta.level === 0 && sourceAuthority && !isOfficialSource
+    ? 'Name appears in a public case record. Not a Bar Council listing, and not yet confirmed by the professional.'
+    : meta.checked;
   return (
-    <span className={`verif verif-${meta.level}`} title={meta.checked}>
+    <span className={`verif verif-${meta.level}`} title={checked}>
       <span aria-hidden="true">{icon}</span>
       <span>{compact && meta.level === 0 ? 'From public record' : meta.label}</span>
     </span>

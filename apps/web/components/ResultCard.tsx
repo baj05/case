@@ -51,7 +51,7 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
               </h3>
               {p.bodyRole && <p className="t-body-sm ink-variant clamp-2">{p.bodyRole}</p>}
             </div>
-            <VerificationBadge level={p.verificationLevel} compact />
+            <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} compact />
           </div>
 
           <div className="row wrap gap-2">

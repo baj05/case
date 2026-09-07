@@ -24,8 +24,8 @@ export default function ForProfessionalsPage() {
         </h1>
         <p className="t-body-lg ink-variant measure">
           {corpus ? `${formatNumber(corpus.professionals)} profiles` : 'Profiles'} were compiled from
-          official Bar Council registers. If one of them is you, claiming it puts you in control of
-          what it says.
+          official Bar Council registers and public case records. If one of them is you, claiming it
+          puts you in control of what it says.
         </p>
       </div>
 

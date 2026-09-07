@@ -24,8 +24,8 @@ export default async function DataRequestPage({
           <p className="t-label-mono ink-variant">Your data</p>
           <h1 className="t-headline-lg">Correct or remove your listing</h1>
           <p className="t-body ink-variant measure">
-            We compile listings from official public registers. If something is wrong, or you would
-            rather not appear, tell us and we will act on it.
+            We compile listings from official public registers and public case records. If something
+            is wrong, or you would rather not appear, tell us and we will act on it.
           </p>
         </div>
 

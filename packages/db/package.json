@@ -16,7 +16,8 @@
     "create-admin": "node scripts/create-admin.ts",
     "seed-review-demo": "node scripts/seed-review-demo.ts",
     "judicial": "node scripts/ingest-judicial-statistics.ts",
-    "ecourts": "node scripts/ingest-ecourts.ts"
+    "ecourts": "node scripts/ingest-ecourts.ts",
+    "ecourts-scrape": "node scripts/ingest-ecourts-scrape.ts"
   },
   "dependencies": {
     "@lexhall/core": "*"

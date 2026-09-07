@@ -65,6 +65,7 @@ export interface ProfessionalSummary {
   lastVerifiedAt: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+  sourceAuthority: string | null;
 }
 
 /** A ranked search hit plus the reason it ranked where it did. */

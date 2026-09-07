@@ -26,10 +26,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const p = getProfessional(slug);
   if (!p) return { title: 'Profile unavailable' };
   const where = [p.locationName, p.jurisdictionName].filter(Boolean).join(', ');
+  const isOfficial = p.sourceAuthority === 'official_regulator'
+    || p.sourceAuthority === 'official_court' || p.sourceAuthority === 'government';
   return {
     title: `${p.displayName} — ${p.kind === 'senior_advocate' ? 'Senior Advocate' : 'Advocate'}${where ? `, ${where}` : ''}`,
     description:
-      `${p.displayName}${p.bodyRole ? `, ${p.bodyRole}` : ''}. Listed from the official Bar Council register`
+      `${p.displayName}${p.bodyRole ? `, ${p.bodyRole}` : ''}. `
+      + (isOfficial ? 'Listed from the official Bar Council register' : 'Name appears in a public case record')
       + `${p.lastVerifiedAt ? `, last checked ${formatDate(p.lastVerifiedAt)}` : ''}.`,
     alternates: { canonical: `/advocates/${p.slug}` },
     robots: { index: p.claimStatus !== 'opted_out', follow: true },
@@ -74,6 +77,8 @@ export default async function ProfilePage({
   const topReview = hasReviewScore && flags.FEATURE_REVIEWS ? getReviews(p.id, { sort: 'helpful', limit: 1 })[0] : undefined;
   const meta = verificationMeta(p.verificationLevel);
   const isUnclaimed = p.claimStatus === 'unclaimed' || p.claimStatus === 'claim_pending';
+  const isOfficialSource = p.sourceAuthority === 'official_regulator'
+    || p.sourceAuthority === 'official_court' || p.sourceAuthority === 'government';
 
   // Real, non-fabricated highlight facts only — each one true or omitted,
   // never a placeholder. Deliberately excludes verification level and
@@ -140,7 +145,7 @@ export default async function ProfilePage({
       {isUnclaimed && (
         <section className="container section-tight" style={{ paddingBottom: 0 }}>
           <Notice tone="warn" title="This profile has not been confirmed by the professional">
-            {LEGAL_COPY.unclaimedProfile}{' '}
+            {isOfficialSource ? LEGAL_COPY.unclaimedProfile : LEGAL_COPY.unclaimedProfileFromCaseRecord}{' '}
             <Link href={`/advocates/${p.slug}/claim`} style={{ textDecoration: 'underline' }}>Claim it</Link>{' '}
             to confirm and complete these details, or{' '}
             <Link href={`/legal/data-request?profile=${p.slug}`} style={{ textDecoration: 'underline' }}>request a correction or removal</Link>.
@@ -168,7 +173,7 @@ export default async function ProfilePage({
                   {p.bodyRole && <p className="t-body-lg ink-variant">{p.bodyRole}</p>}
                   <div className="row wrap gap-2">
                     <KindChip kind={p.kind} />
-                    <VerificationBadge level={p.verificationLevel} />
+                    <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} />
                     <ClaimChip status={p.claimStatus} />
                   </div>
                   <p className="t-caption ink-variant">

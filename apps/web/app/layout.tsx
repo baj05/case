@@ -35,7 +35,8 @@ export const metadata: Metadata = {
   title: { default: `${BRAND.name} — ${BRAND.tagline}`, template: `%s · ${BRAND.name}` },
   description:
     'Search verified advocates, law firms and chambers by legal issue, court, jurisdiction and city. '
-    + 'Listings are compiled from official Bar Council registers with full source attribution.',
+    + 'Listings are compiled from official Bar Council registers and public case records, with full '
+    + 'source attribution.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   openGraph: { type: 'website', siteName: BRAND.name, title: BRAND.name, description: BRAND.tagline },
   robots: { index: true, follow: true },

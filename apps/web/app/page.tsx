@@ -93,7 +93,7 @@ export default async function HomePage() {
         <div className="container hero-center">
           <span className="chip chip-outline hero-badge">
             <span aria-hidden="true" style={{ color: 'var(--action-orange)' }}>●</span>
-            Built on official Bar Council registers
+            Built on official registers and public case records
           </span>
 
           <h1 className="t-display-xl hero-headline">
@@ -534,7 +534,7 @@ export default async function HomePage() {
               <span className="t-caption">Every advocate in the register, automatically</span>
               <span className="plan-price">Free</span>
               <ul className="plan-list">
-                {['Profile compiled from the official register', 'Full source attribution and freshness dates', 'Correction and removal on request', 'Appears in search on relevance alone'].map((f) => (
+                {['Profile compiled from an official register or public case record', 'Full source attribution and freshness dates', 'Correction and removal on request', 'Appears in search on relevance alone'].map((f) => (
                   <li key={f}><span className="plan-tick" aria-hidden="true">✓</span>{f}</li>
                 ))}
               </ul>

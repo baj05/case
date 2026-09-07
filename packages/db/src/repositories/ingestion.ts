@@ -5,7 +5,14 @@ import { createHash } from 'node:crypto';
 
 export interface SourceDefinition {
   code: string; name: string; publisher: string; baseUrl: string;
-  authority: 'official_regulator' | 'official_court' | 'government' | 'self_declared';
+  authority: 'official_regulator' | 'official_court' | 'government' | 'self_declared'
+    // Used by real sources already registered outside this helper (see
+    // ingest-ecourts.ts / ingest-ecourts-scrape.ts): a private aggregator,
+    // via its licensed API vs. its public pages respectively. Neither is a
+    // regulator, a court or a government publisher, and calling either one
+    // "self_declared" (normally: the professional's own claimed-profile
+    // assertion) would misrepresent whose word the data actually is.
+    | 'third_party_licensed' | 'third_party_scraped';
   coverageNote: string; termsUrl?: string; termsReviewNote?: string;
   rateLimitMs?: number; publishAllowed: boolean;
 }

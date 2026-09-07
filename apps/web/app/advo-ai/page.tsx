@@ -49,8 +49,8 @@ export default function AdvoAiLanding() {
 
       <Notice tone="info">
         Advo AI shortlists from our directory of professionals listed on official Bar Council
-        registers. It does not represent them, cannot receive money on their behalf, and never
-        ranks paid entries higher than unpaid ones.
+        registers and public case records. It does not represent them, cannot receive money on their
+        behalf, and never ranks paid entries higher than unpaid ones.
       </Notice>
     </div>
   );
