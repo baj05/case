@@ -939,6 +939,30 @@ ul, ol { list-style: none; padding: 0; }
   font-size: 0.9rem;
 }
 
+/* --- availability grid (result card, profile sidebar, Advo AI shortlist) */
+.avail-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px;
+}
+.avail-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 4px; border-radius: var(--r-sm); border: 1px solid var(--outline-variant);
+  text-align: center; text-decoration: none; font: inherit; background: none; cursor: default;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.avail-cell-day { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+.avail-cell-date { font-size: 0.6875rem; }
+.avail-cell-count { font-family: var(--font-mono); font-size: 0.6875rem; }
+.avail-cell.is-open {
+  background: var(--electric-lime); color: var(--on-lime); border-color: transparent; cursor: pointer;
+}
+.avail-cell.is-open:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.avail-cell.is-closed { color: var(--on-surface-variant); }
+.avail-cell-more {
+  color: var(--on-surface-variant); cursor: pointer; justify-content: center;
+}
+.avail-cell-more span:first-child { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: var(--on-surface); }
+.avail-cell-more:hover { border-color: var(--outline); }
+
 /* --- result card ------------------------------------------------------ */
 .result-card {
   display: grid;
@@ -1064,14 +1088,19 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 
 /* Custom marker: a plain div (no default Leaflet pin), so no icon assets to
-   ship and no visual trace of Leaflet's or anyone else's default pin shape. */
+   ship and no visual trace of Leaflet's or anyone else's default pin shape.
+   The number is the real listing count for that state — never a decorative
+   cluster count invented to look busy. */
 .map-marker {
-  background: var(--secondary); opacity: 0.82; border: 2px solid var(--surface-lowest);
+  background: var(--trust-navy); color: var(--inverse-on-surface);
+  border: 2px solid var(--surface-lowest);
   border-radius: 50%; box-shadow: var(--shadow-sm); cursor: pointer;
-  transition: transform 120ms ease, opacity 120ms ease;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 600; line-height: 1;
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.map-marker:hover { opacity: 1; transform: scale(1.12); }
-.map-marker.is-active { background: var(--primary); opacity: 1; }
+.map-marker:hover { transform: scale(1.14); box-shadow: var(--shadow-md); }
+.map-marker.is-active { background: var(--primary); border-color: var(--primary-fixed); }
 
 /* --- profile page ------------------------------------------------------ */
 .profile-hero { display: grid; gap: 20px; grid-template-columns: 1fr; }

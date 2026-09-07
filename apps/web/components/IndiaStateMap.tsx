@@ -65,13 +65,15 @@ export function IndiaStateMap({ states }: { states: StateMapEntry[] }) {
       }).addTo(map);
 
       const max = Math.max(1, ...withCoords.map((s) => s.professionalCount));
+      const compact = new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 });
 
       for (const s of withCoords) {
         const isActive = s.slug === activeSlug;
-        const size = 14 + Math.round(Math.sqrt(s.professionalCount / max) * 20);
+        const size = 22 + Math.round(Math.sqrt(s.professionalCount / max) * 22);
+        const fontSize = Math.max(10, Math.round(size * 0.36));
         const icon = L.divIcon({
           className: '',
-          html: `<div class="map-marker${isActive ? ' is-active' : ''}" style="width:${size}px;height:${size}px"></div>`,
+          html: `<div class="map-marker${isActive ? ' is-active' : ''}" style="width:${size}px;height:${size}px;font-size:${fontSize}px">${compact.format(s.professionalCount)}</div>`,
           iconSize: [size, size],
         });
         const marker = L.marker(s.latlng, { icon }).addTo(map);

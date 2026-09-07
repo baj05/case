@@ -27,45 +27,37 @@ export function AvailabilityStrip({ days, slug, max = 6, onSelectDay }: {
   onSelectDay?: (date: string) => void;
 }) {
   if (days.length === 0) return null;
+  const shown = days.slice(0, max);
+  const hiddenCount = days.length - shown.length;
+
   return (
-    <div className="row gap-1" style={{ overflowX: 'auto', paddingBottom: 2 }}>
-      {days.slice(0, max).map((d) => {
-        const cellStyle = {
-          flex: '0 0 auto', minWidth: 64, textAlign: 'center' as const, padding: '6px 8px',
-          borderRadius: 'var(--r-sm)', textDecoration: 'none',
-          background: d.count > 0 ? 'var(--electric-lime)' : 'var(--surface-container)',
-          color: d.count > 0 ? 'var(--on-lime)' : 'var(--on-surface-variant)',
-          border: 'none', font: 'inherit', cursor: d.count > 0 ? 'pointer' : 'default',
-        };
+    <div className="avail-grid">
+      {shown.map((d) => {
         const label = DAY_LABEL.format(new Date(`${d.date}T00:00:00Z`));
         const date = DATE_LABEL.format(new Date(`${d.date}T00:00:00Z`));
-        const countLabel = d.count > 0 ? `${d.count} slot${d.count === 1 ? '' : 's'}` : 'No slots';
+        const countLabel = d.count > 0 ? `${d.count} appt${d.count === 1 ? '' : 's'}` : 'No appts';
+        const cellClass = `avail-cell${d.count > 0 ? ' is-open' : ' is-closed'}`;
+        const inner = (
+          <>
+            <span className="avail-cell-day">{label}</span>
+            <span className="avail-cell-date">{date}</span>
+            <span className="avail-cell-count">{countLabel}</span>
+          </>
+        );
         if (d.count === 0) {
-          return (
-            <div key={d.date} className="stack gap-0" style={cellStyle} aria-label={`${label} ${date}: no slots`}>
-              <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
-              <span className="t-caption">{date}</span>
-              <span className="t-caption">{countLabel}</span>
-            </div>
-          );
+          return <div key={d.date} className={cellClass} aria-label={`${label} ${date}: no appointments`}>{inner}</div>;
         }
         if (onSelectDay) {
-          return (
-            <button key={d.date} type="button" className="stack gap-0" style={cellStyle} onClick={() => onSelectDay(d.date)}>
-              <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
-              <span className="t-caption">{date}</span>
-              <span className="t-caption">{countLabel}</span>
-            </button>
-          );
+          return <button key={d.date} type="button" className={cellClass} onClick={() => onSelectDay(d.date)}>{inner}</button>;
         }
-        return (
-          <Link key={d.date} href={`/advocates/${slug}/book`} className="stack gap-0" style={cellStyle}>
-            <span className="t-caption" style={{ fontWeight: 600 }}>{label}</span>
-            <span className="t-caption">{date}</span>
-            <span className="t-caption">{countLabel}</span>
-          </Link>
-        );
+        return <Link key={d.date} href={`/advocates/${slug}/book`} className={cellClass}>{inner}</Link>;
       })}
+      {hiddenCount > 0 && (
+        <Link href={`/advocates/${slug}/book`} className="avail-cell avail-cell-more">
+          <span>+{hiddenCount}</span>
+          <span className="avail-cell-count">More</span>
+        </Link>
+      )}
     </div>
   );
 }
