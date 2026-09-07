@@ -4,6 +4,7 @@ import { DualSearch } from '@/components/DualSearch';
 import { ResultCard } from '@/components/ResultCard';
 import { FilterPanel, type FilterGroupSpec } from '@/components/FilterPanel';
 import { IndiaStateMap } from '@/components/IndiaStateMap';
+import { QuickFilterBar } from '@/components/QuickFilterBar';
 import { EmptyState, Notice } from '@/components/States';
 import { runSearch, getPracticeAreas, getCourts, getStates, recordSearchEvent, databaseReady } from '@/lib/data';
 import { formatNumber } from '@/lib/format';
@@ -178,6 +179,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           </div>
         )}
       </div>
+
+      <QuickFilterBar kindOptions={[
+        { label: 'Advocate', value: 'advocate' },
+        { label: 'Senior Advocate', value: 'senior_advocate' },
+        { label: 'Law firm', value: 'law_firm' },
+      ]} />
 
       {/* ------------------------------------------------- results + filters */}
       <div className="search-layout with-map">

@@ -989,6 +989,23 @@ ul, ol { list-style: none; padding: 0; }
   .result-card-body:has(> :only-child) { grid-template-columns: 1fr; }
 }
 
+/* --- quick filter pill bar (search results) ---------------------------- */
+.quick-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill-filter {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--r-full);
+  border: 1px solid var(--outline-variant); background: var(--surface-lowest);
+  color: var(--on-surface); font-family: var(--font-body); font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease;
+  min-height: 44px;
+}
+.pill-filter:hover { border-color: var(--outline); }
+.pill-filter[aria-pressed='true'] {
+  border-color: var(--on-surface); border-width: 2px; padding: 8px 17px;
+  box-shadow: var(--shadow-sm);
+}
+.pill-filter-more { color: var(--on-surface-variant); }
+
 /* --- filter panel ----------------------------------------------------- */
 .filter-group { border-bottom: 1px solid var(--outline-variant); padding-block: 14px; }
 .filter-group:last-child { border-bottom: 0; }

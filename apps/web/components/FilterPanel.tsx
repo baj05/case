@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -23,6 +23,16 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
   const router = useRouter();
   const params = useSearchParams();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // The QuickFilterBar's "More filters" pill lives outside this component
+  // (it sits above the results, not in the sidebar), so it signals here via
+  // a DOM event rather than a lifted prop — the two never need to agree on
+  // a shared parent.
+  useEffect(() => {
+    const open = () => setSheetOpen(true);
+    window.addEventListener('caseadvo:open-filters', open);
+    return () => window.removeEventListener('caseadvo:open-filters', open);
+  }, []);
 
   const activeCount = groups.reduce((n, g) => n + (params.get(g.key) ? 1 : 0), 0)
     + (params.get('verified') === '1' ? 1 : 0)
