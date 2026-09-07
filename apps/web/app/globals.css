@@ -1039,6 +1039,29 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (min-width: 1400px) {
   .search-layout { grid-template-columns: 300px minmax(0, 1fr); }
 }
+@media (min-width: 1240px) {
+  .search-layout.with-map { grid-template-columns: 280px minmax(0, 1fr) 300px; }
+}
+
+/* --- state map (search sidebar) ----------------------------------------- */
+.state-map-card {
+  display: none;
+  position: sticky; top: 84px; align-self: start;
+  background: var(--surface-lowest); border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-sm);
+}
+@media (min-width: 1240px) { .state-map-card { display: block; } }
+.state-map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.state-map-svg { width: 100%; aspect-ratio: 1 / 1; overflow: visible; }
+.state-map-dot {
+  fill: var(--secondary); fill-opacity: 0.16; stroke: var(--secondary); stroke-width: 0.6;
+  cursor: pointer; transition: fill-opacity var(--t-fast, 120ms) ease, transform var(--t-fast, 120ms) ease;
+  transform-box: fill-box; transform-origin: center;
+}
+.state-map-dot:hover, .state-map-dot.is-hover { fill-opacity: 0.32; transform: scale(1.12); }
+.state-map-dot.is-active { fill: var(--primary); stroke: var(--primary); fill-opacity: 0.85; }
+.state-map-dot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.state-map-note { margin-top: 10px; }
 
 /* --- profile page ------------------------------------------------------ */
 .profile-hero { display: grid; gap: 20px; grid-template-columns: 1fr; }

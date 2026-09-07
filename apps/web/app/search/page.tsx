@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { DualSearch } from '@/components/DualSearch';
 import { ResultCard } from '@/components/ResultCard';
 import { FilterPanel, type FilterGroupSpec } from '@/components/FilterPanel';
+import { IndiaStateMap } from '@/components/IndiaStateMap';
 import { EmptyState, Notice } from '@/components/States';
 import { runSearch, getPracticeAreas, getCourts, getStates, recordSearchEvent, databaseReady } from '@/lib/data';
 import { formatNumber } from '@/lib/format';
@@ -179,7 +180,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       </div>
 
       {/* ------------------------------------------------- results + filters */}
-      <div className="search-layout">
+      <div className="search-layout with-map">
         <FilterPanel groups={groups} total={outcome.total} />
 
         <div className="stack gap-4" style={{ minWidth: 0 }}>
@@ -257,6 +258,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </nav>
           )}
         </div>
+
+        <IndiaStateMap states={states.map((s) => ({ name: s.name, slug: s.slug, professionalCount: s.professionalCount }))} />
       </div>
     </div>
   );
