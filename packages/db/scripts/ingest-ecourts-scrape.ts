@@ -196,13 +196,20 @@ for (const state of states) {
     const normalised = normaliseName(rawName);
     if (!normalised) { baseSkipped += 1; continue; }
 
-    const displayName = titleCaseName(rawName);
+    // A standalone "Senior Advocate" designation attached to the name is the
+    // same signal the BCI pipeline already treats as senior_advocate — but
+    // "Senior Advocate with X" names X (junior counsel), not the senior
+    // advocate, so that composite phrasing is deliberately left alone rather
+    // than misattributing the designation to the wrong person.
+    const isSeniorAdvocate = /\bSENIOR\s+ADVOCATE\b/i.test(rawName) && !/SENIOR\s+ADVOCATE\s+WITH\b/i.test(rawName);
+    const personName = isSeniorAdvocate ? rawName.replace(/\bSENIOR\s+ADVOCATE\b/i, ' ').replace(/\s+/g, ' ').trim() : rawName;
+    const displayName = titleCaseName(personName);
     const sourceRef = `case-name:${state}:${normalised}`;
     const sourceUrl = `https://ecourtsindia.com/lawyer/${slugify(rawName) || 'advocate'}?sc=${state}`;
     const mentionCount = Number(row.times_seen) || 1;
 
     const result = upsertProfessional({
-      kind: 'advocate',
+      kind: isSeniorAdvocate ? 'senior_advocate' : 'advocate',
       fullName: rawName,
       displayName,
       countryId,
