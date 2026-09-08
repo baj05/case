@@ -153,7 +153,110 @@ export function getProfileDetail(slug: string) {
               is_current AS isCurrent, summary, evidence_basis AS evidenceBasis
          FROM experience WHERE professional_id = ? ORDER BY is_current DESC, COALESCE(end_year, start_year) DESC`,
     ).all(id) as Array<{ organisationName: string; role: string; startYear: number | null; endYear: number | null; isCurrent: number; summary: string | null; evidenceBasis: string }>,
+    caseStats: getCaseStats(id),
+    caseCategories: h.prepare(
+      `SELECT category_label AS label, case_count AS count FROM professional_case_category
+        WHERE professional_id = ? ORDER BY rank`,
+    ).all(id) as Array<{ label: string; count: number }>,
+    caseYearly: h.prepare(
+      `SELECT filing_year AS year, case_count AS count FROM professional_case_year
+        WHERE professional_id = ? ORDER BY filing_year`,
+    ).all(id) as Array<{ year: number; count: number }>,
+    declaredAreas: (h.prepare(
+      `SELECT label FROM professional_declared_area WHERE professional_id = ? ORDER BY label`,
+    ).all(id) as Array<{ label: string }>).map((r) => r.label),
   };
+}
+
+/** IMPLAUSIBLE_CASE_COUNT mirrors the ingest script's own threshold — case
+ * counts above it are matched-by-name aggregates the source itself cannot
+ * disambiguate, most likely several real people sharing a common name. */
+export const IMPLAUSIBLE_CASE_COUNT = 10000;
+
+export interface CaseStats {
+  totalCases: number; disposedCases: number; pendingCases: number;
+  disposalRatePct: number | null; distinctCourtCount: number; mostActiveCourt: string | null;
+  firstFilingYear: number | null; lastFilingYear: number | null; yearsActive: number | null;
+  isImplausibleVolume: boolean;
+}
+
+export function getCaseStats(professionalId: number): CaseStats | null {
+  const row = db().prepare(
+    `SELECT total_cases AS totalCases, disposed_cases AS disposedCases, pending_cases AS pendingCases,
+            disposal_rate_pct AS disposalRatePct, distinct_court_count AS distinctCourtCount,
+            most_active_court AS mostActiveCourt, first_filing_year AS firstFilingYear,
+            last_filing_year AS lastFilingYear, years_active AS yearsActive
+       FROM professional_case_stats WHERE professional_id = ?`,
+  ).get(professionalId) as Omit<CaseStats, 'isImplausibleVolume'> | undefined;
+  if (!row) return null;
+  return { ...row, isImplausibleVolume: row.totalCases > IMPLAUSIBLE_CASE_COUNT };
+}
+
+/** Top case categories — the "specialization tags" a case-history record can
+ * actually support, ranked by real frequency. */
+export function getCaseCategories(professionalId: number, limit = 3): Array<{ label: string; count: number }> {
+  return db().prepare(
+    `SELECT category_label AS label, case_count AS count FROM professional_case_category
+      WHERE professional_id = ? ORDER BY rank LIMIT ?`,
+  ).all(professionalId, limit) as Array<{ label: string; count: number }>;
+}
+
+/** Site-wide aggregates for the case-statistics dashboard. Every number is a
+ * live query against the same tables the profile page reads — nothing
+ * pre-computed or cached separately, so it can never drift from reality. */
+export function caseCorpusStats() {
+  const h = db();
+  const one = (sql: string) => Number((h.prepare(sql).get() as { n: number }).n);
+  return {
+    professionalsWithCases: one(`SELECT count(*) n FROM professional_case_stats WHERE total_cases > 0`),
+    totalCases: one(`SELECT COALESCE(sum(total_cases),0) n FROM professional_case_stats`),
+    totalDisposed: one(`SELECT COALESCE(sum(disposed_cases),0) n FROM professional_case_stats`),
+    totalPending: one(`SELECT COALESCE(sum(pending_cases),0) n FROM professional_case_stats`),
+    implausibleVolumeCount: one(`SELECT count(*) n FROM professional_case_stats WHERE total_cases > ${IMPLAUSIBLE_CASE_COUNT}`),
+    medianCasesPerAdvocate: (() => {
+      const rows = h.prepare(`SELECT total_cases FROM professional_case_stats WHERE total_cases > 0 ORDER BY total_cases`).all() as Array<{ total_cases: number }>;
+      if (rows.length === 0) return 0;
+      const mid = Math.floor(rows.length / 2);
+      return rows.length % 2 === 0 ? Math.round((rows[mid - 1]!.total_cases + rows[mid]!.total_cases) / 2) : rows[mid]!.total_cases;
+    })(),
+  };
+}
+
+/** Real case categories nationwide, ranked by how many distinct advocates
+ * carry them in their own top-3 — not a raw case-row count, which a single
+ * high-volume (likely name-collision) profile could dominate. */
+export function topCaseCategoriesNationwide(limit = 12): Array<{ label: string; advocateCount: number }> {
+  // Each advocate's own top-3 keeps whatever casing dominated THEIR case
+  // rows (see ingest-verified-advocates.ts), so the same real category can
+  // still reach here under two different advocates' casing choices —
+  // group case-insensitively and just show whichever spelling sorts first.
+  return db().prepare(
+    `SELECT min(category_label) AS label, count(DISTINCT professional_id) AS advocateCount
+       FROM professional_case_category
+      GROUP BY lower(category_label) ORDER BY advocateCount DESC LIMIT ?`,
+  ).all(limit) as Array<{ label: string; advocateCount: number }>;
+}
+
+/** Most-cited courts by distinct advocate count (professional_court links),
+ * real evidence-based appearances only — see linkCourt() call sites. */
+export function topCourtsByAdvocateCount(limit = 10): Array<{ name: string; shortName: string | null; slug: string; advocateCount: number }> {
+  return db().prepare(
+    `SELECT c.name, c.short_name AS shortName, c.slug, count(DISTINCT pc.professional_id) AS advocateCount
+       FROM professional_court pc JOIN court c ON c.id = pc.court_id
+      GROUP BY c.id ORDER BY advocateCount DESC LIMIT ?`,
+  ).all(limit) as Array<{ name: string; shortName: string | null; slug: string; advocateCount: number }>;
+}
+
+/** Advocate count per state, for the dashboard's state breakdown — the same
+ * counts the search filter panel already shows, reused rather than
+ * recomputed differently. */
+export function advocateCountByState(limit = 15): Array<{ name: string; slug: string; count: number }> {
+  return db().prepare(
+    `SELECT l.name, l.slug,
+            (SELECT count(*) FROM professional p WHERE p.primary_jurisdiction_id = l.jurisdiction_id AND p.is_published = 1 AND p.deleted_at IS NULL) AS count
+       FROM location l WHERE l.level = 1
+      ORDER BY count DESC LIMIT ?`,
+  ).all(limit) as Array<{ name: string; slug: string; count: number }>;
 }
 
 /**

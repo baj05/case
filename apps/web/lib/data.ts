@@ -29,6 +29,7 @@ import {
   getSiteFeedbackSummary, listSiteFeedback,
   getJudicialSnapshot, listHighCourts,
   getECourtsCoverage, listECourtsCourts, listECourtsAdvocates, countECourtsAdvocates, listECourtsStates,
+  caseCorpusStats, topCaseCategoriesNationwide, topCourtsByAdvocateCount, advocateCountByState,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort, OrganisationKind } from '@lexhall/db';
 
@@ -43,6 +44,10 @@ export const getCorpus = cache(() => corpusStats());
 export const getPracticeAreas = cache(() => listPracticeAreas());
 export const getCourts = cache((tier?: number) => listCourts(tier));
 export const getStates = cache(() => listStates());
+export const getCaseCorpusStats = cache(() => caseCorpusStats());
+export const getTopCaseCategories = cache((limit?: number) => topCaseCategoriesNationwide(limit));
+export const getTopCourts = cache((limit?: number) => topCourtsByAdvocateCount(limit));
+export const getAdvocateCountByState = cache((limit?: number) => advocateCountByState(limit));
 export const getFlags = cache(() => getFeatureFlags());
 
 export const getProfessional = cache((slug: string) => getProfessionalBySlug(slug));

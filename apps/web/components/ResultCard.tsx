@@ -4,7 +4,7 @@ import { VerificationBadge, ClaimChip, KIND_LABEL } from './Badges';
 import { MatchScore } from './MatchScore';
 import { ResultBooking } from './ResultBooking';
 import { relativeDate } from '@/lib/format';
-import { feeSummary, formatMinor, nextAvailabilityDays, generateSlots, listFees, chamberAddress } from '@lexhall/db';
+import { feeSummary, formatMinor, nextAvailabilityDays, generateSlots, listFees, chamberAddress, getCaseStats, getCaseCategories } from '@lexhall/db';
 import { getFlags, getReviewSummary, getPracticeAreas } from '@/lib/data';
 import type { SearchHit } from '@lexhall/core';
 
@@ -25,6 +25,8 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
     ?? (p.enrolmentYear ? new Date().getFullYear() - p.enrolmentYear : null);
   const flags = getFlags();
   const reviewSummary = flags.FEATURE_REVIEWS ? getReviewSummary(p.id) : null;
+  const caseStats = getCaseStats(p.id);
+  const topCategories = getCaseCategories(p.id, 3);
 
   // Only fetched for professionals actually taking bookings — the drawer's
   // full fee schedule and slot list, not just the summary already above.
@@ -99,6 +101,17 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
                 <span key={a.id} className="chip chip-primary">{a.name}</span>
               ))}
             </div>
+          ) : topCategories.length > 0 ? (
+            <div className="stack gap-1">
+              <p className="t-caption">From case history, not a claimed specialisation:</p>
+              <div className="row wrap gap-1">
+                {topCategories.map((c) => (
+                  <span key={c.label} className="chip chip-outline" title={`${c.count} case${c.count === 1 ? '' : 's'} on record`}>
+                    {c.label}
+                  </span>
+                ))}
+              </div>
+            </div>
           ) : (
             <p className="t-caption">
               Practice areas not stated — they appear once this professional claims the profile.
@@ -111,6 +124,25 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
               <span className="fact-label">Experience</span>
               <span className="fact-value">{years !== null ? `${years} yrs` : 'Not stated'}</span>
             </span>
+            {caseStats && (
+              <span className="fact-item">
+                <span className="fact-label">Cases on record</span>
+                <span className="fact-value row gap-1" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                  {caseStats.totalCases.toLocaleString()}
+                  {caseStats.isImplausibleVolume && (
+                    <span title="A very high count for one name usually means the source has merged several people who share it — see the profile for the full caveat.">
+                      <WarnIcon />
+                    </span>
+                  )}
+                </span>
+              </span>
+            )}
+            {caseStats?.disposalRatePct != null && (
+              <span className="fact-item">
+                <span className="fact-label">Disposed</span>
+                <span className="fact-value">{caseStats.disposalRatePct}%</span>
+              </span>
+            )}
             <span className="fact-item">
               <span className="fact-label">Consultation</span>
               <span className="fact-value">
@@ -197,6 +229,14 @@ function CourtIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 21h16M5 21V10M19 21V10M3 10l9-5 9 5M8 10v7M12 10v7M16 10v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+export function WarnIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3.5L2 20.5h20L12 3.5z" stroke="var(--warning-container)" fill="var(--warning-container)" strokeLinejoin="round" />
+      <path d="M12 9.5v5M12 17.5v.1" stroke="var(--on-warning-container)" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }

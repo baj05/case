@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Avatar } from '@/components/Avatar';
 import { VerificationBadge, KindChip, ClaimChip, EvidenceChip } from '@/components/Badges';
-import { ResultCard } from '@/components/ResultCard';
+import { ResultCard, WarnIcon } from '@/components/ResultCard';
+import { CaseYearChart } from '@/components/CaseYearChart';
 import { ResourceCard } from '@/components/ResourceCard';
 import { Notice } from '@/components/States';
 import { getProfessional, getDetail, getRelated, getFlags, getResourcesForMatter, getReviewSummary, getReviews } from '@/lib/data';
@@ -108,6 +109,7 @@ export default async function ProfilePage({
     { href: '#overview', label: 'Overview' },
     ...(detail?.bio ? [{ href: '#about', label: 'About' }] : []),
     { href: '#practice-areas', label: 'Practice areas' },
+    ...(detail?.caseStats ? [{ href: '#case-statistics', label: 'Case statistics' }] : []),
     { href: '#fees', label: 'Fees' },
     ...(flags.FEATURE_REVIEWS ? [{ href: '#reviews', label: 'Reviews' }] : []),
     ...(profileResources.length > 0 ? [{ href: '#resources', label: 'Resources' }] : []),
@@ -272,6 +274,97 @@ export default async function ProfilePage({
                 </Notice>
               )}
             </section>
+
+            {/* case statistics — real, computed from scraped case history */}
+            {detail?.caseStats && (
+              <section className="stack gap-3" id="case-statistics">
+                <h2 className="t-headline-md">Case statistics</h2>
+                {detail.caseStats.isImplausibleVolume && (
+                  <Notice tone="warn" title="Unusually high case count">
+                    <span className="row gap-2" style={{ alignItems: 'flex-start' }}>
+                      <WarnIcon />
+                      <span>
+                        {detail.caseStats.totalCases.toLocaleString()} cases is far more than one advocate
+                        typically handles. The source site matches cases to a profile by name, and common
+                        names can merge several real people&rsquo;s case histories into one profile —
+                        treat this figure with that in mind.
+                      </span>
+                    </span>
+                  </Notice>
+                )}
+                <div className="fact-strip">
+                  <span className="fact-item">
+                    <span className="fact-label">Cases on record</span>
+                    <span className="fact-value">{detail.caseStats.totalCases.toLocaleString()}</span>
+                  </span>
+                  {detail.caseStats.disposalRatePct != null && (
+                    <span className="fact-item">
+                      <span className="fact-label">Disposed</span>
+                      <span className="fact-value">{detail.caseStats.disposalRatePct}%</span>
+                    </span>
+                  )}
+                  <span className="fact-item">
+                    <span className="fact-label">Court reach</span>
+                    <span className="fact-value">{detail.caseStats.distinctCourtCount} court{detail.caseStats.distinctCourtCount === 1 ? '' : 's'}</span>
+                  </span>
+                  {detail.caseStats.yearsActive != null && (
+                    <span className="fact-item">
+                      <span className="fact-label">Years on record</span>
+                      <span className="fact-value">
+                        {detail.caseStats.firstFilingYear}–{detail.caseStats.lastFilingYear}
+                      </span>
+                    </span>
+                  )}
+                  {detail.caseStats.mostActiveCourt && (
+                    <span className="fact-item" style={{ maxWidth: 260 }}>
+                      <span className="fact-label">Most active court</span>
+                      <span className="fact-value clamp-2">{detail.caseStats.mostActiveCourt}</span>
+                    </span>
+                  )}
+                </div>
+
+                {detail.caseCategories.length > 0 && (
+                  <div className="stack gap-2">
+                    <p className="t-caption">Most frequent case types on record</p>
+                    <div className="row wrap gap-1">
+                      {detail.caseCategories.map((c) => (
+                        <span key={c.label} className="chip chip-outline" title={`${c.count} case${c.count === 1 ? '' : 's'}`}>
+                          {c.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {detail.caseYearly.length > 1 && (
+                  <div className="stack gap-2">
+                    <p className="t-caption">Cases filed by year</p>
+                    <CaseYearChart data={detail.caseYearly} />
+                  </div>
+                )}
+
+                <p className="t-caption">
+                  Computed from case records matched to this name on eCourts India (see &ldquo;Where this
+                  came from&rdquo; in the sidebar). &ldquo;Disposed&rdquo; means the case concluded, not
+                  who prevailed — this platform does not record or infer outcomes.
+                </p>
+              </section>
+            )}
+
+            {detail?.declaredAreas && detail.declaredAreas.length > 0 && (
+              <section className="stack gap-3" id="declared-areas">
+                <h2 className="t-headline-md">Self-declared on eCourts India</h2>
+                <p className="t-caption">
+                  Case-type categories the professional selected on their own directory profile — not this
+                  platform&rsquo;s practice-area taxonomy, and not verified against actual case filings.
+                </p>
+                <div className="row wrap gap-1">
+                  {detail.declaredAreas.map((label) => (
+                    <span key={label} className="chip chip-outline">{label}</span>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* courts */}
             <section className="stack gap-3" id="courts">
