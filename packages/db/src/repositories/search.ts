@@ -182,7 +182,7 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
             d.profile_completeness, d.jurisdiction_id, d.location_path, d.practice_area_ids,
             d.court_ids, d.name_text, d.data_confidence,
             fs.min_consult_minor AS fee_min, fs.currency_code AS fee_currency,
-            p.enrolment_year AS enrolment_year
+            p.enrolment_year AS enrolment_year, (p.photo_url IS NOT NULL) AS has_photo
        FROM professional_search_doc d
        JOIN professional p ON p.id = d.professional_id
        LEFT JOIN professional_fee_summary fs ON fs.professional_id = d.professional_id
@@ -192,7 +192,7 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
     id: number; verification_level: number; years_experience: number | null; accepts_consultations: number;
     profile_completeness: number; jurisdiction_id: number | null; location_path: string;
     practice_area_ids: string; court_ids: string; name_text: string; data_confidence: number;
-    fee_min: number | null; fee_currency: string | null; enrolment_year: number | null;
+    fee_min: number | null; fee_currency: string | null; enrolment_year: number | null; has_photo: number;
   }>;
 
   // ---- rank ---------------------------------------------------------------
@@ -235,7 +235,7 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
     });
     const years = c.years_experience
       ?? (c.enrolment_year ? new Date().getFullYear() - c.enrolment_year : null);
-    return { id: c.id, score, factors, feeMin: c.fee_min, years };
+    return { id: c.id, score, factors, feeMin: c.fee_min, years, hasPhoto: c.has_photo === 1 };
   });
 
   switch (filters.sort) {
@@ -257,7 +257,11 @@ export function searchProfessionals(filters: SearchFilters): SearchOutcome {
     case 'name':
       break; // applied after hydration, where names are available
     default:
-      scored.sort((a, b) => b.score - a.score || a.id - b.id);
+      // Photo presence breaks ties before relevance score: a directory
+      // reads as more trustworthy when the first screenful is real faces,
+      // not initials — but only as a tiebreak, never overriding an
+      // explicit sort choice (fee/experience/verification/name above).
+      scored.sort((a, b) => (Number(b.hasPhoto) - Number(a.hasPhoto)) || b.score - a.score || a.id - b.id);
   }
 
   const total = scored.length;

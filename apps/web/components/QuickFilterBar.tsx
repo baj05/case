@@ -9,7 +9,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
  * state, court, fee/experience). Reads/writes the same URL params
  * FilterPanel does, so the two never disagree — neither owns the state.
  */
-export function QuickFilterBar({ kindOptions }: { kindOptions: Array<{ label: string; value: string }> }) {
+export function QuickFilterBar({ kindOptions, practiceOptions = [] }: {
+  kindOptions: Array<{ label: string; value: string }>;
+  /** Top practice areas by real advocate count — a fast path into the same
+   * ?practice= filter the sidebar's full list already uses, not a separate
+   * filtering mechanism. */
+  practiceOptions?: Array<{ label: string; value: string; count: number }>;
+}) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -27,9 +33,21 @@ export function QuickFilterBar({ kindOptions }: { kindOptions: Array<{ label: st
   }
 
   const kind = params.get('kind');
+  const practice = params.get('practice');
 
   return (
     <div className="quick-filter-bar" role="group" aria-label="Quick filters">
+      {practiceOptions.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          className="pill-filter"
+          aria-pressed={practice === opt.value}
+          onClick={() => toggle('practice', opt.value)}
+        >
+          {opt.label} <span className="pill-filter-count">{opt.count}</span>
+        </button>
+      ))}
       {kindOptions.map((opt) => (
         <button
           key={opt.value}

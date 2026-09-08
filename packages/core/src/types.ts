@@ -66,6 +66,7 @@ export interface ProfessionalSummary {
   sourceName: string | null;
   sourceUrl: string | null;
   sourceAuthority: string | null;
+  hasContactInfo: boolean;
 }
 
 /** A ranked search hit plus the reason it ranked where it did. */

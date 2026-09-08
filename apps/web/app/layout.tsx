@@ -64,7 +64,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN">
-      <body className={`${display.variable} ${body.variable} ${mono.variable} ${serif.variable}`}>
+      <body
+        className={`${display.variable} ${body.variable} ${mono.variable} ${serif.variable}`}
+        suppressHydrationWarning
+      >
         <a href="#main" className="skip-link">Skip to main content</a>
         <Header />
         <main id="main">{children}</main>

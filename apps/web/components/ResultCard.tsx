@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Avatar } from './Avatar';
-import { VerificationBadge, ClaimChip, KIND_LABEL } from './Badges';
+import { VerificationBadge, ClaimChip, ContactChip, KIND_LABEL } from './Badges';
 import { MatchScore } from './MatchScore';
 import { ResultBooking } from './ResultBooking';
 import { relativeDate } from '@/lib/format';
@@ -52,6 +52,7 @@ export function ResultCard({ hit, showScore = true }: { hit: SearchHit; showScor
           <div className="row wrap gap-2" style={{ alignItems: 'center' }}>
             <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} />
             {p.claimStatus === 'claimed' && <ClaimChip status={p.claimStatus} />}
+            {p.hasContactInfo && <ContactChip />}
           </div>
 
           <div className="stack gap-1" style={{ minWidth: 0 }}>

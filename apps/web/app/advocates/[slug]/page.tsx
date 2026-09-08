@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Avatar } from '@/components/Avatar';
-import { VerificationBadge, KindChip, ClaimChip, EvidenceChip } from '@/components/Badges';
+import { VerificationBadge, KindChip, ClaimChip, ContactChip, EvidenceChip } from '@/components/Badges';
 import { ResultCard, WarnIcon } from '@/components/ResultCard';
 import { CaseYearChart } from '@/components/CaseYearChart';
 import { ResourceCard } from '@/components/ResourceCard';
@@ -177,6 +177,7 @@ export default async function ProfilePage({
                     <KindChip kind={p.kind} />
                     <VerificationBadge level={p.verificationLevel} sourceAuthority={p.sourceAuthority} />
                     <ClaimChip status={p.claimStatus} />
+                    {p.hasContactInfo && <ContactChip />}
                   </div>
                   <p className="t-caption ink-variant">
                     {[p.locationName, p.jurisdictionName].filter(Boolean).join(' · ')}

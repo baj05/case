@@ -45,6 +45,16 @@ export function KindChip({ kind }: { kind: ProfessionalKind }) {
   return <span className={`chip ${isSenior ? 'chip-primary' : 'chip-outline'}`}>{KIND_LABEL[kind] ?? kind}</span>;
 }
 
+/**
+ * A real phone number or email on file — a different, weaker signal than
+ * VerificationBadge (which means Bar Council enrolment confirmed), so it
+ * gets its own distinct wording rather than reusing "Verified" for two
+ * different facts.
+ */
+export function ContactChip() {
+  return <span className="chip chip-teal" title="A phone number or email is on file for this professional">✓ Contact on file</span>;
+}
+
 export function ClaimChip({ status }: { status: ClaimStatus }) {
   if (status === 'claimed') return <span className="chip chip-teal">✓ Managed by this professional</span>;
   if (status === 'claim_pending') return <span className="chip chip-warn">Claim under review</span>;

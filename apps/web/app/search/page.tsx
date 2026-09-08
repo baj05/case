@@ -180,11 +180,18 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         )}
       </div>
 
-      <QuickFilterBar kindOptions={[
-        { label: 'Advocate', value: 'advocate' },
-        { label: 'Senior Advocate', value: 'senior_advocate' },
-        { label: 'Law firm', value: 'law_firm' },
-      ]} />
+      <QuickFilterBar
+        kindOptions={[
+          { label: 'Advocate', value: 'advocate' },
+          { label: 'Senior Advocate', value: 'senior_advocate' },
+          { label: 'Law firm', value: 'law_firm' },
+        ]}
+        practiceOptions={areas
+          .filter((a) => !a.parentId && a.professionalCount > 0)
+          .sort((a, b) => b.professionalCount - a.professionalCount)
+          .slice(0, 6)
+          .map((a) => ({ label: a.name, value: a.slug, count: a.professionalCount }))}
+      />
 
       {/* ------------------------------------------------- results + filters */}
       <div className="search-layout with-map">

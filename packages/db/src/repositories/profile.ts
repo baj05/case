@@ -18,7 +18,8 @@ const PUBLIC_COLUMNS = `
   p.enrolment_year, p.years_experience, p.last_verified_at,
   pb.name AS body_name, pb.short_name AS body_short,
   l.name AS location_name, j.name AS jurisdiction_name,
-  s.name AS source_name, p.source_url, s.authority AS source_authority
+  s.name AS source_name, p.source_url, s.authority AS source_authority,
+  (p.public_email IS NOT NULL OR p.public_phone IS NOT NULL) AS has_contact_info
 `;
 
 const PUBLIC_JOINS = `
@@ -36,7 +37,7 @@ interface RawSummary {
   years_experience: number | null; last_verified_at: string | null;
   body_name: string | null; body_short: string | null; location_name: string | null;
   jurisdiction_name: string | null; source_name: string | null; source_url: string | null;
-  source_authority: string | null;
+  source_authority: string | null; has_contact_info: number;
 }
 
 function toSummary(r: RawSummary): ProfessionalSummary {
@@ -49,6 +50,7 @@ function toSummary(r: RawSummary): ProfessionalSummary {
     enrolmentYear: r.enrolment_year, yearsExperience: r.years_experience,
     professionalBodyName: r.body_name, professionalBodyShort: r.body_short,
     locationName: r.location_name, jurisdictionName: r.jurisdiction_name,
+    hasContactInfo: r.has_contact_info === 1,
     practiceAreas: h.prepare(
       `SELECT pa.id, pa.name, pa.slug, ppa.is_primary AS isPrimary
          FROM professional_practice_area ppa JOIN practice_area pa ON pa.id = ppa.practice_area_id
