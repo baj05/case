@@ -82,9 +82,21 @@
   --container: 1280px;
 
   /* --- elevation: luminescent, tinted with the brand ------------------ */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.07), 0 2px 4px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10), 0 4px 8px rgba(15, 23, 42, 0.05);
+  /* Layered rather than single-blur: a hairline contact shadow, a short
+     ambient one and a long soft one. Three cheap layers read as real depth
+     where one big blur reads as a grey smudge. */
+  --shadow-sm:
+    0 0 0 1px rgba(15, 23, 42, 0.02),
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-md:
+    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 8px 20px rgba(15, 23, 42, 0.07);
+  --shadow-lg:
+    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 4px 8px rgba(15, 23, 42, 0.05),
+    0 18px 44px rgba(15, 23, 42, 0.12);
   --shadow-primary: 0 6px 20px rgba(167, 58, 5, 0.24);
   --shadow-glass: 0 8px 32px rgba(19, 27, 46, 0.08);
 
@@ -430,12 +442,19 @@ ul, ol { list-style: none; padding: 0; }
 .btn:disabled, .btn[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }
 
 /* Solid primary uses --primary (6.5:1 with white), not --action-orange. */
+/* A top-lit gradient plus an inset highlight — the difference between a
+   flat colour rectangle and a button that looks like an object. */
 .btn-primary {
-  background: var(--primary);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--primary) 88%, #fff) 0%, var(--primary) 100%);
+  background-color: var(--primary);
   color: var(--on-primary);
-  box-shadow: var(--shadow-primary);
+  box-shadow: var(--shadow-primary), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
-.btn-primary:hover:not(:disabled) { background: #8f3104; }
+.btn-primary:hover:not(:disabled) {
+  background-image: linear-gradient(180deg, var(--primary) 0%, #8f3104 100%);
+  box-shadow: 0 8px 22px rgba(167, 58, 5, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
 
 .btn-secondary {
   background: var(--glass-surface);
