@@ -68,6 +68,18 @@ export default function ForProfessionalsPage() {
         </ol>
       </section>
 
+      <section className="card stack gap-3" style={{ padding: 'clamp(20px, 4vw, 28px)' }}>
+        <p className="t-label-mono ink-variant">New · in preview</p>
+        <h2 className="t-headline-md">List a specific service, not just a profile</h2>
+        <p className="t-body ink-variant measure">
+          A criminal-defence consultation, a rent agreement drafted, a same-day notarisation — the
+          Marketplace is a preview of listing one priced, geofenced service at a time, the way a
+          classifieds board works, instead of a full advocate profile. It runs on seeded demonstration
+          listings today, not real ones from the register.
+        </p>
+        <Link href="/marketplace" className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>See the preview</Link>
+      </section>
+
       <Notice tone="legal" title="What we will never do">
         We do not sell placement, we do not offer to improve your ranking for a fee, and we do not
         publish reviews of you — the review system is switched off pending a professional-conduct

@@ -16,3 +16,4 @@ export * from './organisations.ts';
 export * from './corporate.ts';
 export * from './entitlements.ts';
 export * from './site-feedback.ts';
+export * from './marketplace.ts';

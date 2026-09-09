@@ -30,6 +30,8 @@ import {
   getJudicialSnapshot, listHighCourts,
   getECourtsCoverage, listECourtsCourts, listECourtsAdvocates, countECourtsAdvocates, listECourtsStates,
   caseCorpusStats, topCaseCategoriesNationwide, topCourtsByAdvocateCount, advocateCountByState,
+  searchMarketplace, marketplaceCategoryCounts, marketplaceCityOptions, MARKETPLACE_CATEGORIES,
+  type MarketplaceSearchFilters,
 } from '@lexhall/db';
 import type { SearchFilters, ResourceSearchFilters, ReviewFilter, ReviewSort, OrganisationKind } from '@lexhall/db';
 
@@ -47,6 +49,10 @@ export const getStates = cache(() => listStates());
 export const getCaseCorpusStats = cache(() => caseCorpusStats());
 export const getTopCaseCategories = cache((limit?: number) => topCaseCategoriesNationwide(limit));
 export const getTopCourts = cache((limit?: number) => topCourtsByAdvocateCount(limit));
+export const getMarketplaceListings = (filters: MarketplaceSearchFilters) => searchMarketplace(filters);
+export const getMarketplaceCategoryCounts = cache(() => marketplaceCategoryCounts());
+export const getMarketplaceCities = cache(() => marketplaceCityOptions());
+export { MARKETPLACE_CATEGORIES };
 export const getAdvocateCountByState = cache((limit?: number) => advocateCountByState(limit));
 export const getFlags = cache(() => getFeatureFlags());
 
