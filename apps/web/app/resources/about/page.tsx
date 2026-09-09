@@ -4,6 +4,22 @@ import { databaseReady, getResourceStats, adminResourceDashboard } from '@/lib/d
 import { formatNumber } from '@/lib/format';
 import { Notice } from '@/components/States';
 import { TRUST_LEVELS, OFFICIAL_STATUS_META, RIGHTS_BASIS_META, LINK_OUTCOME_META } from '@lexhall/core';
+import {
+  ChartIcon, ShieldCheckIcon, DocumentIcon, ClockIcon, SearchIcon, TrendUpIcon,
+  CheckCircleIcon, GavelIcon,
+} from '@/components/Icons';
+
+const SECTIONS = [
+  { id: 'whats-here', label: 'What is here', icon: <ChartIcon size={16} /> },
+  { id: 'the-distinction', label: 'The four labels', icon: <ShieldCheckIcon size={16} /> },
+  { id: 'why-we-link', label: 'Why we link, not host', icon: <DocumentIcon size={16} /> },
+  { id: 'how-published', label: 'How a source is published', icon: <ClockIcon size={16} /> },
+  { id: 'why-403', label: 'Why a 403 isn’t "broken"', icon: <SearchIcon size={16} /> },
+  { id: 'source-levels', label: 'Source levels', icon: <TrendUpIcon size={16} /> },
+  { id: 'provenance-score', label: 'The provenance score', icon: <CheckCircleIcon size={16} /> },
+  { id: 'will-not-do', label: 'What we will not do', icon: <GavelIcon size={16} /> },
+  { id: 'known-gaps', label: 'Known gaps', icon: <DocumentIcon size={16} /> },
+] as const;
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +53,20 @@ export default function AboutResourcesPage() {
         </p>
       </header>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">What is actually here</h2>
+      <nav aria-label="Sections on this page" className="row wrap gap-2">
+        {SECTIONS.map((s) => (
+          <a key={s.id} href={`#${s.id}`} className="chip chip-button chip-outline row gap-1" style={{ alignItems: 'center' }}>
+            {s.icon}
+            {s.label}
+          </a>
+        ))}
+      </nav>
+
+      <section id="whats-here" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><ChartIcon size={16} /></span>
+          What is actually here
+        </h2>
         <div className="stat-strip">
           <span className="stat"><span className="stat-num">{formatNumber(stats.published)}</span><span className="stat-label">Published</span></span>
           <span className="stat"><span className="stat-num">{formatNumber(stats.official)}</span><span className="stat-label">Official sources</span></span>
@@ -53,8 +81,11 @@ export default function AboutResourcesPage() {
         </p>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">The distinction that matters most</h2>
+      <section id="the-distinction" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><ShieldCheckIcon size={16} /></span>
+          The distinction that matters most
+        </h2>
         <p className="t-body ink-variant">
           Every resource carries one of these four labels, on its card and on its page, and they are never
           styled to look alike.
@@ -74,8 +105,11 @@ export default function AboutResourcesPage() {
         </Notice>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">Why we link instead of hosting</h2>
+      <section id="why-we-link" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><DocumentIcon size={16} /></span>
+          Why we link instead of hosting
+        </h2>
         <p className="t-body ink-variant">
           Every official document in this library opens at the publisher’s own site. We have not sought or
           obtained permission to rehost government documents, so we store the metadata and point at their
@@ -108,8 +142,11 @@ export default function AboutResourcesPage() {
         </p>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">How a source becomes published</h2>
+      <section id="how-published" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><ClockIcon size={16} /></span>
+          How a source becomes published
+        </h2>
         <ol className="stack gap-3">
           {[
             ['Discovered or catalogued', 'Either written into the catalogue by hand with a URL somebody opened, or found by the harvester reading a publisher’s own forms page.'],
@@ -139,8 +176,11 @@ export default function AboutResourcesPage() {
         </ol>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">Why a 403 is not a broken link</h2>
+      <section id="why-403" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><SearchIcon size={16} /></span>
+          Why a 403 is not a broken link
+        </h2>
         <p className="t-body ink-variant">
           A number of Indian government sites refuse automated requests outright. Treating that as “this
           document is gone” would empty the library of precisely the sources that matter most — the Supreme
@@ -167,8 +207,11 @@ export default function AboutResourcesPage() {
         </p>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">Source levels</h2>
+      <section id="source-levels" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><TrendUpIcon size={16} /></span>
+          Source levels
+        </h2>
         <p className="t-body ink-variant">
           Every resource records how close its publisher is to the authority that actually decides the matter.
           It feeds the provenance score, and it is shown on the resource page.
@@ -186,8 +229,11 @@ export default function AboutResourcesPage() {
         </div>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">The provenance score is not a legal score</h2>
+      <section id="provenance-score" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><CheckCircleIcon size={16} /></span>
+          The provenance score is not a legal score
+        </h2>
         <p className="t-body ink-variant">
           Each resource carries a number out of 100, and the breakdown is published on its page. It measures
           where a document came from, how complete its metadata is, and how recently the source answered.
@@ -197,9 +243,12 @@ export default function AboutResourcesPage() {
         </p>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">What this library will not do</h2>
-        <ul className="stack gap-2 list-plain">
+      <section id="will-not-do" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><GavelIcon size={16} /></span>
+          What this library will not do
+        </h2>
+        <div className="grid-auto">
           {[
             'Present anything we wrote as a government or court form.',
             'Offer a national template as though it were valid in every state. Tenancy registration, stamp duty and the forum that hears a dispute are state subjects, and the state note comes before the document.',
@@ -209,16 +258,19 @@ export default function AboutResourcesPage() {
             'Bypass a robots.txt disallow, a CAPTCHA or an access control to obtain a document.',
             'Give legal advice, or tell you which of these documents applies to your facts.',
           ].map((line) => (
-            <li key={line} className="row gap-2" style={{ alignItems: 'flex-start' }}>
+            <div key={line} className="card row gap-2" style={{ padding: 14, alignItems: 'flex-start' }}>
               <span aria-hidden="true" className="ink-accent">—</span>
-              <span className="t-body">{line}</span>
-            </li>
+              <span className="t-body-sm">{line}</span>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
-      <section className="stack gap-3">
-        <h2 className="t-headline-md">Known gaps</h2>
+      <section id="known-gaps" className="stack gap-3">
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><DocumentIcon size={16} /></span>
+          Known gaps
+        </h2>
         <p className="t-body ink-variant">
           Stated plainly, because a library that hides its gaps wastes your time:
         </p>
