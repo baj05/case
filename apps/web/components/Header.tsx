@@ -5,12 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BRAND } from '@/lib/brand';
 import { NAV, type NavItem } from '@/lib/nav';
+import { formatNumber } from '@/lib/format';
 
 /** Pointer-driven open/close is debounced so a diagonal mouse path from the
  * trigger down into the panel doesn't flicker the menu shut mid-travel. */
 const CLOSE_DELAY_MS = 140;
 
-export function Header() {
+export function Header({ totalProfessionals }: { totalProfessionals?: number }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -80,11 +81,18 @@ export function Header() {
   return (
     <header className="site-header" data-scrolled={scrolled}>
       <div className="container row" style={{ justifyContent: 'space-between', gap: 16 }}>
-        <Link href="/" className="wordmark" aria-label={`${BRAND.name} home`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/mark.png" alt="" width={32} height={32} className="wordmark-logo" aria-hidden="true" />
-          <span>{BRAND.wordmark}</span>
-        </Link>
+        <div className="row gap-2" style={{ alignItems: 'center' }}>
+          <Link href="/" className="wordmark" aria-label={`${BRAND.name} home`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/mark.png" alt="" width={32} height={32} className="wordmark-logo" aria-hidden="true" />
+            <span>{BRAND.wordmark}</span>
+          </Link>
+          {typeof totalProfessionals === 'number' && (
+            <Link href="/search" className="header-count-badge hide-mobile" title="Total professionals currently listed">
+              {formatNumber(totalProfessionals)} advocates listed
+            </Link>
+          )}
+        </div>
 
         <div ref={navRef} className="nav-shell hide-mobile" onMouseLeave={scheduleClose} onMouseEnter={cancelClose}>
           <nav className="nav-pill" aria-label="Main">

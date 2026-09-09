@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdvoLauncher } from '@/components/AdvoLauncher';
 import { BRAND } from '@/lib/brand';
+import { getCorpus, databaseReady } from '@/lib/data';
 import './globals.css';
 // Must come after globals.css: primitives.css consumes its tokens and
 // utilities, and an @import inside globals.css would be hoisted above the
@@ -62,6 +63,9 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Best-effort: a DB hiccup must not take down every page's shared layout.
+  const totalProfessionals = databaseReady() ? getCorpus().professionals : undefined;
+
   return (
     <html lang="en-IN">
       <body
@@ -69,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <a href="#main" className="skip-link">Skip to main content</a>
-        <Header />
+        <Header totalProfessionals={totalProfessionals} />
         <main id="main">{children}</main>
         <Footer />
         <AdvoLauncher />

@@ -843,6 +843,13 @@ ul, ol { list-style: none; padding: 0; }
   color: var(--on-primary);
   font-size: 0.8125rem;
 }
+.header-count-badge {
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;
+  color: var(--secondary); background: var(--secondary-container);
+  padding: 5px 10px; border-radius: var(--r-full); white-space: nowrap;
+  text-decoration: none;
+}
+.header-count-badge:hover { filter: brightness(0.96); }
 /* The real logo emblem (navy ink) — used where the header sits on a light
    surface. Unlike .wordmark-mark it carries no background plate: the
    emblem's own white rings already give it contrast, and a colored plate
