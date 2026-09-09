@@ -9,10 +9,10 @@ import { Notice } from '@/components/States';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Court directory — courts, districts and advocates on the record',
+  title: 'Advocate names on the record — licensed case-record data',
   description:
-    'Court structure across India and advocate names appearing on the court record, '
-    + 'sourced under licence from the eCourtsIndia API with full attribution.',
+    'Advocate names appearing on real court case records, sourced under licence from the '
+    + 'eCourtsIndia API — distinct from CaseADVO\'s main Bar Council–sourced directory.',
 };
 
 const PAGE_SIZE = 30;
@@ -38,7 +38,7 @@ export default async function CourtDirectoryPage({
   if (stats.advocates === 0 && stats.states === 0) {
     return (
       <div className="container section-tight stack gap-4">
-        <h1 className="t-headline-lg">Court directory</h1>
+        <h1 className="t-headline-lg">Advocate names on the record</h1>
         <Notice tone="info" title="No court directory data ingested yet">
           Set <code className="mono">ECOURTS_API_KEY</code> in <code className="mono">.env</code>, then run{' '}
           <code className="mono">npm run db:ecourts -- --structure --advocates</code>.
@@ -56,14 +56,14 @@ export default async function CourtDirectoryPage({
     ? new Date(stats.retrievedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
-  const pageHref = (p: number) => `/court-directory?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
+  const pageHref = (p: number) => `/case-records?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
 
   return (
     <div className="stack gap-8">
       <section className="hero textured">
         <div className="container stack gap-4" style={{ maxWidth: '56ch' }}>
-          <p className="t-label-mono ink-variant">Court directory</p>
-          <h1 className="t-display-lg">Every court. Every name on the record.</h1>
+          <p className="t-label-mono ink-variant">Case-record names</p>
+          <h1 className="t-display-lg">Every name that appeared on the record.</h1>
           <p className="t-body-lg ink-variant">
             Court structure across {stats.states} states and union territories, and the advocate names
             appearing on real case records — so you can see who actually practises where.
@@ -105,7 +105,7 @@ export default async function CourtDirectoryPage({
                 show, not an advocate&apos;s ability or standing.
               </p>
             </div>
-            <form action="/court-directory" className="row gap-2">
+            <form action="/case-records" className="row gap-2">
               <label htmlFor="adv-q" className="sr-only">Search advocate names</label>
               <input id="adv-q" name="q" defaultValue={q} className="input" placeholder="Search a name…" style={{ minWidth: 200 }} />
               <button type="submit" className="btn btn-secondary">Search</button>
