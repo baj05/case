@@ -42,11 +42,34 @@ const PA_IMAGE: Record<string, string> = {
   ARBITRATION: '/img/editorial/pa-arbitration.jpg',
   CONSUMER: '/img/editorial/pa-consumer.jpg',
   BANKING: '/img/editorial/pa-banking.jpg',
-  CIVIL: '/img/courts/court-bombay-hc.jpg',
-  CONSTITUTIONAL: '/img/courts/court-calcutta-hc.jpg',
+  CIVIL: '/img/editorial/court-building.jpg',
+  MOTOR: '/img/editorial/documents-signing.jpg',
+  CONSTITUTIONAL: '/img/editorial/law-books.jpg',
   ADMIN_SERVICE: '/img/courts/court-punjab-hc.jpg',
   ARBITRATION_ALT: '/img/courts/interior-chamber.jpg',
   INSOLVENCY: '/img/courts/court-karnataka-hc.jpg',
+};
+
+/** One relevant icon per practice area, drawn from the existing hand-built
+ * icon set, so the card reads as an original infographic rather than a
+ * generic stock photo with a caption. */
+const PA_ICON: Record<string, typeof GavelIcon> = {
+  LABOUR: BriefcaseIcon,
+  CORPORATE: BriefcaseIcon,
+  PROPERTY: DocumentIcon,
+  FAMILY: UsersIcon,
+  CRIMINAL: GavelIcon,
+  TAX: RupeeIcon,
+  IP: ShieldCheckIcon,
+  TECH: ShieldCheckIcon,
+  ARBITRATION: ChartIcon,
+  CONSUMER: CheckCircleIcon,
+  BANKING: RupeeIcon,
+  CIVIL: GavelIcon,
+  MOTOR: DocumentIcon,
+  CONSTITUTIONAL: GavelIcon,
+  ADMIN_SERVICE: DocumentIcon,
+  INSOLVENCY: ChartIcon,
 };
 
 export default async function HomePage() {
@@ -83,7 +106,9 @@ export default async function HomePage() {
         : null;
     })
     .filter((t) => t !== null);
-  const topAreas = areas.filter((a) => a.parentId === null);
+  const topAreas = areas
+    .filter((a) => a.parentId === null && a.professionalCount > 0)
+    .sort((a, b) => b.professionalCount - a.professionalCount);
   // Real ingestion coverage, expressed as the kit's segmented bar.
   const coverageSegments = 24;
   const councilsWithRecords = councils.filter((c) => c.recordCount > 0).length;
@@ -407,6 +432,7 @@ export default async function HomePage() {
           <div className="cat-grid stagger">
             {topAreas.slice(0, 8).map((area, i) => {
               const img = PA_IMAGE[area.code] ?? '/img/courts/court-madras-hc.jpg';
+              const AreaIcon = PA_ICON[area.code] ?? GavelIcon;
               // Vary the tiles so the grid reads like the reference collage.
               const span = i === 0 ? 'span-2row' : i === 3 ? 'span-2col' : '';
               return (
@@ -424,6 +450,18 @@ export default async function HomePage() {
                     style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   />
                   <span className="media-card-arrow" aria-hidden="true">↗</span>
+                  <span
+                    className="row gap-1"
+                    style={{
+                      position: 'absolute', top: 12, left: 12, alignItems: 'center',
+                      background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)',
+                      color: '#fff', borderRadius: 999, padding: '4px 10px 4px 8px',
+                      fontSize: '0.75rem', fontWeight: 600,
+                    }}
+                  >
+                    <AreaIcon size={14} />
+                    {formatNumber(area.professionalCount)} advocates
+                  </span>
                   <span className="media-card-overlay">
                     <span className="t-title" style={{ color: '#fff' }}>{area.name}</span>
                     <span className="t-caption clamp-2" style={{ color: 'rgba(255,255,255,0.85)' }}>

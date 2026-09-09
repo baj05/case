@@ -29,22 +29,35 @@ export default function ReviewsHubPage() {
   return (
     <div className="stack gap-8">
       <section className="hero textured">
-        <div className="container stack gap-4" style={{ maxWidth: '54ch' }}>
-          <p className="t-label-mono ink-variant">Reviews</p>
-          <h1 className="t-display-lg">Real experiences. Better legal decisions.</h1>
-          <p className="t-body-lg ink-variant">
-            Read real experiences from clients, businesses and legal professionals — verified
-            where the platform can confirm a real interaction, anonymous where the reviewer
-            chose it, always clearly labelled as one or the other.
-          </p>
-          <form action="/search" className="row gap-2 wrap">
-            <label htmlFor="reviews-hub-search" className="sr-only">Search advocates, law firms or legal services</label>
-            <input id="reviews-hub-search" name="q" className="input" placeholder="Search advocates, law firms or legal services…" autoComplete="off" style={{ flex: 1, minWidth: 240 }} />
-            <button type="submit" className="btn btn-primary">Search</button>
-          </form>
-          <div className="row wrap gap-2">
-            <Link href="/search" className="btn btn-secondary">Find a professional to review</Link>
-            <Link href="/rate-us" className="btn btn-ghost">Rate CaseADVO instead</Link>
+        <div className="container hero-split">
+          <div className="stack gap-4" style={{ maxWidth: '54ch' }}>
+            <p className="t-label-mono ink-variant">Reviews</p>
+            <h1 className="t-display-lg">Real experiences. Better legal decisions.</h1>
+            <p className="t-body-lg ink-variant">
+              Read real experiences from clients, businesses and legal professionals — verified
+              where the platform can confirm a real interaction, anonymous where the reviewer
+              chose it, always clearly labelled as one or the other.
+            </p>
+            <form action="/search" className="row gap-2 wrap">
+              <label htmlFor="reviews-hub-search" className="sr-only">Search advocates, law firms or legal services</label>
+              <input id="reviews-hub-search" name="q" className="input" placeholder="Search advocates, law firms or legal services…" autoComplete="off" style={{ flex: 1, minWidth: 240 }} />
+              <button type="submit" className="btn btn-primary">Search</button>
+            </form>
+            <div className="row wrap gap-2">
+              <Link href="/search" className="btn btn-secondary">Find a professional to review</Link>
+              <Link href="/rate-us" className="btn btn-ghost">Rate CaseADVO instead</Link>
+            </div>
+          </div>
+
+          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
+            <video
+              src="/media/reviews-hub-demo.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
         </div>
       </section>

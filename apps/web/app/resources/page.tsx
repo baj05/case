@@ -56,29 +56,42 @@ export default function ResourcesPage() {
     <>
       {/* ---- hero ------------------------------------------------------- */}
       <section className="hero textured">
-        <div className="container stack gap-6">
-          <div className="stack gap-3" style={{ maxWidth: '54ch' }}>
-            <p className="t-label-mono ink-variant">Resource library</p>
-            <h1 className="t-display-lg">
-              Find the legal document,<br />
-              <span className="serif-em">form or guide</span> you need.
-            </h1>
-            <p className="t-body-lg ink-variant">
-              {formatNumber(stats.published)} resources. {formatNumber(stats.official)} are published by the
-              authority itself and open at their own site; {formatNumber(stats.templates)} are CaseADVO
-              templates you can read here before downloading. Every one of them is free, and every one says
-              plainly which of the two it is.
-            </p>
+        <div className="container hero-split">
+          <div className="stack gap-6">
+            <div className="stack gap-3" style={{ maxWidth: '54ch' }}>
+              <p className="t-label-mono ink-variant">Resource library</p>
+              <h1 className="t-display-lg">
+                Find the legal document,<br />
+                <span className="serif-em">form or guide</span> you need.
+              </h1>
+              <p className="t-body-lg ink-variant">
+                {formatNumber(stats.published)} resources. {formatNumber(stats.official)} are published by the
+                authority itself and open at their own site; {formatNumber(stats.templates)} are CaseADVO
+                templates you can read here before downloading. Every one of them is free, and every one says
+                plainly which of the two it is.
+              </p>
+            </div>
+
+            <ResourceSearch examples={EXAMPLES} autoFocus />
+
+            <div className="stat-strip">
+              <span className="stat"><span className="stat-num">{formatNumber(stats.published)}</span><span className="stat-label">Resources</span></span>
+              <span className="stat"><span className="stat-num">{formatNumber(stats.official)}</span><span className="stat-label">Official sources</span></span>
+              <span className="stat"><span className="stat-num">{formatNumber(stats.previewable)}</span><span className="stat-label">Readable in the browser</span></span>
+              <span className="stat"><span className="stat-num">{formatNumber(stats.states)}</span><span className="stat-label">States covered</span></span>
+              <span className="stat"><span className="stat-num">{formatNumber(stats.authorities)}</span><span className="stat-label">Authorities</span></span>
+            </div>
           </div>
 
-          <ResourceSearch examples={EXAMPLES} autoFocus />
-
-          <div className="stat-strip">
-            <span className="stat"><span className="stat-num">{formatNumber(stats.published)}</span><span className="stat-label">Resources</span></span>
-            <span className="stat"><span className="stat-num">{formatNumber(stats.official)}</span><span className="stat-label">Official sources</span></span>
-            <span className="stat"><span className="stat-num">{formatNumber(stats.previewable)}</span><span className="stat-label">Readable in the browser</span></span>
-            <span className="stat"><span className="stat-num">{formatNumber(stats.states)}</span><span className="stat-label">States covered</span></span>
-            <span className="stat"><span className="stat-num">{formatNumber(stats.authorities)}</span><span className="stat-label">Authorities</span></span>
+          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
+            <video
+              src="/media/resources-library-demo.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
         </div>
       </section>
