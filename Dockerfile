@@ -53,6 +53,14 @@ COPY --from=build --chown=lexhall:lexhall /app/package.json ./
 # The reviewed judicial-statistics extract the ingest script reads at boot.
 # Only the structured artifact ships — raw crawl HTML stays out of the image.
 COPY --from=build --chown=lexhall:lexhall /app/research/ecourts/structured ./research/ecourts/structured
+# The real, already-ingested corpus (62,946 professionals), baked in at a
+# path outside the /app/data volume — never written to directly. On a fresh
+# volume (no persistent disk attached, or a first-ever deploy) the entrypoint
+# copies it into place; a previously-populated persistent volume is left
+# alone. Ships the platform with real data on day one instead of the
+# schema-only "run ingest yourself" state, while still letting a real
+# deployment's own ingested volume take over once one exists.
+COPY --chown=lexhall:lexhall data/lexhall.db /app/data-seed/lexhall.db
 COPY --chown=lexhall:lexhall docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && mkdir -p /app/data && chown -R lexhall:lexhall /app/data

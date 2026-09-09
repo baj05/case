@@ -7,6 +7,17 @@ set -e
 # than a hard failure. Migrations are additive and idempotent, so this is safe
 # on every restart, including over an existing populated volume.
 # ---------------------------------------------------------------------------
+# A fresh /app/data volume (no persistent disk attached, or the very first
+# deploy of one) has nothing in it yet. Rather than boot into the
+# schema-only "degraded" state below, copy in the real corpus baked into the
+# image at build time — but only when the volume is genuinely empty, so a
+# real deployment's own ingested data (on a persistent disk that survives
+# container replacement) is never overwritten by the seed.
+if [ ! -f "${DATABASE_PATH}" ] && [ -f /app/data-seed/lexhall.db ]; then
+  echo "[entrypoint] ${DATABASE_PATH} does not exist yet; seeding from the baked-in corpus"
+  cp /app/data-seed/lexhall.db "${DATABASE_PATH}"
+fi
+
 echo "[entrypoint] ensuring schema at ${DATABASE_PATH}"
 node --input-type=module -e "
   const { applySchema, isInitialised } = await import('/app/packages/db/src/client.ts');
