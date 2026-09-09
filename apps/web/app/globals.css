@@ -1092,6 +1092,9 @@ details[open] > .filter-summary::after { content: '–'; }
   width: 32px; height: 32px; border-radius: 50%; margin-bottom: 8px;
   background: var(--surface-high); color: var(--primary);
 }
+.filter-search {
+  width: 100%; margin-top: 8px; padding: 6px 10px; font-size: 0.8125rem; min-height: 34px;
+}
 .filter-options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; max-height: 260px; overflow-y: auto; }
 .filter-option {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1221,6 +1224,35 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 .map-marker:hover { transform: scale(1.14); box-shadow: var(--shadow-md); }
 .map-marker.is-active { background: var(--primary); border-color: var(--primary-fixed); }
+
+/* Court landmark pin — a teardrop, not a circle, so it never reads as "the
+   same kind of thing" as a state population bubble on the same map. */
+.court-marker {
+  width: 20px; height: 20px;
+  background: var(--secondary); color: var(--on-secondary);
+  border: 2px solid var(--surface-lowest);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.court-marker svg { width: 60%; height: 60%; transform: rotate(45deg); }
+.court-marker:hover { transform: rotate(-45deg) scale(1.16); box-shadow: var(--shadow-md); }
+.court-marker-major { width: 26px; height: 26px; background: var(--trust-navy); }
+.court-marker.is-active { background: var(--primary); border-color: var(--primary-fixed); }
+
+.state-map-legend { flex: none; margin-top: 8px; }
+.state-map-legend .t-caption, .state-map-legend span { font-size: 0.6875rem; color: var(--on-surface-variant); }
+.map-marker-legend-swatch {
+  width: 12px; height: 12px; border-radius: 50%; background: var(--trust-navy);
+  border: 1.5px solid var(--surface-lowest); box-shadow: var(--shadow-sm); flex: none;
+}
+.court-marker-legend-swatch {
+  width: 11px; height: 11px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--trust-navy); border: 1.5px solid var(--surface-lowest); flex: none;
+}
+.court-marker-legend-swatch-minor { background: var(--secondary); }
 
 /* --- profile page ------------------------------------------------------ */
 .profile-hero { display: grid; gap: 20px; grid-template-columns: 1fr; }

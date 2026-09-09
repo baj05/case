@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BriefcaseIcon, PinIcon, GavelIcon, UsersIcon, RupeeIcon, ShieldCheckIcon } from './Icons';
@@ -31,6 +31,11 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
   const router = useRouter();
   const params = useSearchParams();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  // Per-group type-to-filter text, only shown on groups long enough to need
+  // it (see the render below) — one map rather than a hook per group, since
+  // groups are rendered from a loop.
+  const [queries, setQueries] = useState<Record<string, string>>({});
 
   // The QuickFilterBar's "More filters" pill lives outside this component
   // (it sits above the results, not in the sidebar), so it signals here via
@@ -58,14 +63,31 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
     return qs ? `/search?${qs}` : '/search';
   }
 
-  function toggle(key: string, value: string) {
-    router.push(withParam(key, params.get(key) === value ? null : value));
+  function goto(href: string) {
+    startTransition(() => router.push(href));
   }
 
+  function toggle(key: string, value: string) {
+    goto(withParam(key, params.get(key) === value ? null : value));
+  }
+
+  // A checkbox/chip change already navigates instantly (no separate "Apply"
+  // step) — the only thing that wasn't visible was the gap while the new
+  // page streamed in, which read as "did that click even register?" on a
+  // slow connection. `isPending` fills that gap without changing what
+  // actually happens on click.
   const body = (
-    <div className="stack">
+    <div className="stack" aria-busy={isPending} style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 150ms ease', pointerEvents: isPending ? 'none' : undefined }}>
       {groups.map((group) => {
         const current = params.get(group.key);
+        const query = queries[group.key] ?? '';
+        // Only long lists earn a search box — Professional type has 7
+        // options and would never need one; Practice area and Court both
+        // run past 30.
+        const searchable = group.options.length > 8;
+        const visible = searchable && query.trim()
+          ? group.options.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()))
+          : group.options;
         return (
           <details key={group.key} className="filter-group" open={group.openByDefault || Boolean(current)}>
             <summary className="filter-summary">
@@ -75,9 +97,23 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
                 {current && <span className="chip chip-primary" style={{ marginLeft: 8, fontSize: '0.6875rem' }}>1</span>}
               </span>
             </summary>
+            {searchable && (
+              <input
+                type="text"
+                className="input filter-search"
+                placeholder={`Search ${group.label.toLowerCase()}…`}
+                value={query}
+                onChange={(e) => setQueries((q) => ({ ...q, [group.key]: e.target.value }))}
+                aria-label={`Search within ${group.label}`}
+              />
+            )}
             <div className="filter-options" role="group" aria-label={group.label}>
-              {group.options.length === 0 && <p className="t-caption" style={{ padding: '6px 10px' }}>Nothing to filter by yet.</p>}
-              {group.options.map((opt) => {
+              {visible.length === 0 && (
+                <p className="t-caption" style={{ padding: '6px 10px' }}>
+                  {group.options.length === 0 ? 'Nothing to filter by yet.' : `No match for "${query}".`}
+                </p>
+              )}
+              {visible.map((opt) => {
                 const isOn = current === opt.value;
                 return (
                   <button
@@ -116,7 +152,7 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
                   key={label} type="button"
                   className={`chip chip-button ${(params.get('feemax') ?? '') === v ? 'chip-primary' : 'chip-outline'}`}
                   aria-pressed={(params.get('feemax') ?? '') === v}
-                  onClick={() => router.push(withParam('feemax', v || null))}
+                  onClick={() => goto(withParam('feemax', v || null))}
                 >{label}</button>
               ))}
             </div>
@@ -130,7 +166,7 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
                   key={label} type="button"
                   className={`chip chip-button ${(params.get('years') ?? '') === v ? 'chip-primary' : 'chip-outline'}`}
                   aria-pressed={(params.get('years') ?? '') === v}
-                  onClick={() => router.push(withParam('years', v || null))}
+                  onClick={() => goto(withParam('years', v || null))}
                 >{label}</button>
               ))}
             </div>
@@ -146,7 +182,7 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
           <input
             type="checkbox"
             checked={params.get('verified') === '1'}
-            onChange={(e) => router.push(withParam('verified', e.target.checked ? '1' : null))}
+            onChange={(e) => goto(withParam('verified', e.target.checked ? '1' : null))}
           />
           <span className="stack gap-1">
             <span className="t-body-sm" style={{ fontWeight: 600 }}>Bar enrolment verified</span>
@@ -157,7 +193,7 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
           <input
             type="checkbox"
             checked={params.get('accepting') === '1'}
-            onChange={(e) => router.push(withParam('accepting', e.target.checked ? '1' : null))}
+            onChange={(e) => goto(withParam('accepting', e.target.checked ? '1' : null))}
           />
           <span className="stack gap-1">
             <span className="t-body-sm" style={{ fontWeight: 600 }}>Accepting consultation requests</span>
@@ -168,7 +204,7 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
           <input
             type="checkbox"
             checked={params.get('available') === '1'}
-            onChange={(e) => router.push(withParam('available', e.target.checked ? '1' : null))}
+            onChange={(e) => goto(withParam('available', e.target.checked ? '1' : null))}
           />
           <span className="stack gap-1">
             <span className="t-body-sm" style={{ fontWeight: 600 }}>Has published availability</span>

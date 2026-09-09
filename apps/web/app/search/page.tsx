@@ -273,7 +273,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           )}
         </div>
 
-        <IndiaStateMap states={states.map((s) => ({ name: s.name, slug: s.slug, professionalCount: s.professionalCount }))} />
+        <IndiaStateMap
+          states={states.map((s) => ({ name: s.name, slug: s.slug, professionalCount: s.professionalCount }))}
+          courts={courts.map((c) => ({ name: c.name, slug: c.slug, tier: c.tier, seat: c.seat, professionalCount: c.professionalCount }))}
+        />
       </div>
     </div>
   );
