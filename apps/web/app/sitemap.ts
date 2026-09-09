@@ -26,7 +26,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/judges`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/bar-councils`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/how-it-works`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${BASE}/data-sources`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
   if (!databaseReady()) return stat;

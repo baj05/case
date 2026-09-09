@@ -71,7 +71,6 @@ export const NAV: NavItem[] = [
           { href: '/judicial-data', label: 'Judicial data', hint: 'Pendency & disposal statistics' },
           { href: '/case-records', label: 'Case-record names', hint: 'Advocate names from licensed case data — a separate, smaller dataset than the main directory' },
         ],
-        footer: { href: '/data-sources', label: 'Where our data comes from' },
       },
     ],
     feature: {

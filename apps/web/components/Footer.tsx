@@ -56,7 +56,6 @@ export function Footer() {
       head: 'Transparency',
       links: [
         { href: '/how-it-works', label: 'How results are ranked' },
-        { href: '/data-sources', label: 'Where our data comes from' },
         { href: '/credits', label: 'Image credits' },
         { href: '/bot', label: 'About our crawler' },
       ],

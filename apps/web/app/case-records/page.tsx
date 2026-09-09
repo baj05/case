@@ -196,7 +196,6 @@ export default async function CourtDirectoryPage({
           <div className="row wrap gap-2">
             <Link href="/for-professionals" className="btn btn-primary">Claim your profile</Link>
             <Link href="/judicial-data" className="btn btn-secondary">Judicial statistics</Link>
-            <Link href="/data-sources" className="btn btn-ghost">Where our data comes from</Link>
           </div>
           <p className="t-caption">
             Source: eCourtsIndia partner API (licensed){retrieved ? ` · retrieved ${retrieved}` : ''} ·{' '}

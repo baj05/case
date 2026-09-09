@@ -28,7 +28,6 @@ export default function BarCouncilsPage() {
       <Notice tone="legal" title="What this covers, and what it does not">
         The Bar Council of India publishes each council&apos;s elected office-bearers, not the full roll
         of enrolled advocates. Full rolls are published separately by each council in its own format.
-        {' '}<Link href="/data-sources" style={{ textDecoration: 'underline' }}>Read the detail</Link>.
       </Notice>
 
       <div className="grid-auto-lg">

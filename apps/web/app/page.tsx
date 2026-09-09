@@ -657,8 +657,7 @@ export default async function HomePage() {
               response is hashed so we only republish what actually changed.
             </p>
             <div className="row wrap gap-2">
-              <Link href="/data-sources" className="btn btn-secondary">Where our data comes from</Link>
-              <Link href="/bar-councils" className="btn btn-ghost">All {councils.length} Councils</Link>
+              <Link href="/bar-councils" className="btn btn-secondary">All {councils.length} Councils</Link>
             </div>
           </div>
 

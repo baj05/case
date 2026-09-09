@@ -339,7 +339,6 @@ export default function JudicialDataPage() {
           </p>
           <div className="row wrap gap-2">
             <Link href="/search" className="btn btn-primary">Find an advocate</Link>
-            <Link href="/data-sources" className="btn btn-secondary">All our data sources</Link>
           </div>
         </section>
       </div>
