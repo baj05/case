@@ -49,15 +49,8 @@ export default function CorporateSuitePage() {
               <Link href="#how-it-works" className="btn btn-secondary">How it works</Link>
             </div>
           </div>
-          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
-            <video
-              src="/media/corporate-cover-hero.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+          <div className="media-card-ghost">
+            <video src="/media/corporate-cover-hero.webm" autoPlay loop muted playsInline />
           </div>
         </div>
       </section>
@@ -188,15 +181,8 @@ export default function CorporateSuitePage() {
             </ol>
             <Link href="/corporate/start" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Set up your company account</Link>
           </div>
-          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
-            <video
-              src="/media/corporate-cover-how-it-works.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+          <div className="media-card-ghost">
+            <video src="/media/corporate-cover-how-it-works.webm" autoPlay loop muted playsInline />
           </div>
         </div>
       </section>

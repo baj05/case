@@ -941,6 +941,15 @@ ul, ol { list-style: none; padding: 0; }
 }
 .media-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .media-card img { width: 100%; height: 100%; object-fit: cover; }
+/* For an illustration video with its own background keyed out to alpha
+   (see apps/web/public/media/*.webm) — no card chrome to fight the
+   transparency, so the clip blends straight into the section behind it. */
+.media-card-ghost {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+}
+.media-card-ghost video { width: 100%; height: 100%; object-fit: contain; }
 .media-card-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.30) 45%, transparent 75%);

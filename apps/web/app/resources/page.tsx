@@ -83,15 +83,8 @@ export default function ResourcesPage() {
             </div>
           </div>
 
-          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
-            <video
-              src="/media/resources-library-demo.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+          <div className="media-card-ghost">
+            <video src="/media/resources-library-demo.webm" autoPlay loop muted playsInline />
           </div>
         </div>
       </section>

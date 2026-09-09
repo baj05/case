@@ -49,15 +49,8 @@ export default function ReviewsHubPage() {
             </div>
           </div>
 
-          <div className="media-card" style={{ aspectRatio: '4 / 3' }}>
-            <video
-              src="/media/reviews-hub-demo.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+          <div className="media-card-ghost">
+            <video src="/media/reviews-hub-demo.webm" autoPlay loop muted playsInline />
           </div>
         </div>
       </section>
