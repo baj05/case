@@ -59,6 +59,7 @@ function writeAudit(input: {
 export interface OrgSummary {
   id: number; name: string; slug: string; kind: string;
   emailDomain: string | null; domainVerifiedAt: string | null;
+  industry: string | null; about: string | null;
 }
 
 /**
@@ -73,6 +74,7 @@ export interface OrgSummary {
 export function createCorporateOrganisation(input: {
   name: string; ownerUserId: number; countryId?: number;
   billingEmail?: string | null; gstin?: string | null;
+  industry?: string | null; about?: string | null;
 }): OrgSummary {
   const name = input.name.trim();
   if (name.length < 2) throw new CorporateError('NAME_TOO_SHORT');
@@ -93,9 +95,12 @@ export function createCorporateOrganisation(input: {
       try {
         const info = h.prepare(
           `INSERT INTO organisation (kind, name, slug, country_id, billing_email, gstin,
-                                     verification_level, created_at, updated_at)
-           VALUES ('corporate',?,?,?,?,?,0,?,?)`,
-        ).run(name, slug, countryId, input.billingEmail ?? null, input.gstin ?? null, ts, ts);
+                                     industry, about, verification_level, created_at, updated_at)
+           VALUES ('corporate',?,?,?,?,?,?,?,0,?,?)`,
+        ).run(
+          name, slug, countryId, input.billingEmail ?? null, input.gstin ?? null,
+          input.industry?.trim() || null, input.about?.trim() || null, ts, ts,
+        );
         orgId = Number(info.lastInsertRowid);
         break;
       } catch (error) {
@@ -118,7 +123,30 @@ export function createCorporateOrganisation(input: {
       reason: 'Corporate account created',
     });
 
-    return { id: orgId, name, slug, kind: 'corporate', emailDomain: null, domainVerifiedAt: null };
+    return {
+      id: orgId, name, slug, kind: 'corporate', emailDomain: null, domainVerifiedAt: null,
+      industry: input.industry?.trim() || null, about: input.about?.trim() || null,
+    };
+  });
+}
+
+/**
+ * Update the profile a company states about itself — industry and a short
+ * description of what it does. This is the context an assigned advocate
+ * sees before the first conversation, so it is worth letting a company fix
+ * or add it after signup, not only capture it once at creation.
+ */
+export function updateOrgProfile(
+  organisationId: number, actorUserId: number, input: { industry?: string | null; about?: string | null },
+): void {
+  const ts = now();
+  db().prepare(
+    `UPDATE organisation SET industry = ?, about = ?, updated_at = ? WHERE id = ? AND kind = 'corporate'`,
+  ).run(input.industry?.trim() || null, input.about?.trim() || null, ts, organisationId);
+  writeAudit({
+    actorUserId, action: 'organisation.profile_updated', subjectId: organisationId,
+    after: { industry: input.industry ?? null, about: input.about ?? null },
+    reason: 'Company profile updated',
   });
 }
 
@@ -129,6 +157,7 @@ export function createCorporateOrganisation(input: {
 export interface OrgMembership {
   organisationId: number; slug: string; name: string; kind: string;
   role: OrgRole; emailDomain: string | null; domainVerifiedAt: string | null;
+  industry: string | null; about: string | null;
 }
 
 /** Organisations this user belongs to, for an account switcher. */
@@ -141,7 +170,8 @@ export function listOrgsForUser(userId: number): OrgMembership[] {
   // through it, e.g. as a grant of booking.manage over that firm's bookings.
   return db().prepare(
     `SELECT o.id AS organisationId, o.slug, o.name, o.kind, m.role,
-            o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt
+            o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt,
+            o.industry, o.about
        FROM org_member m
        JOIN organisation o ON o.id = m.organisation_id
       WHERE m.user_id = ? AND o.kind = 'corporate' AND o.deleted_at IS NULL
@@ -166,7 +196,8 @@ export function getOrgMembershipBySlug(userId: number, slug: string): OrgMembers
   // public listing through the corporate tenant actions.
   const row = db().prepare(
     `SELECT o.id AS organisationId, o.slug, o.name, o.kind, m.role,
-            o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt
+            o.email_domain AS emailDomain, o.domain_verified_at AS domainVerifiedAt,
+            o.industry, o.about
        FROM organisation o
        JOIN org_member m ON m.organisation_id = o.id AND m.user_id = ?
       WHERE o.slug = ? AND o.kind = 'corporate' AND o.deleted_at IS NULL`,
@@ -178,7 +209,8 @@ export function getOrgMembershipBySlug(userId: number, slug: string): OrgMembers
  * platform_admin read path, which is read-only by design. */
 export function getCorporateOrgBySlug(slug: string): OrgSummary | null {
   const row = db().prepare(
-    `SELECT id, name, slug, kind, email_domain AS emailDomain, domain_verified_at AS domainVerifiedAt
+    `SELECT id, name, slug, kind, email_domain AS emailDomain, domain_verified_at AS domainVerifiedAt,
+            industry, about
        FROM organisation WHERE slug = ? AND kind = 'corporate' AND deleted_at IS NULL`,
   ).get(slug) as unknown as OrgSummary | undefined;
   return row ?? null;

@@ -6,6 +6,7 @@ import { listOrgsForUser } from '@lexhall/db';
 import { currentUser } from '@/lib/auth';
 import { Notice } from '@/components/States';
 import { CorporateSignupForm, CreateOrganisationForm } from '@/components/CorporateForms';
+import { COVER_TIERS } from '@/app/corporate/cover-tiers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,11 +16,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default async function CorporateStartPage() {
+export default async function CorporateStartPage({
+  searchParams,
+}: { searchParams: Promise<{ plan?: string }> }) {
   if (!databaseReady()) {
     return <div className="container section"><Notice tone="warn">Run <code className="mono">npm run ingest</code> first.</Notice></div>;
   }
   if (!getFlags().FEATURE_CORPORATE) notFound();
+
+  const { plan: planSlug } = await searchParams;
+  const plan = COVER_TIERS.find((t) => t.slug === planSlug);
 
   const user = await currentUser();
   const existing = user ? listOrgsForUser(user.id) : [];
@@ -34,6 +40,16 @@ export default async function CorporateStartPage() {
           same place instead of forwarding files to each other.
         </p>
       </div>
+
+      {plan && (
+        <Notice tone="info" title={`Setting up: ${plan.name}`}>
+          {plan.priceMonthly
+            ? `₹${plan.priceMonthly.toLocaleString('en-IN')}/month, or ₹${plan.priceYearly!.toLocaleString('en-IN')}/year.`
+            : 'Custom pricing.'}{' '}
+          Create your account below, then mention {plan.name} when your advocate reaches out to confirm scope
+          and billing — nothing is charged automatically.
+        </Notice>
+      )}
 
       {existing.length > 0 && (
         <section className="stack gap-3">

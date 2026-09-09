@@ -6,6 +6,7 @@ import { listOrgMembers, listOrgBookings } from '@lexhall/db';
 import { requireOrgMember, can } from '@/lib/org';
 import { Notice } from '@/components/States';
 import { CORPORATE_SUITE_SLUGS } from '@lexhall/core';
+import { CompanyProfileForm } from '@/components/CorporateForms';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,28 @@ export default async function CorporateOrgPage({ params }: { params: Promise<{ s
           <span className="t-caption">Only bookings made in the company’s name appear here.</span>
         </div>
       </div>
+
+      <section className="card stack gap-3" style={{ padding: 'clamp(18px, 3vw, 28px)' }}>
+        <div className="stack gap-1">
+          <h2 className="t-headline-md">Company profile</h2>
+          <p className="t-body-sm ink-variant measure">
+            What an advocate assigned to this account sees before the first conversation — so they arrive
+            with context, not a blank page.
+          </p>
+        </div>
+        {!ctx.viaPlatformAdmin && can(membership.role, 'org.settings') ? (
+          <CompanyProfileForm slug={slug} industry={membership.industry} about={membership.about} />
+        ) : (
+          <div className="stack gap-2">
+            <p className="t-body-sm">
+              <strong>Industry:</strong> {membership.industry ?? <span className="ink-variant">Not stated</span>}
+            </p>
+            <p className="t-body-sm">
+              <strong>About:</strong> {membership.about ?? <span className="ink-variant">Not stated</span>}
+            </p>
+          </div>
+        )}
+      </section>
 
       <section className="stack gap-3">
         <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>

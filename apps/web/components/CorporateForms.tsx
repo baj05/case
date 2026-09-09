@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react';
 import {
   corporateSignupAction, createOrganisationAction, inviteMemberAction,
   revokeInviteAction, setMemberRoleAction, removeMemberAction,
-  acceptInviteAction, acceptInviteSignupAction,
+  acceptInviteAction, acceptInviteSignupAction, updateOrgProfileAction,
 } from '@/app/actions';
 import { Field, FormError, FormSuccess, SubmitButton } from './Forms';
 
@@ -25,6 +25,38 @@ const ROLE_LABEL: Record<string, string> = {
   owner: 'Owner', admin: 'Admin', member: 'Member',
   billing: 'Billing contact', read_only: 'Read only',
 };
+
+/** Not exhaustive — "Other" covers anything not listed, since forcing a
+ * pick here would either misclassify a company or block signup entirely. */
+const INDUSTRY_OPTIONS = [
+  'Technology / SaaS', 'E-commerce & retail', 'Manufacturing', 'Financial services',
+  'Healthcare & pharma', 'Real estate & construction', 'Professional services (consulting, agency)',
+  'Media & entertainment', 'Logistics & transport', 'Education', 'Hospitality & travel',
+  'Food & beverage', 'Non-profit', 'Other',
+] as const;
+
+/** Shared by both signup forms: what an assigned advocate sees before the
+ * first conversation. Optional — a company that skips it can still fill it
+ * in later from the account dashboard, but stating it now means the
+ * advocate isn't starting from zero. */
+function CompanyProfileFields({ val, err }: { val: Record<string, string>; err: Record<string, string> }) {
+  return (
+    <>
+      <Field name="industry" label="Industry" hint="Optional, but it helps your advocate get oriented fast." error={err.industry}>
+        <select id="industry" name="industry" className="select" defaultValue={val.industry ?? ''}>
+          <option value="">Prefer not to say</option>
+          {INDUSTRY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </Field>
+      <Field name="about" label="What does your company do?" hint="A sentence or two — who you are, what you do, roughly how big. Optional." error={err.about}>
+        <textarea id="about" name="about" className="textarea" rows={3} maxLength={500}
+          placeholder="e.g. a 40-person D2C skincare brand, manufacturing in Baddi and selling online across India."
+          defaultValue={val.about ?? ''} aria-invalid={Boolean(err.about)}
+          aria-describedby={describedBy('about', true, Boolean(err.about))} />
+      </Field>
+    </>
+  );
+}
 
 const ROLE_HINT: Record<string, string> = {
   admin: 'Can invite and manage people, and book on the company’s behalf.',
@@ -69,6 +101,7 @@ export function CorporateSignupForm() {
           required minLength={8} aria-invalid={Boolean(err.password)}
           aria-describedby={describedBy('password', true, Boolean(err.password))} />
       </Field>
+      <CompanyProfileFields val={val} err={err} />
       <SubmitButton pendingLabel="Creating…">Create the account</SubmitButton>
     </form>
   );
@@ -92,7 +125,26 @@ export function CreateOrganisationForm() {
           defaultValue={val.billingEmail ?? ''} aria-invalid={Boolean(err.billingEmail)}
           aria-describedby={describedBy('billingEmail', true, Boolean(err.billingEmail))} />
       </Field>
+      <CompanyProfileFields val={val} err={err} />
       <SubmitButton pendingLabel="Creating…">Create the company account</SubmitButton>
+    </form>
+  );
+}
+
+/** Inline edit, for the account dashboard — the same two fields, pre-filled,
+ * so a company that skipped this at signup (or every company that existed
+ * before this field did) can still give its advocate the context. */
+export function CompanyProfileForm({ slug, industry, about }: { slug: string; industry: string | null; about: string | null }) {
+  const [state, formAction] = useActionState(updateOrgProfileAction, null);
+  const err = state?.fieldErrors ?? {};
+  const val = state?.values ?? { industry: industry ?? '', about: about ?? '' };
+  return (
+    <form action={formAction} className="stack gap-4" noValidate>
+      <input type="hidden" name="slug" value={slug} />
+      <FormError message={state?.ok ? undefined : state?.message} />
+      <FormSuccess message={state?.ok ? state.message : undefined} />
+      <CompanyProfileFields val={val} err={err} />
+      <SubmitButton pendingLabel="Saving…" className="btn btn-secondary btn-sm">Save company profile</SubmitButton>
     </form>
   );
 }

@@ -340,6 +340,17 @@ ul, ol { list-style: none; padding: 0; }
   gap: var(--gutter);
   grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
 }
+.cover-tier-grid {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  align-items: stretch;
+}
+.cover-tier { display: flex; flex-direction: column; }
+.cover-tier-featured {
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow-md);
+}
 
 /* Any wide content scrolls inside itself, never the page. `min-width: 0` is
    load-bearing: without it a flex/grid item refuses to shrink below its

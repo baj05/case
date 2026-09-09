@@ -17,6 +17,7 @@
     "start": "npm run start --workspace=@lexhall/web",
     "typecheck": "cd apps/web && npx tsc --noEmit",
     "db:reset": "npm run reset --workspace=@lexhall/db",
+    "db:migrate": "node packages/db/scripts/migrate.ts",
     "db:seed": "npm run seed --workspace=@lexhall/db",
     "db:stats": "npm run stats --workspace=@lexhall/db",
     "ingest": "npm run ingest --workspace=@lexhall/ingestion",

@@ -15,7 +15,7 @@ import {
   createUser, authenticate, createSession, deleteSession, AuthError,
   createReview, editReview, withdrawReview, respondToReview, isAuthorizedToRespond, voteHelpful, reportReview, moderateReview, deleteReview, normaliseHandle,
   createOrganisationReview, getOrganisationBySlug, REVIEWABLE_ORG_KINDS, submitSiteFeedback, getReviewSubjectPath,
-  createCorporateOrganisation, createOrgInvite, revokeInvite, setMemberRole, removeMember,
+  createCorporateOrganisation, createOrgInvite, revokeInvite, setMemberRole, removeMember, updateOrgProfile,
   acceptInvite, peekInvite, INVITABLE_ROLES, listOrgsForUser,
 } from '@lexhall/db';
 import type { OrgRole } from '@lexhall/db';
@@ -757,7 +757,7 @@ export async function createOrganisationAction(_prev: ActionResult | null, form:
   const user = await currentUser();
   if (!user) return { ok: false, message: 'Please sign in first.' };
 
-  const values = keep(form, ['name', 'billingEmail'] as const);
+  const values = keep(form, ['name', 'billingEmail', 'industry', 'about'] as const);
   const fieldErrors: Record<string, string> = {};
   if (values.name.length < 2) fieldErrors.name = 'Enter the company name.';
   if (values.billingEmail && !EMAIL_RE.test(values.billingEmail)) {
@@ -773,6 +773,8 @@ export async function createOrganisationAction(_prev: ActionResult | null, form:
       name: values.name,
       ownerUserId: user.id,
       billingEmail: values.billingEmail || null,
+      industry: values.industry || null,
+      about: values.about || null,
     });
     slug = org.slug;
   } catch (error) {
@@ -785,7 +787,7 @@ export async function createOrganisationAction(_prev: ActionResult | null, form:
 /** Sign up and create the company in one step, for someone with no account. */
 export async function corporateSignupAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   if (!getFlags().FEATURE_CORPORATE) return { ok: false, message: 'This feature is not available.' };
-  const values = keep(form, ['fullName', 'email', 'password', 'companyName'] as const);
+  const values = keep(form, ['fullName', 'email', 'password', 'companyName', 'industry', 'about'] as const);
   const fieldErrors: Record<string, string> = {};
   if (values.fullName.length < 2) fieldErrors.fullName = 'Enter your name.';
   if (!EMAIL_RE.test(values.email)) fieldErrors.email = 'Enter a valid email address.';
@@ -800,7 +802,10 @@ export async function corporateSignupAction(_prev: ActionResult | null, form: Fo
     const user = createUser({ email: values.email, fullName: values.fullName, password: values.password });
     const session = createSession(user.id);
     await setSessionCookie(session.id, session.expiresAt);
-    slug = createCorporateOrganisation({ name: values.companyName, ownerUserId: user.id }).slug;
+    slug = createCorporateOrganisation({
+      name: values.companyName, ownerUserId: user.id,
+      industry: values.industry || null, about: values.about || null,
+    }).slug;
   } catch (error) {
     if ((error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw error;
     if (error instanceof AuthError && error.code === 'EMAIL_TAKEN') {
@@ -904,6 +909,27 @@ export async function setMemberRoleAction(_prev: ActionResult | null, form: Form
   }
   revalidatePath(`/corporate/o/${slug}/team`);
   return { ok: true, message: 'Role updated.' };
+}
+
+/** The context an assigned advocate sees before the first conversation —
+ * separate from settings a booking or a member roster touches, so it is
+ * gated on `org.settings` the same way the rest of the account's own
+ * details are, not folded into a capability meant for people management. */
+export async function updateOrgProfileAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const slug = str(form, 'slug', 120);
+  const values = keep(form, ['industry', 'about'] as const);
+
+  const gate = await orgActionContext(slug, 'org.settings');
+  if ('error' in gate) return { ...gate.error, values };
+
+  const user = await currentUser();
+  if (!user) return { ok: false, message: 'Please sign in first.' };
+
+  updateOrgProfile(gate.ctx.membership.organisationId, user.id, {
+    industry: values.industry || null, about: values.about || null,
+  });
+  revalidatePath(`/corporate/o/${slug}`);
+  return { ok: true, message: 'Company profile updated.', values };
 }
 
 export async function removeMemberAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {

@@ -77,6 +77,7 @@ export async function currentOrgContext(slug: string): Promise<OrgContext | null
       membership: {
         organisationId: org.id, slug: org.slug, name: org.name, kind: org.kind,
         role: 'read_only', emailDomain: org.emailDomain, domainVerifiedAt: org.domainVerifiedAt,
+        industry: org.industry, about: org.about,
       },
       entitlements: orgEntitlements(org.id),
       viaPlatformAdmin: true,
