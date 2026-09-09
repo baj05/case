@@ -209,8 +209,14 @@ export interface AvailabilityDay { date: string; count: number; hasVideo: boolea
  * calendar date deliberately — the strip is a coarse "does this day have
  * anything" signal, not a booking surface, so it does not need the advocate's
  * timezone the way `generateSlots` itself does.
+ *
+ * Every calendar date in the window is returned, not only the ones with a
+ * slot: a weekend `generateSlots` never books shows up here as a real
+ * zero-count day rather than silently vanishing from the strip, which is
+ * what lets a day-of-week grid line up Mon–Sun instead of skipping the days
+ * nobody works.
  */
-export function nextAvailabilityDays(professionalId: number, days = 9): AvailabilityDay[] {
+export function nextAvailabilityDays(professionalId: number, days = 14): AvailabilityDay[] {
   const slots = generateSlots(professionalId, new Date().toISOString(), days);
   const byDate = new Map<string, AvailabilityDay>();
   for (const s of slots) {
@@ -220,7 +226,14 @@ export function nextAvailabilityDays(professionalId: number, days = 9): Availabi
     if (s.mode === 'video') bucket.hasVideo = true;
     byDate.set(date, bucket);
   }
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const start = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const out: AvailabilityDay[] = [];
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(start.getTime() + i * 86_400_000);
+    const date = d.toISOString().slice(0, 10);
+    out.push(byDate.get(date) ?? { date, count: 0, hasVideo: false });
+  }
+  return out;
 }
 
 /** Offset in minutes for a named zone at a given instant, via Intl. */

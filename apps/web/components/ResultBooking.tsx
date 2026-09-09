@@ -23,7 +23,7 @@ export function ResultBooking({
 
   return (
     <>
-      <AvailabilityStrip days={availabilityDays} slug={slug} max={5} onSelectDay={setOpenDate} />
+      <AvailabilityStrip days={availabilityDays} slug={slug} max={14} columns={7} onSelectDay={setOpenDate} />
       <BookingDrawer
         open={openDate !== null}
         onClose={() => setOpenDate(null)}

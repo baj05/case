@@ -36,6 +36,7 @@ export function IndiaStateMap({ states }: { states: StateMapEntry[] }) {
   const params = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import('leaflet').Map | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const activeSlug = params.get('location');
 
   const withCoords = states
@@ -86,10 +87,23 @@ export function IndiaStateMap({ states }: { states: StateMapEntry[] }) {
           router.push(qs ? `/search?${qs}` : '/search');
         });
       }
+
+      // Leaflet sizes its tile grid once, at mount, from the container's
+      // current pixel box — it has no built-in awareness that this card
+      // goes from a fixed sticky column to full-width (or back) at the
+      // 1240px breakpoint. Without this, a browser resized across that
+      // breakpoint keeps rendering tiles at the stale width until the next
+      // full reload, which the map's own `display:none` used to paper over
+      // by never mounting it on the narrow side at all.
+      const ro = new ResizeObserver(() => mapRef.current?.invalidateSize());
+      ro.observe(containerRef.current!);
+      resizeObserverRef.current = ro;
     });
 
     return () => {
       cancelled = true;
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };

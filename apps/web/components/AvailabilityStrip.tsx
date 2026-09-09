@@ -18,8 +18,13 @@ const DATE_LABEL = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'nume
  * and the search results list, so every surface shows availability the
  * same way.
  */
-export function AvailabilityStrip({ days, slug, max = 6, onSelectDay }: {
+export function AvailabilityStrip({ days, slug, max = 6, columns, onSelectDay }: {
   days: AvailabilityDay[]; slug: string; max?: number;
+  /** Force an exact N-column grid (e.g. 7, for a Mon–Sun week row) instead
+   * of the default auto-fill wrap. Only worth setting where the container
+   * width is known and wide enough — the search card's widened availability
+   * column is; a narrower sidebar is better served letting cells wrap. */
+  columns?: number;
   /** When given, a day with slots calls this instead of navigating to the
    * booking page — e.g. the search results list opens a booking drawer
    * in place rather than leaving the list. Days with zero slots are never
@@ -31,7 +36,7 @@ export function AvailabilityStrip({ days, slug, max = 6, onSelectDay }: {
   const hiddenCount = days.length - shown.length;
 
   return (
-    <div className="avail-grid">
+    <div className={`avail-grid${columns ? ' avail-grid-week' : ''}`}>
       {shown.map((d) => {
         const label = DAY_LABEL.format(new Date(`${d.date}T00:00:00Z`));
         const date = DATE_LABEL.format(new Date(`${d.date}T00:00:00Z`));

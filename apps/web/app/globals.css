@@ -976,6 +976,19 @@ ul, ol { list-style: none; padding: 0; }
 .avail-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px;
 }
+/* The search card's full two-week grid: a fixed column count instead of
+   auto-fill, so a week always reads as one aligned row of seven days rather
+   than wrapping wherever a cell happens to stop fitting. Column count is
+   tied to how wide `.result-card-body`'s own right-hand track actually is
+   at each of its breakpoints (see line ~1027) — not a guess independent of
+   it — so seven columns only appears where seven cells actually have room. */
+.avail-grid-week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (min-width: 480px) and (max-width: 859px) {
+  .avail-grid-week { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
+@media (min-width: 1700px) {
+  .avail-grid-week { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
 .avail-cell {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 8px 4px; border-radius: var(--r-sm); border: 1px solid var(--outline-variant);
@@ -1151,15 +1164,25 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 
 /* --- state map (search sidebar) ----------------------------------------- */
+/* Below 1240px .search-layout.with-map has no third column, so the map
+   (third DOM child) would otherwise auto-place into row 2 of the filter
+   rail's own column — spanning it full-width puts it where a reader
+   actually expects a map: below the results, not squeezed under the
+   filters. At 1240px+ it becomes the real sticky third column instead. */
 .state-map-card {
-  display: none;
-  position: sticky; top: 84px; align-self: start;
+  display: block;
   background: var(--surface-lowest); border: 1px solid var(--outline-variant);
   border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-sm);
 }
-@media (min-width: 1240px) { .state-map-card { display: block; } }
+@media (max-width: 1239px) {
+  .state-map-card { grid-column: 1 / -1; }
+}
+@media (min-width: 1240px) {
+  .state-map-card { position: sticky; top: 84px; align-self: start; }
+}
 .state-map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-.state-map-leaflet { width: 100%; height: 340px; border-radius: var(--r); overflow: hidden; background: var(--surface-low); }
+.state-map-leaflet { width: 100%; height: 320px; border-radius: var(--r); overflow: hidden; background: var(--surface-low); }
+@media (min-width: 1240px) { .state-map-leaflet { height: 340px; } }
 .state-map-note { margin-top: 10px; }
 
 /* Leaflet chrome, restyled to this site's palette instead of its own blue defaults. */
