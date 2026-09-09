@@ -148,3 +148,88 @@ export function TrendUpIcon({ size = 14 }: IconProps) {
     </svg>
   );
 }
+
+// --- marketplace ----------------------------------------------------------
+
+export function MicIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="2.6" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ChatIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20.5 12c0 4-3.8 7.2-8.5 7.2a10 10 0 0 1-2.6-.34L4.5 20.5l1.2-3.4A6.9 6.9 0 0 1 3.5 12C3.5 8 7.3 4.8 12 4.8s8.5 3.2 8.5 7.2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ImageIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.2" y="4.5" width="17.6" height="15" rx="2.2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="8.6" cy="9.6" r="1.7" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.6 16.4l4.3-3.8 3.5 3 3.2-2.6 5.4 4.4" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function GlobeIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3.4 12h17.2M12 3.4c2.2 2.4 3.3 5.4 3.3 8.6s-1.1 6.2-3.3 8.6c-2.2-2.4-3.3-5.4-3.3-8.6S9.8 5.8 12 3.4z" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function HomeIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 10.4L12 4l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19v-8.6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9.6 20.4v-6h4.8v6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function LockIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4.6" y="10.4" width="14.8" height="9.6" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** The verified tick. Deliberately not X's checkmark badge: an eight-point
+ * seal, so it reads as "checked against a register" rather than as a
+ * borrowed social-media trust mark. */
+export function VerifiedIcon({ size = 15 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2.4l2.3 1.9 3-.3.9 2.9 2.5 1.7-1.2 2.8 1.2 2.8-2.5 1.7-.9 2.9-3-.3L12 21.6l-2.3-1.9-3 .3-.9-2.9L3.3 15.4l1.2-2.8-1.2-2.8 2.5-1.7.9-2.9 3 .3L12 2.4z" fill="currentColor" opacity="0.16" />
+      <path d="M12 2.4l2.3 1.9 3-.3.9 2.9 2.5 1.7-1.2 2.8 1.2 2.8-2.5 1.7-.9 2.9-3-.3L12 21.6l-2.3-1.9-3 .3-.9-2.9L3.3 15.4l1.2-2.8-1.2-2.8 2.5-1.7.9-2.9 3 .3L12 2.4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M8.4 12.1l2.5 2.5 4.7-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

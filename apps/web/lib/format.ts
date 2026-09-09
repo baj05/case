@@ -36,6 +36,41 @@ export function formatMinor(minor: number | null | undefined, currency = 'INR', 
   }
 }
 
+/** Compact age of a post — "4h", "3d", "2w". The feed shows dozens of these
+ * side by side, so `relativeDate`'s prose form ("3 days ago") is too wide;
+ * this is the same information at glance width. */
+export function shortAge(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const mins = Math.max(0, Math.floor((Date.now() - t) / 60_000));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w`;
+  return `${Math.floor(days / 30)}mo`;
+}
+
+export interface Expiry { label: string; urgent: boolean; expired: boolean }
+
+/** How long a listing has left. `urgent` inside 48 hours, because "5 hours
+ * left" and "3 weeks left" should not be styled the same. */
+export function timeUntil(iso: string | null | undefined): Expiry | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const mins = Math.floor((t - Date.now()) / 60_000);
+  if (mins <= 0) return { label: 'Closed', urgent: false, expired: true };
+  if (mins < 60) return { label: `${mins}m left`, urgent: true, expired: false };
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return { label: `${hours}h left`, urgent: true, expired: false };
+  const days = Math.floor(hours / 24);
+  return { label: `${days}d left`, urgent: false, expired: false };
+}
+
 /** Build a canonical search URL so filters are shareable and bookmarkable. */
 export function searchHref(params: Record<string, string | number | boolean | undefined | null>): string {
   const sp = new URLSearchParams();

@@ -521,8 +521,22 @@ ul, ol { list-style: none; padding: 0; }
 .chip-error { background: var(--error-container); color: var(--on-error-container); }
 
 /* Interactive filter chip with a removal affordance. */
-.chip-button { cursor: pointer; transition: background var(--t) var(--ease); }
+.chip-button { cursor: pointer; transition: background var(--t) var(--ease), color var(--t) var(--ease); }
 .chip-button:hover { background: var(--surface-high); }
+/* A toggle chip has to *look* toggled. Keyed off aria-pressed rather than a
+   class so the visual state and the state announced to a screen reader can
+   never drift apart. */
+.chip-button[aria-pressed='true'] {
+  background: var(--trust-navy);
+  color: var(--surface-lowest);
+  border-color: var(--trust-navy);
+}
+.chip-button[aria-pressed='true']:hover { background: var(--trust-navy); }
+:root:not([data-theme='light']) .chip-button[aria-pressed='true'] {
+  background: var(--surface-highest);
+  color: var(--on-surface);
+  border-color: var(--outline);
+}
 .chip-remove {
   display: inline-grid; place-items: center;
   width: 18px; height: 18px; margin-right: -4px;
@@ -2900,3 +2914,310 @@ details[open] > .filter-summary::after { content: '–'; }
 @media (max-width: 1023px) {
   .builder-layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ==========================================================================
+   Marketplace — advocate profile, service feed, composer
+   ==========================================================================
+   The profile header borrows the shape a social profile has taught everyone
+   to read (banner, overlapping avatar, handle, stat row, tab strip) but
+   none of its palette: the colours, radii, shadows and type below are this
+   site's own tokens throughout, so it reads as CaseADVO rather than as a
+   skinned copy of somebody else's product.
+   ------------------------------------------------------------------------ */
+
+.adv-profile {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.adv-banner {
+  position: relative;
+  height: clamp(120px, 22vw, 210px);
+  background: var(--surface-high);
+}
+.adv-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* A scrim so the avatar ring and any banner text keep contrast against
+   whatever photograph happens to sit behind them. */
+.adv-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 40%, rgba(15, 23, 42, 0.34) 100%);
+}
+
+.adv-identity { padding: 0 clamp(16px, 3vw, 28px) clamp(18px, 3vw, 26px); }
+
+.adv-avatar-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  /* Pulls the avatar up over the banner. Half the avatar height, so it
+     straddles the seam the way the pattern expects. */
+  margin-top: clamp(-56px, -8vw, -44px);
+}
+
+.adv-avatar {
+  position: relative;
+  width: clamp(88px, 14vw, 118px);
+  height: clamp(88px, 14vw, 118px);
+  border-radius: var(--r-full);
+  border: 4px solid var(--surface-lowest);
+  background: var(--surface-container);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  flex: none;
+}
+.adv-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.adv-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adv-handle { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.875rem; color: var(--on-surface-variant); }
+
+.adv-verified { display: inline-flex; align-items: center; color: var(--secondary); }
+:root:not([data-theme='light']) .adv-verified { color: var(--growth-teal); }
+
+.adv-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(14px, 3vw, 26px);
+  padding-top: 4px;
+}
+.adv-stat { display: flex; align-items: baseline; gap: 6px; }
+.adv-stat strong { font-size: 1.0625rem; }
+.adv-stat span { font-size: 0.8125rem; color: var(--on-surface-variant); }
+
+.adv-tabs {
+  display: flex;
+  gap: 2px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adv-tabs::-webkit-scrollbar { display: none; }
+
+.adv-tab {
+  flex: 1 0 auto;
+  min-width: 116px;
+  padding: 14px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+.adv-tab:hover { background: var(--surface-low); color: var(--on-surface); }
+.adv-tab[aria-selected='true'] { color: var(--on-surface); }
+.adv-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 18px; right: 18px; bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--action-orange);
+}
+
+/* --- the feed ----------------------------------------------------------- */
+
+.svc-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+/* Two columns is the intended reading rhythm; above ~1500px a third would
+   make each post too narrow for its own price row to breathe. */
+@media (min-width: 1100px) { .svc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.svc-post {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-lg);
+  background: var(--surface-lowest);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+.svc-post:hover { box-shadow: var(--shadow-md); border-color: var(--outline); }
+
+.svc-head { display: flex; gap: 10px; padding: 14px 16px 10px; align-items: flex-start; }
+.svc-head-avatar {
+  position: relative;
+  width: 42px; height: 42px; flex: none;
+  border-radius: var(--r-full);
+  overflow: hidden;
+  background: var(--surface-container);
+}
+.svc-head-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.svc-body { padding: 0 16px 12px; }
+.svc-pitch { font-size: 0.9375rem; line-height: 1.55; }
+
+.svc-banner { position: relative; display: block; background: var(--surface-container); }
+.svc-banner img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+/* The ALT badge is a promise the composer enforces: every banner carries a
+   description, and the badge is how a sighted author can see that it did. */
+.svc-alt-badge {
+  position: absolute;
+  left: 10px; bottom: 10px;
+  padding: 3px 7px;
+  border-radius: var(--r-sm);
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.svc-podcast {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-low);
+}
+.svc-podcast-play {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; flex: none;
+  border-radius: var(--r-full);
+  background: var(--trust-navy);
+  color: var(--surface-lowest);
+}
+:root:not([data-theme='light']) .svc-podcast-play { background: var(--surface-highest); color: var(--on-surface); }
+
+.svc-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
+
+.svc-foot {
+  margin-top: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+}
+.svc-price { display: flex; flex-direction: column; gap: 1px; }
+.svc-price strong { font-size: 1.125rem; line-height: 1.1; }
+.svc-price span { font-size: 0.75rem; color: var(--on-surface-variant); }
+.svc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Expiry. Amber inside 48 hours, because "3 days left" and "5 hours left"
+   are different kinds of information and should not look identical. */
+.svc-expiry { display: inline-flex; align-items: center; gap: 4px; }
+.svc-expiry[data-urgent='true'] { background: var(--warning-container); color: var(--on-warning-container); }
+
+/* --- threads ------------------------------------------------------------ */
+
+.thread { display: flex; flex-direction: column; gap: 2px; }
+.thread-item { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid var(--outline-variant); }
+.thread-item:first-child { border-top: 0; }
+.thread-avatar {
+  display: grid; place-items: center;
+  width: 36px; height: 36px; flex: none;
+  border-radius: var(--r-full);
+  background: var(--surface-container);
+  font-size: 0.8125rem; font-weight: 700;
+  color: var(--on-surface-variant);
+}
+/* Replies indent once and once only — a legal Q&A that nests four deep is a
+   conversation that should have become a message. */
+.thread-replies {
+  margin: 10px 0 0 12px;
+  padding-left: 16px;
+  border-left: 2px solid var(--outline-variant);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.thread-reply-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--secondary);
+}
+:root:not([data-theme='light']) .thread-reply-badge { color: var(--growth-teal); }
+
+.stars { display: inline-flex; gap: 1px; color: var(--action-orange); }
+.stars [data-off='true'] { color: var(--outline-variant); }
+
+/* --- composer ----------------------------------------------------------- */
+
+.composer-backdrop {
+  position: fixed; inset: 0; z-index: var(--z-drawer);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(3px);
+  display: grid; place-items: start center;
+  padding: clamp(12px, 5vh, 56px) 16px;
+  overflow-y: auto;
+}
+.composer {
+  width: min(640px, 100%);
+  background: var(--surface-lowest);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--outline-variant);
+  overflow: hidden;
+}
+.composer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.composer-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.composer-pitch {
+  width: 100%;
+  min-height: 128px;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font: inherit;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+.composer-pitch:focus { outline: none; }
+.composer-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 14px 18px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+}
+
+/* The character counter turns amber approaching the cap and red past it,
+   so the limit is felt before it is hit. */
+.char-count { font-size: 0.8125rem; font-weight: 600; color: var(--on-surface-variant); }
+.char-count[data-state='near'] { color: var(--on-warning-container); }
+.char-count[data-state='over'] { color: var(--error); }
+
+.composer-field { display: flex; flex-direction: column; gap: 6px; }
+.composer-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+
+/* --- escrow ------------------------------------------------------------- */
+
+.escrow-steps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); counter-reset: escrow; }
+.escrow-step {
+  position: relative;
+  padding: 16px 16px 16px 46px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-lowest);
+}
+.escrow-step::before {
+  counter-increment: escrow;
+  content: counter(escrow);
+  position: absolute;
+  left: 14px; top: 15px;
+  display: grid; place-items: center;
+  width: 22px; height: 22px;
+  border-radius: var(--r-full);
+  background: var(--trust-navy);
+  color: var(--surface-lowest);
+  font-size: 0.75rem; font-weight: 700;
+}
+:root:not([data-theme='light']) .escrow-step::before { background: var(--surface-highest); color: var(--on-surface); }
