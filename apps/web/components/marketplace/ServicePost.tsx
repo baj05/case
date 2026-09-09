@@ -1,9 +1,11 @@
 'use client';
 
 /**
- * One service offer, rendered as a post rather than a table row: who is
- * offering it, in their own words, with what it costs and how it reaches
- * you attached to the same card.
+ * One service offer, rendered as a clean social-post card: a tight
+ * avatar/name/handle/time header, body copy that just flows, edge-to-edge
+ * rounded media, and a minimal icon-led action row along the bottom —
+ * no boxed sub-sections, no shadow doing the work a hairline border
+ * already does.
  *
  * Every listing is seeded demonstration data owned by a fictional provider.
  * The card never carries a real registered advocate's name — see the
@@ -14,7 +16,7 @@ import type { MarketplaceListingFull } from '@lexhall/db';
 import { formatMinor, shortAge, timeUntil } from '@/lib/format';
 import {
   ChatIcon, ClockIcon, GlobeIcon, HomeIcon, LockIcon, MicIcon,
-  PinIcon, StarIcon, BriefcaseIcon, VerifiedIcon,
+  PinIcon, StarIcon, BriefcaseIcon, VerifiedIcon, CalendarIcon,
 } from '@/components/Icons';
 
 const DELIVERY_META: Record<string, { label: string; hint: string; icon: typeof HomeIcon }> = {
@@ -65,40 +67,45 @@ export function ServicePost({
             ? <img src={listing.providerAvatar} alt="" />
             : null}
         </div>
-        <div className="stack" style={{ minWidth: 0, flex: 1 }}>
-          <div className="row gap-1" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <strong style={{ fontSize: '0.9375rem' }}>{listing.providerName}</strong>
+        <div className="svc-head-info">
+          <div className="svc-name-row">
+            <strong>{listing.providerName}</strong>
             {badges.includes('bar') && (
               <span className="adv-verified" title="Bar Council enrolment checked">
-                <VerifiedIcon size={14} />
+                <VerifiedIcon size={15} />
               </span>
             )}
-            {listing.providerHandle && <span className="adv-handle">@{listing.providerHandle}</span>}
-            {age && <span className="t-caption" aria-label={`Posted ${age} ago`}>· {age}</span>}
+            {listing.providerHandle && <span className="svc-handle">@{listing.providerHandle}</span>}
+            {age && (
+              <>
+                <span className="svc-dot" aria-hidden="true">·</span>
+                <span className="svc-time" aria-label={`Posted ${age} ago`}>{age}</span>
+              </>
+            )}
           </div>
-          <span className="t-caption row gap-1" style={{ alignItems: 'center' }}>
+          <div className="svc-meta-line">
             <PinIcon size={12} />
-            {listing.locationName}
-            {typeof listing.distanceKm === 'number' && ` · ${listing.distanceKm.toFixed(1)} km away`}
-          </span>
+            <span>
+              {listing.locationName}
+              {typeof listing.distanceKm === 'number' && ` · ${listing.distanceKm.toFixed(1)} km away`}
+            </span>
+          </div>
         </div>
-        {expiry && (
-          <span className="chip svc-expiry" data-urgent={expiry.urgent ? 'true' : undefined}>
-            <ClockIcon size={12} />
-            {expiry.label}
-          </span>
-        )}
+        <div className="svc-price-tag">
+          <strong>{formatMinor(listing.priceMinor, listing.currencyCode)}</strong>
+          <span>{PRICE_BASIS_LABEL[listing.priceBasis] ?? listing.priceBasis}</span>
+        </div>
       </header>
 
-      <div className="svc-body stack gap-2">
-        <h3 className="t-body" style={{ fontWeight: 700, margin: 0 }}>{listing.title}</h3>
+      <div className="svc-body">
+        <h3 className="svc-title">{listing.title}</h3>
         <p className="svc-pitch ink-variant">{listing.description}</p>
         {listing.reviewCount > 0 && (
-          <span className="row gap-1 t-caption" style={{ alignItems: 'center' }}>
+          <div className="svc-rating-row">
             <Stars ratingX10={listing.ratingX10} />
-            {(listing.ratingX10 / 10).toFixed(1)}
+            <span>{(listing.ratingX10 / 10).toFixed(1)}</span>
             <span className="ink-variant">({listing.reviewCount})</span>
-          </span>
+          </div>
         )}
       </div>
 
@@ -132,37 +139,37 @@ export function ServicePost({
 
       <div className="svc-chips">
         <span className="chip" title={delivery.hint}>
-          <DeliveryIcon size={12} />
+          <DeliveryIcon size={11} />
           {' '}{delivery.label}
         </span>
         <span className="chip chip-outline">Serves {listing.geofenceRadiusKm} km</span>
         <span className="chip chip-outline">{listing.availabilityLabel}</span>
         {listing.responseMinutes != null && (
           <span className="chip chip-outline">
-            Replies in ~{listing.responseMinutes < 60
+            ~{listing.responseMinutes < 60
               ? `${listing.responseMinutes} min`
-              : `${Math.round(listing.responseMinutes / 60)} hr`}
+              : `${Math.round(listing.responseMinutes / 60)} hr`} reply
+          </span>
+        )}
+        {expiry && (
+          <span className="chip svc-expiry" data-urgent={expiry.urgent ? 'true' : undefined}>
+            <ClockIcon size={11} />
+            {expiry.label}
           </span>
         )}
       </div>
 
-      <footer className="svc-foot">
-        <span className="svc-price">
-          <strong>{formatMinor(listing.priceMinor, listing.currencyCode)}</strong>
-          <span>{PRICE_BASIS_LABEL[listing.priceBasis] ?? listing.priceBasis}</span>
-        </span>
-        <span className="svc-actions">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onDiscuss(listing)}>
-            <ChatIcon size={13} /> Message
-          </button>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onBook(listing)}>
-            Book
-          </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => onBuy(listing)}>
-            <LockIcon size={13} /> Buy
-          </button>
-        </span>
-      </footer>
+      <div className="svc-actions-row">
+        <button type="button" className="svc-action-btn" onClick={() => onDiscuss(listing)}>
+          <ChatIcon size={15} /> Message
+        </button>
+        <button type="button" className="svc-action-btn" data-tone="book" onClick={() => onBook(listing)}>
+          <CalendarIcon size={15} /> Book
+        </button>
+        <button type="button" className="svc-action-btn" data-tone="buy" onClick={() => onBuy(listing)}>
+          <LockIcon size={13} /> Buy
+        </button>
+      </div>
     </article>
   );
 }

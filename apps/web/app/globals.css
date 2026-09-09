@@ -3025,11 +3025,17 @@ details[open] > .filter-summary::after { content: '–'; }
   background: var(--action-orange);
 }
 
-/* --- the feed ----------------------------------------------------------- */
+/* --- the feed ------------------------------------------------------------
+   Restyled after a clean social-post card: flat surface, hairline border,
+   a tight avatar/name/handle/time header row, body copy that just flows
+   (no boxed sub-sections), edge-to-edge rounded media, and a minimal
+   icon-led action row along the bottom rather than a boxed footer with its
+   own background. The colours and radii are still this design system's own
+   tokens — nothing here borrows another product's palette. */
 
 .svc-grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
 }
 /* Two columns is the intended reading rhythm; above ~1500px a third would
@@ -3039,35 +3045,101 @@ details[open] > .filter-summary::after { content: '–'; }
 .svc-post {
   display: flex;
   flex-direction: column;
+  position: relative;
   border: 1px solid var(--outline-variant);
   border-radius: var(--r-lg);
   background: var(--surface-lowest);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+  transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
 }
-.svc-post:hover { box-shadow: var(--shadow-md); border-color: var(--outline); }
+/* A soft background tint on hover, the way a feed item lifts under the
+   cursor without a shadow popping into existence — shadow is reserved for
+   things that actually float (menus, modals), not for a card sitting flush
+   in a grid. */
+.svc-post:hover { background: var(--surface-low); border-color: var(--outline); }
 
-.svc-head { display: flex; gap: 10px; padding: 14px 16px 10px; align-items: flex-start; }
+.svc-head { display: flex; gap: 10px; padding: 14px 14px 0; align-items: flex-start; }
 .svc-head-avatar {
   position: relative;
-  width: 42px; height: 42px; flex: none;
+  width: 44px; height: 44px; flex: none;
   border-radius: var(--r-full);
   overflow: hidden;
   background: var(--surface-container);
 }
 .svc-head-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
-.svc-body { padding: 0 16px 12px; }
-.svc-pitch { font-size: 0.9375rem; line-height: 1.55; }
+/* Name · verified tick · @handle · time, one line, exactly the rhythm a
+   social profile trains people to scan in half a second. */
+.svc-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.svc-name-row strong {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.svc-handle, .svc-dot, .svc-time {
+  font-size: 0.875rem;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  flex: none;
+}
+.svc-handle { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
 
-.svc-banner { position: relative; display: block; background: var(--surface-container); }
+.svc-head-info { min-width: 0; flex: 1; padding-right: 72px; }
+
+/* Where the whole post gets scanned before the price is even reached, so
+   it earns the same top-right corner a "Promoted" tag would occupy on a
+   social card — seen without competing with the name row for attention. */
+.svc-price-tag {
+  position: absolute;
+  top: 14px; right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.svc-price-tag strong { font-size: 1rem; font-weight: 800; color: var(--on-surface); }
+.svc-price-tag span { font-size: 0.6875rem; color: var(--on-surface-variant); }
+
+.svc-meta-line {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  margin-top: 1px;
+}
+
+.svc-body { padding: 8px 14px 0; }
+.svc-title { font-size: 0.9375rem; font-weight: 700; color: var(--on-surface); margin: 0 0 2px; }
+.svc-pitch { font-size: 0.9375rem; line-height: 1.5; color: var(--on-surface); margin: 0; }
+
+.svc-rating-row { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.8125rem; }
+
+/* Media sits edge-to-edge within the card's own padding and carries its
+   own rounded corners and hairline border — the same treatment a link
+   preview gets on a social card, never a bleed to the card's own edge. */
+.svc-banner {
+  position: relative;
+  display: block;
+  margin: 10px 14px 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--outline-variant);
+  overflow: hidden;
+  background: var(--surface-container);
+}
 .svc-banner img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
 /* The ALT badge is a promise the composer enforces: every banner carries a
    description, and the badge is how a sighted author can see that it did. */
 .svc-alt-badge {
   position: absolute;
-  left: 10px; bottom: 10px;
+  left: 8px; bottom: 8px;
   padding: 3px 7px;
   border-radius: var(--r-sm);
   background: rgba(15, 23, 42, 0.72);
@@ -3079,40 +3151,78 @@ details[open] > .filter-summary::after { content: '–'; }
 
 .svc-podcast {
   display: flex; align-items: center; gap: 10px;
-  margin: 12px 16px 0;
-  padding: 10px 12px;
+  margin: 10px 14px 0;
+  padding: 9px 11px;
   border: 1px solid var(--outline-variant);
   border-radius: var(--r-md);
-  background: var(--surface-low);
+  background: transparent;
+  transition: background var(--t) var(--ease);
 }
+.svc-post:hover .svc-podcast { background: var(--surface-container); }
 .svc-podcast-play {
   display: grid; place-items: center;
-  width: 34px; height: 34px; flex: none;
+  width: 32px; height: 32px; flex: none;
   border-radius: var(--r-full);
   background: var(--trust-navy);
   color: var(--surface-lowest);
 }
 :root:not([data-theme='light']) .svc-podcast-play { background: var(--surface-highest); color: var(--on-surface); }
 
-.svc-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
+.svc-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 14px 0; }
+.svc-chips .chip, .svc-chips .chip-outline { font-size: 0.75rem; padding: 3px 9px; min-height: 0; }
 
-.svc-foot {
-  margin-top: auto;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; flex-wrap: wrap;
-  padding: 14px 16px;
+/* The action row: no fill, no boxed background — a hairline separator and
+   evenly spaced icon-led controls, the same shape a social post's engagement
+   bar takes. Buy stays the one filled control since it is the sole
+   irreversible action in the row; Message and Book stay ghost, matching how
+   a feed treats "reply" and "repost" as lightweight and "the thing that
+   costs money" as the odd one out. */
+.svc-actions-row {
+  margin-top: 12px;
+  padding: 6px 6px;
   border-top: 1px solid var(--outline-variant);
-  background: var(--surface-low);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
 }
-.svc-price { display: flex; flex-direction: column; gap: 1px; }
-.svc-price strong { font-size: 1.125rem; line-height: 1.1; }
-.svc-price span { font-size: 0.75rem; color: var(--on-surface-variant); }
-.svc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.svc-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+.svc-action-btn:hover { background: var(--surface-container); color: var(--on-surface); }
+.svc-action-btn[data-tone='book']:hover { background: rgba(0, 107, 95, 0.12); color: var(--secondary); }
+:root:not([data-theme='light']) .svc-action-btn[data-tone='book']:hover { color: var(--growth-teal); }
+.svc-action-btn[data-tone='buy'] {
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 7px 14px;
+}
+.svc-action-btn[data-tone='buy']:hover { background: var(--primary); filter: brightness(1.06); color: var(--on-primary); }
+
+/* Price shown in-card once means the price tag can crowd the header on the
+   narrowest cards; the row wraps rather than truncating the name. */
+@media (max-width: 380px) {
+  .svc-price-tag { position: static; align-items: flex-start; margin: 8px 14px 0; order: 1; }
+  .svc-head-info { padding-right: 0; }
+}
 
 /* Expiry. Amber inside 48 hours, because "3 days left" and "5 hours left"
    are different kinds of information and should not look identical. */
 .svc-expiry { display: inline-flex; align-items: center; gap: 4px; }
 .svc-expiry[data-urgent='true'] { background: var(--warning-container); color: var(--on-warning-container); }
+
 
 /* --- threads ------------------------------------------------------------ */
 
