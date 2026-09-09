@@ -5,6 +5,10 @@ import { HeroDescribeLink } from './HeroDescribeLink';
 import { Notice } from '@/components/States';
 import { getCorpus, getPracticeAreas, getCourts, getBarCouncils, databaseReady, getFlags, getRecentReviewFeed, getJudicialData } from '@/lib/data';
 import { formatNumber, relativeDate, searchHref, compactIndian } from '@/lib/format';
+import {
+  ShieldCheckIcon, CheckCircleIcon, SearchIcon, ChartIcon, MailIcon, GavelIcon,
+  RupeeIcon, DocumentIcon, BriefcaseIcon, ClockIcon, UsersIcon, TrendUpIcon,
+} from '@/components/Icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,7 +147,7 @@ export default async function HomePage() {
             </div>
 
             <div className="glass-card gcard-left">
-              <span className="gcard-icon" aria-hidden="true">⚖</span>
+              <span className="gcard-icon" aria-hidden="true"><GavelIcon size={20} /></span>
               <span className="float-label">Register coverage</span>
               <span className="float-value">{councilsWithRecords}/{corpus.bodies}</span>
               <span className="t-caption">State Bar Councils ingested</span>
@@ -156,7 +160,7 @@ export default async function HomePage() {
 
             <div className="glass-card gcard-top-right">
               <span className="row gap-2" style={{ alignItems: 'flex-start' }}>
-                <span className="gcard-avatar" aria-hidden="true">✓</span>
+                <span className="gcard-avatar" aria-hidden="true"><CheckCircleIcon size={16} /></span>
                 <span className="stack" style={{ gap: 2 }}>
                   <span className="t-title-sm" style={{ fontSize: '0.875rem' }}>Register checked</span>
                   <span className="t-body-sm ink-variant">
@@ -169,7 +173,7 @@ export default async function HomePage() {
 
             <div className="glass-card gcard-bottom-right">
               <span className="row gap-2" style={{ justifyContent: 'space-between' }}>
-                <span className="gcard-icon gcard-icon-sm" aria-hidden="true">✓</span>
+                <span className="gcard-icon gcard-icon-sm" aria-hidden="true"><CheckCircleIcon size={16} /></span>
               </span>
               <span className="float-label">Records published</span>
               <span className="float-value">{formatNumber(corpus.professionals)}</span>
@@ -231,7 +235,9 @@ export default async function HomePage() {
                   />
                   <div className="block-info">
                     <span className="block-tag">
-                      <span className="block-tag-icon" aria-hidden="true">{['⚖', '₹', '📄'][i % 3]}</span>
+                      <span className="block-tag-icon" aria-hidden="true">
+                        {[<GavelIcon key="g" size={12} />, <RupeeIcon key="r" size={12} />, <DocumentIcon key="d" size={12} />][i % 3]}
+                      </span>
                       {a.area}
                     </span>
                     <span className="block-name">{a.name}</span>
@@ -278,7 +284,11 @@ export default async function HomePage() {
               <div key={r.id} className="card stack gap-1" style={{ padding: 16, flex: '1 1 260px' }}>
                 <span className="row gap-2" style={{ alignItems: 'baseline' }}>
                   <strong className="t-body-sm">{r.displayName}</strong>
-                  {r.verified && <span className="chip chip-lime" style={{ fontSize: '0.625rem' }}>Verified</span>}
+                  {r.verified && (
+                    <span className="chip chip-lime row gap-1" style={{ fontSize: '0.625rem', display: 'inline-flex', alignItems: 'center' }}>
+                      <ShieldCheckIcon size={11} /> Verified
+                    </span>
+                  )}
                 </span>
                 <p className="t-body-sm clamp-3">{r.body}</p>
               </div>
@@ -311,8 +321,16 @@ export default async function HomePage() {
             <Link href="/advo-ai" className="btn btn-primary btn-pill btn-lg">Start with Advo AI</Link>
           </div>
           <div className="row wrap gap-2">
-            {['Fee: high to low', 'Fee: low to high', '10+ years in practice', 'Bar enrolment verified', 'Accepting bookings'].map((t) => (
-              <span key={t} className="chip" style={{ background: 'rgba(255,255,255,0.10)', color: '#e7eaf5' }}>{t}</span>
+            {[
+              { label: 'Fee: high to low', icon: <RupeeIcon size={12} /> },
+              { label: 'Fee: low to high', icon: <RupeeIcon size={12} /> },
+              { label: '10+ years in practice', icon: <ClockIcon size={12} /> },
+              { label: 'Bar enrolment verified', icon: <ShieldCheckIcon size={12} /> },
+              { label: 'Accepting bookings', icon: <CheckCircleIcon size={12} /> },
+            ].map((t) => (
+              <span key={t.label} className="chip row gap-1" style={{ background: 'rgba(255,255,255,0.10)', color: '#e7eaf5', display: 'inline-flex', alignItems: 'center' }}>
+                {t.icon}{t.label}
+              </span>
             ))}
           </div>
         </div>
@@ -322,14 +340,15 @@ export default async function HomePage() {
       <section className="container section-tight">
         <div className="stat-band on-scroll">
           {[
-            [formatNumber(corpus.professionals), 'Advocates listed from official registers'],
-            [String(corpus.bodies), 'State Bar Councils covered'],
-            [String(corpus.highCourts), 'High Courts mapped, with their benches'],
-            [String(corpus.practiceAreas), 'Practice areas in plain language'],
-          ].map(([num, label]) => (
-            <div key={label}>
-              <div className="stat-band-num">{num}</div>
-              <div className="stat-band-label">{label}</div>
+            { num: formatNumber(corpus.professionals), label: 'Advocates listed from official registers', icon: <UsersIcon size={20} /> },
+            { num: String(corpus.bodies), label: 'State Bar Councils covered', icon: <ShieldCheckIcon size={20} /> },
+            { num: String(corpus.highCourts), label: 'High Courts mapped, with their benches', icon: <GavelIcon size={20} /> },
+            { num: String(corpus.practiceAreas), label: 'Practice areas in plain language', icon: <BriefcaseIcon size={20} /> },
+          ].map((s) => (
+            <div key={s.label}>
+              <span className="stat-band-icon" aria-hidden="true">{s.icon}</span>
+              <div className="stat-band-num">{s.num}</div>
+              <div className="stat-band-label">{s.label}</div>
             </div>
           ))}
         </div>
@@ -356,6 +375,7 @@ export default async function HomePage() {
             <div className="judicial-strip">
               {judicialTiers.map((t) => (
                 <Link key={t.tier} href="/judicial-data" className="judicial-tier">
+                  <span className="judicial-tier-icon" aria-hidden="true"><TrendUpIcon size={18} /></span>
                   <span className="judicial-tier-num">{t.display}</span>
                   <span className="judicial-tier-name">{t.name}</span>
                   <span className="judicial-tier-sub">cases pending</span>
@@ -437,23 +457,32 @@ export default async function HomePage() {
 
           <div className="block-orange">
             <span className="t-label-mono">Why you can check us</span>
-            <div className="inner-card stack gap-1">
-              <strong>Every field is attributable</strong>
-              <span className="t-body-sm ink-variant">
-                Source, source URL, capture date and last-checked date on every record.
+            <div className="inner-card row gap-3" style={{ alignItems: 'flex-start' }}>
+              <span className="trust-icon" aria-hidden="true"><DocumentIcon size={18} /></span>
+              <span className="stack gap-1">
+                <strong>Every field is attributable</strong>
+                <span className="t-body-sm ink-variant">
+                  Source, source URL, capture date and last-checked date on every record.
+                </span>
               </span>
             </div>
-            <div className="inner-card stack gap-1">
-              <strong>Ranking cannot be bought</strong>
-              <span className="t-body-sm ink-variant">
-                The weights are published. The column that would carry a paid boost is constrained to
-                zero in the database.
+            <div className="inner-card row gap-3" style={{ alignItems: 'flex-start' }}>
+              <span className="trust-icon" aria-hidden="true"><ShieldCheckIcon size={18} /></span>
+              <span className="stack gap-1">
+                <strong>Ranking cannot be bought</strong>
+                <span className="t-body-sm ink-variant">
+                  The weights are published. The column that would carry a paid boost is constrained to
+                  zero in the database.
+                </span>
               </span>
             </div>
-            <div className="inner-card stack gap-1">
-              <strong>Personal contact details are withheld</strong>
-              <span className="t-body-sm ink-variant">
-                Residential addresses and personal numbers in the register are never republished.
+            <div className="inner-card row gap-3" style={{ alignItems: 'flex-start' }}>
+              <span className="trust-icon" aria-hidden="true"><CheckCircleIcon size={18} /></span>
+              <span className="stack gap-1">
+                <strong>Personal contact details are withheld</strong>
+                <span className="t-body-sm ink-variant">
+                  Residential addresses and personal numbers in the register are never republished.
+                </span>
               </span>
             </div>
           </div>
@@ -471,15 +500,16 @@ export default async function HomePage() {
           </div>
           <div className="step-row stagger">
             {[
-              ['step-navy', 'Step 01', 'Describe it plainly', 'Type what happened in your own words. Our classifier maps it to a practice area, a jurisdiction and a court, and shows you what it concluded.'],
-              ['step-blue', 'Step 02', 'Compare on the facts', 'Every result shows what is verified, what is self-declared, and its full match-score breakdown.'],
-              ['step-peach', 'Step 03', 'Send an enquiry', 'A structured brief goes to the professional. No fee passes through us, and no lawyer–client relationship is created by asking.'],
-              ['step-lime', 'Step 04', 'They decide, and so do you', 'The professional accepts or declines and sets their own fee with you directly.'],
-            ].map(([tone, kicker, title, body]) => (
-              <div key={kicker} className={`step-card ${tone}`}>
-                <span className="step-kicker">{kicker}</span>
-                <span className="step-title">{title}</span>
-                <span className="t-body-sm" style={{ opacity: 0.92 }}>{body}</span>
+              { tone: 'step-navy', kicker: 'Step 01', title: 'Describe it plainly', body: 'Type what happened in your own words. Our classifier maps it to a practice area, a jurisdiction and a court, and shows you what it concluded.', icon: <SearchIcon size={20} /> },
+              { tone: 'step-blue', kicker: 'Step 02', title: 'Compare on the facts', body: 'Every result shows what is verified, what is self-declared, and its full match-score breakdown.', icon: <ChartIcon size={20} /> },
+              { tone: 'step-peach', kicker: 'Step 03', title: 'Send an enquiry', body: 'A structured brief goes to the professional. No fee passes through us, and no lawyer–client relationship is created by asking.', icon: <MailIcon size={20} /> },
+              { tone: 'step-lime', kicker: 'Step 04', title: 'They decide, and so do you', body: 'The professional accepts or declines and sets their own fee with you directly.', icon: <CheckCircleIcon size={20} /> },
+            ].map((s) => (
+              <div key={s.kicker} className={`step-card ${s.tone}`}>
+                <span className="step-icon" aria-hidden="true">{s.icon}</span>
+                <span className="step-kicker">{s.kicker}</span>
+                <span className="step-title">{s.title}</span>
+                <span className="t-body-sm" style={{ opacity: 0.92 }}>{s.body}</span>
               </div>
             ))}
           </div>
@@ -491,7 +521,9 @@ export default async function HomePage() {
         <div className="card stack gap-4" style={{ padding: 'clamp(20px, 4vw, 32px)' }}>
           <div className="row wrap gap-3" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div className="stack gap-2">
-              <p className="t-label-mono ink-variant">By jurisdiction</p>
+              <p className="t-label-mono ink-variant row gap-1" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                <GavelIcon size={12} /> By jurisdiction
+              </p>
               <h2 className="t-headline-md">Search by the court that will hear it.</h2>
             </div>
             <Link href="/courts" className="btn btn-secondary btn-sm btn-pill">All courts and tribunals</Link>
@@ -535,7 +567,7 @@ export default async function HomePage() {
               <span className="plan-price">Free</span>
               <ul className="plan-list">
                 {['Profile compiled from an official register or public case record', 'Full source attribution and freshness dates', 'Correction and removal on request', 'Appears in search on relevance alone'].map((f) => (
-                  <li key={f}><span className="plan-tick" aria-hidden="true">✓</span>{f}</li>
+                  <li key={f}><span className="plan-tick" aria-hidden="true"><CheckCircleIcon size={15} /></span>{f}</li>
                 ))}
               </ul>
               <Link href="/search" className="btn btn-secondary btn-block" style={{ marginTop: 'auto' }}>Find your profile</Link>
@@ -550,7 +582,7 @@ export default async function HomePage() {
               <span className="plan-price">Free</span>
               <ul className="plan-list">
                 {['Everything in Listed', 'Confirm and correct your details', 'State your practice areas and courts', 'Bar enrolment verification', 'Choose whether you accept enquiries', 'Set your own fees, collected directly'].map((f) => (
-                  <li key={f}><span className="plan-tick" aria-hidden="true">✓</span>{f}</li>
+                  <li key={f}><span className="plan-tick" aria-hidden="true"><CheckCircleIcon size={15} /></span>{f}</li>
                 ))}
               </ul>
               <Link href="/for-professionals" className="btn btn-primary btn-block" style={{ marginTop: 'auto' }}>Claim your profile</Link>
@@ -562,7 +594,7 @@ export default async function HomePage() {
               <span className="plan-price">Later</span>
               <ul className="plan-list">
                 {['Team and organisation pages', 'Matter workspace and documents', 'Referral network across jurisdictions', 'Contract lifecycle management'].map((f) => (
-                  <li key={f}><span className="plan-tick" aria-hidden="true">✓</span>{f}</li>
+                  <li key={f}><span className="plan-tick" aria-hidden="true"><CheckCircleIcon size={15} /></span>{f}</li>
                 ))}
               </ul>
               <p className="plan-note t-caption">

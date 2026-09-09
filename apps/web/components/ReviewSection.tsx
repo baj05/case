@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReviewFilter, ReviewSort, ReviewListItem, ReviewSummary } from '@lexhall/db';
 import { VoteHelpfulForm, ReportReviewForm, RespondToReviewForm } from './ReviewActions';
 import { ReviewCard } from './ReviewCard';
+import { StarIcon } from './Icons';
 
 const DIMENSIONS: Array<{ key: 'communication' | 'responsiveness' | 'professionalism' | 'processClarity'; label: string }> = [
   { key: 'communication', label: 'Communication' },
@@ -32,7 +33,9 @@ export function ReviewSection({
   return (
     <div id="reviews" className="stack gap-5">
       <div className="row wrap gap-2" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <h2 className="t-headline-md">Legal Trust &amp; Experience</h2>
+        <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+          <span className="section-icon" aria-hidden="true"><StarIcon size={17} /></span>Legal Trust &amp; Experience
+        </h2>
         <Link href="/trust/reviews" className="t-caption" style={{ textDecoration: 'underline' }}>How is this calculated?</Link>
       </div>
 

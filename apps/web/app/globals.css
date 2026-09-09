@@ -1027,6 +1027,17 @@ ul, ol { list-style: none; padding: 0; }
 .filter-summary::-webkit-details-marker { display: none; }
 .filter-summary::after { content: '+'; font-size: 1.1rem; color: var(--on-surface-variant); }
 details[open] > .filter-summary::after { content: '–'; }
+.filter-icon { display: inline-flex; color: var(--secondary); flex: none; }
+.section-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 30px; height: 30px; border-radius: var(--r-sm);
+  background: var(--secondary-container); color: var(--secondary);
+}
+.insight-stat-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; margin-bottom: 8px;
+  background: var(--surface-high); color: var(--primary);
+}
 .filter-options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; max-height: 260px; overflow-y: auto; }
 .filter-option {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1488,6 +1499,11 @@ details[open] > .filter-summary::after { content: '–'; }
   border-top: 1px solid var(--outline-variant);
   border-bottom: 1px solid var(--outline-variant);
 }
+.stat-band-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--r); margin-bottom: 10px;
+  background: var(--secondary-container); color: var(--secondary);
+}
 .stat-band-num {
   font-family: var(--font-display); font-weight: 800;
   font-size: clamp(2.25rem, 1.4rem + 3vw, 3.75rem);
@@ -1547,6 +1563,11 @@ details[open] > .filter-summary::after { content: '–'; }
   :root:not([data-theme='light']) .step-navy { background: var(--surface-highest); color: var(--on-surface); }
 }
 .step-kicker { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+.step-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: var(--r); margin-bottom: 4px;
+  background: rgba(255,255,255,0.16);
+}
 .step-title { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; }
 
 /* --- colour block with inner white cards (reference image 5) ----------- */
@@ -1563,6 +1584,11 @@ details[open] > .filter-summary::after { content: '–'; }
   border-radius: var(--r-md);
   padding: 16px;
   box-shadow: var(--shadow-sm);
+}
+.trust-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--primary-fixed); color: var(--on-primary-container);
 }
 
 /* --- plan cards -------------------------------------------------------- */
@@ -2475,6 +2501,11 @@ details[open] > .filter-summary::after { content: '–'; }
   transform: translateY(-2px);
 }
 @media (prefers-reduced-motion: reduce) { .judicial-tier:hover { transform: none; } }
+.judicial-tier-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%; margin-bottom: 6px;
+  background: var(--warning-container); color: var(--on-warning-container);
+}
 .judicial-tier-num {
   font-family: var(--font-display); font-weight: 800;
   font-size: clamp(1.75rem, 3.5vw, 2.375rem); line-height: 1.05;

@@ -4,6 +4,7 @@ import { getCaseCorpusStats, getTopCaseCategories, getTopCourts, getAdvocateCoun
 import { searchHref } from '@/lib/format';
 import { Notice } from '@/components/States';
 import { IMPLAUSIBLE_CASE_COUNT } from '@lexhall/db';
+import { ChartIcon, CheckCircleIcon, ClockIcon, UsersIcon, BriefcaseIcon, GavelIcon, PinIcon } from '@/components/Icons';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -69,6 +70,7 @@ export default function CaseInsightsPage() {
 
       <div className="row wrap gap-6">
         <div className="stack" style={{ gap: 0 }}>
+          <span className="insight-stat-icon" aria-hidden="true"><ChartIcon size={18} /></span>
           <strong style={{ fontSize: '2.25rem', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
             {grouped(stats.totalCases)}
           </strong>
@@ -76,19 +78,23 @@ export default function CaseInsightsPage() {
         </div>
         {disposalRatePct != null && (
           <div className="stack" style={{ gap: 0 }}>
+            <span className="insight-stat-icon" aria-hidden="true"><CheckCircleIcon size={16} /></span>
             <strong className="t-title-sm">{disposalRatePct}%</strong>
             <span className="t-caption">disposed ({grouped(stats.totalDisposed)} of {grouped(stats.totalCases)})</span>
           </div>
         )}
         <div className="stack" style={{ gap: 0 }}>
+          <span className="insight-stat-icon" aria-hidden="true"><ClockIcon size={16} /></span>
           <strong className="t-title-sm">{grouped(stats.totalPending)}</strong>
           <span className="t-caption">pending</span>
         </div>
         <div className="stack" style={{ gap: 0 }}>
+          <span className="insight-stat-icon" aria-hidden="true"><ChartIcon size={16} /></span>
           <strong className="t-title-sm">{grouped(stats.medianCasesPerAdvocate)}</strong>
           <span className="t-caption">median cases per advocate (with any on record)</span>
         </div>
         <div className="stack" style={{ gap: 0 }}>
+          <span className="insight-stat-icon" aria-hidden="true"><UsersIcon size={16} /></span>
           <strong className="t-title-sm">{grouped(corpus.professionals)}</strong>
           <span className="t-caption">total professionals listed</span>
         </div>
@@ -97,7 +103,9 @@ export default function CaseInsightsPage() {
       <div className="row wrap gap-6" style={{ alignItems: 'flex-start' }}>
         <section className="card stack gap-4" style={{ padding: 'clamp(18px, 3vw, 26px)', flex: '1 1 380px' }}>
           <div className="stack gap-1">
-            <h2 className="t-title-lg">Most common case categories</h2>
+            <h2 className="t-title-lg row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+              <span className="section-icon" aria-hidden="true"><BriefcaseIcon size={16} /></span>Most common case categories
+            </h2>
             <p className="t-body-sm ink-variant">
               Ranked by how many distinct advocates carry the category in their own top 3 — not a raw
               case-row count, which one high-volume profile could dominate.
@@ -118,7 +126,9 @@ export default function CaseInsightsPage() {
 
         <section className="card stack gap-4" style={{ padding: 'clamp(18px, 3vw, 26px)', flex: '1 1 380px' }}>
           <div className="stack gap-1">
-            <h2 className="t-title-lg">Most-cited courts</h2>
+            <h2 className="t-title-lg row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+              <span className="section-icon" aria-hidden="true"><GavelIcon size={16} /></span>Most-cited courts
+            </h2>
             <p className="t-body-sm ink-variant">
               Real court-of-appearance links, evidenced from case records — Supreme Court and High Courts
               only; most case rows name a district court not in this platform&rsquo;s curated court list.
@@ -140,7 +150,9 @@ export default function CaseInsightsPage() {
 
       <section className="card stack gap-4" style={{ padding: 'clamp(18px, 3vw, 26px)' }}>
         <div className="stack gap-1">
-          <h2 className="t-title-lg">Advocates by state</h2>
+          <h2 className="t-title-lg row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+            <span className="section-icon" aria-hidden="true"><PinIcon size={16} /></span>Advocates by state
+          </h2>
           <p className="t-body-sm ink-variant">Same counts the search filter panel and state map use.</p>
         </div>
         <div className="stack gap-3">

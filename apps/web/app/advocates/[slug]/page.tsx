@@ -19,6 +19,7 @@ import { ReviewCard } from '@/components/ReviewCard';
 import { ProfileTabs } from '@/components/ProfileTabs';
 import { ShareProfileButton } from '@/components/ShareProfileButton';
 import { currentUser } from '@/lib/auth';
+import { BriefcaseIcon, GavelIcon, ShieldCheckIcon, RupeeIcon } from '@/components/Icons';
 
 export const dynamic = 'force-dynamic';
 
@@ -255,7 +256,9 @@ export default async function ProfilePage({
 
             {/* practice areas */}
             <section className="stack gap-3" id="practice-areas">
-              <h2 className="t-headline-md">Practice areas</h2>
+              <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                <span className="section-icon" aria-hidden="true"><BriefcaseIcon size={17} /></span>Practice areas
+              </h2>
               {p.practiceAreas.length > 0 ? (
                 <>
                   <div className="row wrap gap-2">
@@ -369,7 +372,9 @@ export default async function ProfilePage({
 
             {/* courts */}
             <section className="stack gap-3" id="courts">
-              <h2 className="t-headline-md">Courts and chambers</h2>
+              <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                <span className="section-icon" aria-hidden="true"><GavelIcon size={17} /></span>Courts and chambers
+              </h2>
               {detail && detail.chambers.length > 0 ? (
                 <div className="scroll-x">
                   <table className="table" style={{ minWidth: 480 }}>
@@ -403,7 +408,9 @@ export default async function ProfilePage({
 
             {/* enrolment */}
             <section className="stack gap-3" id="enrolment">
-              <h2 className="t-headline-md">Enrolment</h2>
+              <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                <span className="section-icon" aria-hidden="true"><ShieldCheckIcon size={17} /></span>Enrolment
+              </h2>
               {detail && detail.enrolments.length > 0 ? (
                 <div className="stack gap-2">
                   {detail.enrolments.map((e, i) => (
@@ -450,7 +457,9 @@ export default async function ProfilePage({
 
             {/* fees */}
             <section className="stack gap-3" id="fees">
-              <h2 className="t-headline-md">Fees</h2>
+              <h2 className="t-headline-md row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                <span className="section-icon" aria-hidden="true"><RupeeIcon size={17} /></span>Fees
+              </h2>
               {fees.length === 0 ? (
                 <Notice tone="info">
                   No fees are published. The Bar Council register does not record fees, and we do not

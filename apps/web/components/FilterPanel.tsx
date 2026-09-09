@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { BriefcaseIcon, PinIcon, GavelIcon, UsersIcon, RupeeIcon, ShieldCheckIcon } from './Icons';
+
+const GROUP_ICON: Record<string, React.ReactNode> = {
+  practice: <BriefcaseIcon size={14} />,
+  location: <PinIcon size={14} />,
+  court: <GavelIcon size={14} />,
+  kind: <UsersIcon size={14} />,
+};
 
 export interface FilterOption { label: string; value: string; count?: number }
 export interface FilterGroupSpec {
@@ -61,7 +69,8 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
         return (
           <details key={group.key} className="filter-group" open={group.openByDefault || Boolean(current)}>
             <summary className="filter-summary">
-              <span>
+              <span className="row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+                {GROUP_ICON[group.key] && <span className="filter-icon" aria-hidden="true">{GROUP_ICON[group.key]}</span>}
                 {group.label}
                 {current && <span className="chip chip-primary" style={{ marginLeft: 8, fontSize: '0.6875rem' }}>1</span>}
               </span>
@@ -93,7 +102,11 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
       {/* Fee band and experience — the two things people actually compare on,
           the way Practo surfaces consultation fee and years of experience. */}
       <details className="filter-group" open={Boolean(params.get('feemax') || params.get('years'))}>
-        <summary className="filter-summary"><span>Fee and experience</span></summary>
+        <summary className="filter-summary">
+          <span className="row gap-2" style={{ alignItems: 'center', display: 'inline-flex' }}>
+            <span className="filter-icon" aria-hidden="true"><RupeeIcon size={14} /></span>Fee and experience
+          </span>
+        </summary>
         <div className="stack gap-3" style={{ marginTop: 10 }}>
           <div className="stack gap-1">
             <span className="t-caption">Maximum first-consultation fee</span>
@@ -126,7 +139,9 @@ export function FilterPanel({ groups, total }: { groups: FilterGroupSpec[]; tota
       </details>
 
       <div className="filter-group stack gap-2">
-        <span className="filter-summary" style={{ cursor: 'default' }}>Trust and availability</span>
+        <span className="filter-summary row gap-2" style={{ cursor: 'default', alignItems: 'center', display: 'inline-flex' }}>
+          <span className="filter-icon" aria-hidden="true"><ShieldCheckIcon size={14} /></span>Trust and availability
+        </span>
         <label className="checkbox-row">
           <input
             type="checkbox"
