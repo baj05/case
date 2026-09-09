@@ -313,6 +313,12 @@ ul, ol { list-style: none; padding: 0; }
 @media (max-width: 400px) { .container { padding-inline: 16px; } }
 @media (min-width: 768px) { .container { padding-inline: var(--container-pad); } }
 
+/* A data-dense directory view (search results: filters + list + map) reads
+   as cramped and floating in a sea of margin at the same 1280px cap that
+   suits prose pages — so it gets its own, much wider ceiling instead of
+   inheriting .container's. */
+.container-wide { max-width: 1800px; }
+
 .section { padding-block: clamp(48px, 8vw, var(--section-gap)); }
 .section-tight { padding-block: clamp(32px, 5vw, 64px); }
 
@@ -1023,6 +1029,10 @@ ul, ol { list-style: none; padding: 0; }
   .result-card-body { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
   .result-card-body:has(> :only-child) { grid-template-columns: 1fr; }
 }
+@media (min-width: 1700px) {
+  .result-card-body { grid-template-columns: minmax(0, 1fr) 340px; }
+  .result-card-body:has(> :only-child) { grid-template-columns: 1fr; }
+}
 
 /* --- quick filter pill bar (search results) ---------------------------- */
 .quick-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1130,6 +1140,14 @@ details[open] > .filter-summary::after { content: '–'; }
 }
 @media (min-width: 1240px) {
   .search-layout.with-map { grid-template-columns: 280px minmax(0, 1fr) 300px; }
+}
+/* .container-wide frees up real room past ~1600px — widen the rails to
+   match rather than leaving it all to the (already generous) middle
+   column, which is the layout .with-map's own 1240px/1400px steps alone
+   would otherwise do. */
+@media (min-width: 1700px) {
+  .search-layout { grid-template-columns: 320px minmax(0, 1fr); }
+  .search-layout.with-map { grid-template-columns: 320px minmax(0, 1fr) 380px; }
 }
 
 /* --- state map (search sidebar) ----------------------------------------- */

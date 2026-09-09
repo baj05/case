@@ -67,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const totalProfessionals = databaseReady() ? getCorpus().professionals : undefined;
 
   return (
-    <html lang="en-IN">
+    <html lang="en-IN" data-scroll-behavior="smooth">
       <body
         className={`${display.variable} ${body.variable} ${mono.variable} ${serif.variable}`}
         suppressHydrationWarning

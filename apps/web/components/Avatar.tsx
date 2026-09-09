@@ -19,7 +19,7 @@ export function Avatar({
           width={size}
           height={size}
           priority={priority}
-          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+          style={{ objectFit: 'cover', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
         />
       ) : (
         <span className="monogram" style={{ fontSize: Math.round(size * 0.36) }} aria-hidden="true">

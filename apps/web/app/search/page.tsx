@@ -143,7 +143,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <div className="container section-tight stack gap-6">
+    <div className="container container-wide section-tight stack gap-6">
       {/* --------------------------------------------------------- search bar */}
       <div className="stack gap-3">
         <DualSearch defaultQuery={q} defaultLocation={one(sp.near) ?? ''} size="sm" />
