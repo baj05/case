@@ -267,6 +267,31 @@ export function searchMarketplace(filters: MarketplaceSearchFilters): Marketplac
   return { hits: rows, total };
 }
 
+export interface MarketplaceListingFull extends MarketplaceListing {
+  /** Deterministic, computed from the row's own id — not stored, not
+   * re-randomised per request. These listings are already fully fictional
+   * demo data (see the migration's note), so a plausible satisfaction
+   * figure is consistent with that, but it still has to be *stable*: a
+   * rating that changed on every page load would look broken, not honest. */
+  ratingX10: number; reviewCount: number;
+}
+
+/** Every active listing, unpaginated, for a client-side filter/sort UI —
+ * 100 rows is small enough that shipping all of them once and filtering in
+ * the browser (search, category, price, radius, availability, sort) is
+ * simpler and more responsive than a round trip per filter change. */
+export function listAllMarketplaceListings(): MarketplaceListingFull[] {
+  const rows = db().prepare(
+    `SELECT ${ROW_COLUMNS} FROM marketplace_listing m LEFT JOIN practice_area pa ON pa.id = m.practice_area_id
+     WHERE m.is_demo = 1 ORDER BY m.id`,
+  ).all() as unknown as MarketplaceListing[];
+  return rows.map((r) => ({
+    ...r,
+    ratingX10: 38 + (r.id * 7919) % 13, // 3.8–5.0
+    reviewCount: 5 + (r.id * 104729) % 120, // 5–124
+  }));
+}
+
 export function marketplaceCategoryCounts(): Array<{ category: string; count: number }> {
   return db().prepare(
     `SELECT category, count(*) AS count FROM marketplace_listing WHERE is_demo = 1 GROUP BY category`,

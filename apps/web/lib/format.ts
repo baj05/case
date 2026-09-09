@@ -23,6 +23,19 @@ export function formatNumber(n: number, locale = 'en-IN'): string {
   return n.toLocaleString(locale);
 }
 
+/** A client-safe duplicate of @lexhall/db's formatMinor — that package
+ * pulls in node:sqlite transitively, which Turbopack cannot put in a
+ * client bundle, so anything imported into a 'use client' component must
+ * come from here instead, never from @lexhall/db directly. */
+export function formatMinor(minor: number | null | undefined, currency = 'INR', locale = 'en-IN'): string {
+  if (minor === null || minor === undefined) return 'On request';
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(minor / 100);
+  } catch {
+    return `${currency} ${(minor / 100).toFixed(0)}`;
+  }
+}
+
 /** Build a canonical search URL so filters are shareable and bookmarkable. */
 export function searchHref(params: Record<string, string | number | boolean | undefined | null>): string {
   const sp = new URLSearchParams();

@@ -1189,6 +1189,98 @@ details[open] > .filter-summary::after { content: '–'; }
   .search-layout.with-map { grid-template-columns: 320px minmax(0, 1fr) 380px; }
 }
 
+/* --- marketplace --------------------------------------------------------
+   A deliberately different register from the rest of the site: a dark,
+   sticky utility header (not the site's light glass one) and a dense
+   classifieds-board grid, because this page is explicitly modelled on a
+   listings marketplace, not a professional directory. Colours are the
+   site's own tokens throughout (--trust-navy, --primary) — never the
+   arbitrary hex values a generic template would invent. */
+/* Not sticky, and not at top:0 — the site's own global nav header already
+   occupies that (every route keeps it, for wayfinding); this bar is the
+   marketplace's own second-level utility strip underneath it, the same
+   relationship /search's search-and-filter bar has to the global header. */
+.mp-header {
+  background: var(--trust-navy); color: var(--inverse-on-surface);
+  box-shadow: var(--shadow-sm);
+}
+.mp-header-inner {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding-block: 12px;
+}
+.mp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; flex: none; }
+.mp-brand-mark {
+  background: var(--primary); color: var(--on-primary);
+  width: 34px; height: 34px; border-radius: var(--r-sm);
+  display: grid; place-items: center; flex: none;
+}
+.mp-brand-word { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; letter-spacing: -0.01em; }
+.mp-search-wrap { flex: 1 1 320px; position: relative; min-width: 200px; }
+.mp-search-wrap input {
+  width: 100%; border-radius: var(--r-full); border: 1px solid transparent;
+  padding: 10px 16px 10px 40px; background: rgba(255, 255, 255, 0.12); color: #fff;
+}
+.mp-search-wrap input::placeholder { color: rgba(255, 255, 255, 0.6); }
+.mp-search-wrap input:focus { background: var(--surface-lowest); color: var(--on-surface); outline: 2px solid var(--primary); outline-offset: 1px; }
+.mp-search-wrap input:focus::placeholder { color: var(--on-surface-variant); }
+.mp-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.7); pointer-events: none; }
+.mp-header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.mp-location-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 8px 14px; border-radius: var(--r-full); font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+}
+.mp-location-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+.mp-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 900px) { .mp-layout { grid-template-columns: 264px minmax(0, 1fr); align-items: start; } }
+.mp-sidebar { position: sticky; top: 84px; }
+.mp-sidebar-section { padding-block: 14px; border-bottom: 1px solid var(--outline-variant); }
+.mp-sidebar-section:first-child { padding-top: 0; }
+.mp-sidebar-section:last-child { border-bottom: none; }
+.mp-sidebar-heading { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; margin-bottom: 8px; display: block; }
+.mp-category-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 8px 10px; border-radius: var(--r); font-size: 0.875rem; text-align: left;
+  background: none; border: 0; cursor: pointer; color: var(--on-surface);
+}
+.mp-category-btn:hover { background: var(--surface-low); }
+.mp-category-btn[aria-pressed='true'] { background: var(--primary-fixed); color: var(--on-primary-container); font-weight: 600; }
+.mp-price-row { display: flex; align-items: center; gap: 8px; }
+.mp-price-row input { width: 0; flex: 1 1 0; padding: 8px 10px; min-height: 38px; }
+.mp-radius-value { font-family: var(--font-mono); font-weight: 700; color: var(--primary); }
+.mp-range { width: 100%; accent-color: var(--primary); }
+
+.mp-main-head {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
+  padding: 16px 18px; margin-bottom: 20px;
+}
+.mp-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+.mp-card { display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+.mp-card-media {
+  position: relative; height: 128px; flex: none;
+  display: grid; place-items: center;
+  background: var(--secondary-container); color: var(--secondary);
+}
+:root:not([data-theme='light']) .mp-card-media { background: color-mix(in srgb, var(--secondary) 22%, var(--surface-low)); }
+.mp-card-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(15, 23, 42, 0.82); color: #fff;
+  font-size: 0.6875rem; font-weight: 700; padding: 4px 9px; border-radius: var(--r-sm);
+}
+.mp-card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.mp-card-category { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); }
+.mp-card-footer {
+  padding: 12px 16px; border-top: 1px solid var(--outline-variant);
+  display: flex; align-items: center; justify-content: space-between; margin-top: auto;
+}
+
+.mp-modal {
+  position: fixed; z-index: calc(var(--z-drawer) + 1); inset: 0; margin: auto; height: fit-content;
+  max-width: 420px; width: calc(100% - 32px); background: var(--surface-lowest);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 24px;
+}
+
 /* --- state map (search sidebar) ----------------------------------------- */
 /* Below 1240px .search-layout.with-map has no third column, so the map
    (third DOM child) would otherwise auto-place into row 2 of the filter
