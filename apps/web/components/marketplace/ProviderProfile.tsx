@@ -63,14 +63,13 @@ function Comment({ comment, depth = 0 }: { comment: MarketplaceComment; depth?: 
 }
 
 export function ProviderProfile({
-  provider, listings, comments, onDiscuss, onBook, onBuy,
+  provider, listings, comments, categoryLabel, onOpen,
 }: {
   provider: MarketplaceProviderStats;
   listings: MarketplaceListingFull[];
   comments: MarketplaceComment[];
-  onDiscuss: (l: MarketplaceListingFull) => void;
-  onBook: (l: MarketplaceListingFull) => void;
-  onBuy: (l: MarketplaceListingFull) => void;
+  categoryLabel: (key: string) => string;
+  onOpen: (l: MarketplaceListingFull) => void;
 }) {
   const [tab, setTab] = useState<Tab>('services');
   const badges = provider.badges.split(',').filter(Boolean);
@@ -195,7 +194,12 @@ export function ProviderProfile({
             : (
               <div className="svc-grid">
                 {listings.map((l) => (
-                  <ServicePost key={l.id} listing={l} onDiscuss={onDiscuss} onBook={onBook} onBuy={onBuy} />
+                  <ServicePost
+                    key={l.id}
+                    listing={l}
+                    categoryLabel={categoryLabel(l.category)}
+                    onOpen={onOpen}
+                  />
                 ))}
               </div>
             )

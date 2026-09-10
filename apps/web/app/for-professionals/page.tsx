@@ -5,7 +5,7 @@ import { Notice } from '@/components/States';
 import { VERIFICATION_LEVELS } from '@lexhall/core';
 import {
   getCorpus, databaseReady, getMarketplaceProviders, getProviderListings,
-  getProviderComments, MARKETPLACE_CATEGORIES,
+  getProviderComments, getMarketplaceCities, MARKETPLACE_CATEGORIES,
 } from '@/lib/data';
 import { formatNumber } from '@/lib/format';
 import { MarketplaceHub } from '@/components/marketplace/MarketplaceHub';
@@ -33,10 +33,12 @@ export default function ForProfessionalsPage() {
     providers.map((p) => [p.handle, getProviderComments(p.id)]),
   );
   const allListings = Object.values(listingsByProvider).flat();
+  const cities = ready ? getMarketplaceCities() : [];
 
   return (
-    <div className="container section-tight stack gap-8">
-      <div className="stack gap-8" style={{ maxWidth: 900, width: '100%' }}>
+    <>
+      <div className="container section-tight stack gap-8">
+        <div className="stack gap-8" style={{ maxWidth: 900, width: '100%' }}>
         <div className="stack gap-3">
           <p className="t-label-mono ink-variant">For advocates and firms</p>
           <h1 className="t-display-lg" style={{ maxWidth: '20ch' }}>
@@ -53,13 +55,17 @@ export default function ForProfessionalsPage() {
           </p>
         </div>
 
-        <div className="stack gap-2">
-          <label className="label" htmlFor="find-me">Search for your name</label>
-          <SearchInput placeholder="Your name, or your Bar Council" />
+          <div className="stack gap-2">
+            <label className="label" htmlFor="find-me">Search for your name</label>
+            <SearchInput placeholder="Your name, or your Bar Council" />
+          </div>
         </div>
       </div>
 
-      <section className="stack gap-4" id="marketplace">
+      {/* Full bleed: a sibling of the container, not a child, so the grid runs
+          the whole viewport. The prose inside it stays measured — a paragraph
+          set 2000px wide loses the reader on the return sweep. */}
+      <section className="mkt-full stack gap-4" id="marketplace">
         <div className="stack gap-2" style={{ maxWidth: 900 }}>
           <h2 className="t-headline-lg" style={{ margin: 0 }}>The marketplace</h2>
           <p className="t-body ink-variant measure">
@@ -75,6 +81,7 @@ export default function ForProfessionalsPage() {
             listingsByProvider={listingsByProvider}
             commentsByProvider={commentsByProvider}
             categories={MARKETPLACE_CATEGORIES}
+            cities={cities}
           />
         ) : (
           <Notice tone="warn">
@@ -83,7 +90,8 @@ export default function ForProfessionalsPage() {
         )}
       </section>
 
-      <div className="stack gap-8" style={{ maxWidth: 900, width: '100%' }}>
+      <div className="container section-tight stack gap-8">
+        <div className="stack gap-8" style={{ maxWidth: 900, width: '100%' }}>
 
       <section className="stack gap-3">
         <h2 className="t-headline-md">What claiming gives you</h2>
@@ -143,8 +151,9 @@ export default function ForProfessionalsPage() {
           <Link href="/legal/data-request" className="btn btn-secondary">Request removal or correction</Link>
           <Link href="/dashboard" className="btn btn-ghost">Professional dashboard</Link>
         </div>
-      </section>
+        </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

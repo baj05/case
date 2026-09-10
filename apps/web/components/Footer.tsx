@@ -7,7 +7,7 @@ export function Footer() {
       head: 'Find',
       links: [
         { href: '/search', label: 'Search professionals' },
-        { href: '/marketplace', label: 'Marketplace (preview)' },
+        { href: '/for-professionals#marketplace', label: 'Legal services marketplace' },
         { href: '/firms', label: 'Law firms & chambers' },
         { href: '/lpo', label: 'LPO providers' },
         { href: '/practice-areas', label: 'Practice areas' },

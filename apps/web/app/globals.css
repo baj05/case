@@ -106,6 +106,11 @@
   --t-slow: 320ms;
   --ease: cubic-bezier(0.2, 0, 0.2, 1);
 
+  /* The sticky site header's own height: 12px padding-block either side of
+     a 44px nav pill. Declared once here because three sticky offsets read
+     it, and until now each fell back to a different hardcoded guess. */
+  --header-h: 68px;
+
   --z-header: 50;
   --z-drawer: 80;
   --z-modal: 90;
@@ -1203,56 +1208,17 @@ details[open] > .filter-summary::after { content: '–'; }
   .search-layout.with-map { grid-template-columns: 320px minmax(0, 1fr) 380px; }
 }
 
-/* --- marketplace --------------------------------------------------------
-   A deliberately different register from the rest of the site: a dark,
-   sticky utility header (not the site's light glass one) and a dense
-   classifieds-board grid, because this page is explicitly modelled on a
-   listings marketplace, not a professional directory. Colours are the
-   site's own tokens throughout (--trust-navy, --primary) — never the
-   arbitrary hex values a generic template would invent. */
-/* Not sticky, and not at top:0 — the site's own global nav header already
-   occupies that (every route keeps it, for wayfinding); this bar is the
-   marketplace's own second-level utility strip underneath it, the same
-   relationship /search's search-and-filter bar has to the global header. */
-.mp-header {
-  background: var(--trust-navy); color: var(--inverse-on-surface);
-  box-shadow: var(--shadow-sm);
-}
-.mp-header-inner {
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  padding-block: 12px;
-}
-.mp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; flex: none; }
-.mp-brand-mark {
-  background: var(--primary); color: var(--on-primary);
-  width: 34px; height: 34px; border-radius: var(--r-sm);
-  display: grid; place-items: center; flex: none;
-}
-.mp-brand-word { font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; letter-spacing: -0.01em; }
-.mp-search-wrap { flex: 1 1 320px; position: relative; min-width: 200px; }
-.mp-search-wrap input {
-  width: 100%; border-radius: var(--r-full); border: 1px solid transparent;
-  padding: 10px 16px 10px 40px; background: rgba(255, 255, 255, 0.12); color: #fff;
-}
-.mp-search-wrap input::placeholder { color: rgba(255, 255, 255, 0.6); }
-.mp-search-wrap input:focus { background: var(--surface-lowest); color: var(--on-surface); outline: 2px solid var(--primary); outline-offset: 1px; }
-.mp-search-wrap input:focus::placeholder { color: var(--on-surface-variant); }
-.mp-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.7); pointer-events: none; }
-.mp-header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
-.mp-location-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.16);
-  padding: 8px 14px; border-radius: var(--r-full); font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-}
-.mp-location-btn:hover { background: rgba(255, 255, 255, 0.2); }
-
-.mp-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
-@media (min-width: 900px) { .mp-layout { grid-template-columns: 264px minmax(0, 1fr); align-items: start; } }
-.mp-sidebar { position: sticky; top: 84px; }
+/* --- marketplace filter rail --------------------------------------------
+   The sidebar filter primitives, shared by the sticky desktop rail and the
+   under-900px filter sheet. What was here before also carried a dark utility
+   header and a placeholder-icon card grid for a separate /marketplace page;
+   that page has been folded into /for-professionals and its styles removed
+   with it, so only the filter primitives remain. Selected state is keyed off
+   `aria-pressed` so the visual and announced states cannot drift apart. */
 .mp-sidebar-section { padding-block: 14px; border-bottom: 1px solid var(--outline-variant); }
 .mp-sidebar-section:first-child { padding-top: 0; }
 .mp-sidebar-section:last-child { border-bottom: none; }
-.mp-sidebar-heading { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; margin-bottom: 8px; display: block; }
+.mp-sidebar-heading { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; display: block; }
 .mp-category-btn {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
   padding: 8px 10px; border-radius: var(--r); font-size: 0.875rem; text-align: left;
@@ -1265,30 +1231,7 @@ details[open] > .filter-summary::after { content: '–'; }
 .mp-radius-value { font-family: var(--font-mono); font-weight: 700; color: var(--primary); }
 .mp-range { width: 100%; accent-color: var(--primary); }
 
-.mp-main-head {
-  display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
-  padding: 16px 18px; margin-bottom: 20px;
-}
-.mp-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
-.mp-card { display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
-.mp-card-media {
-  position: relative; height: 128px; flex: none;
-  display: grid; place-items: center;
-  background: var(--secondary-container); color: var(--secondary);
-}
-:root:not([data-theme='light']) .mp-card-media { background: color-mix(in srgb, var(--secondary) 22%, var(--surface-low)); }
-.mp-card-badge {
-  position: absolute; top: 8px; right: 8px;
-  background: rgba(15, 23, 42, 0.82); color: #fff;
-  font-size: 0.6875rem; font-weight: 700; padding: 4px 9px; border-radius: var(--r-sm);
-}
-.mp-card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.mp-card-category { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--primary); }
-.mp-card-footer {
-  padding: 12px 16px; border-top: 1px solid var(--outline-variant);
-  display: flex; align-items: center; justify-content: space-between; margin-top: auto;
-}
-
+/* A centred dialog shell, used by the location/radius picker. */
 .mp-modal {
   position: fixed; z-index: calc(var(--z-drawer) + 1); inset: 0; margin: auto; height: fit-content;
   max-width: 420px; width: calc(100% - 32px); background: var(--surface-lowest);
@@ -3025,204 +2968,328 @@ details[open] > .filter-summary::after { content: '–'; }
   background: var(--action-orange);
 }
 
-/* --- the feed ------------------------------------------------------------
-   Restyled after a clean social-post card: flat surface, hairline border,
-   a tight avatar/name/handle/time header row, body copy that just flows
-   (no boxed sub-sections), edge-to-edge rounded media, and a minimal
-   icon-led action row along the bottom rather than a boxed footer with its
-   own background. The colours and radii are still this design system's own
-   tokens — nothing here borrows another product's palette. */
+/* --- the marketplace grid ------------------------------------------------
+   Image-first listing cards in a full-bleed grid, after the shape a
+   classifieds board uses: fixed-ratio media on top carrying the price, a
+   compact identity strip, clamped copy, and a footer pinned to the card's
+   bottom edge.
+
+   That ordering is what makes a grid of them align. The previous card put
+   variable-length copy above the media and grew a podcast block on about a
+   third of the rows, so heights ran 586-677px and every row bottom was
+   ragged. Media first + clamped text + `margin-top:auto` footer makes the
+   height a constant instead of a consequence.
+   ------------------------------------------------------------------------ */
+
+/* The section escapes the 1280px container and runs the full viewport. Not
+   the `100vw` + negative-margin breakout: `100vw` counts the scrollbar and
+   would hand us the horizontal overflow we test against on every pass. */
+.mkt-full {
+  width: 100%;
+  padding-inline: clamp(12px, 1.5vw, 24px);
+  /* Its own vertical rhythm: as a sibling of the container rather than a
+     child, it no longer inherits `.section-tight`'s padding-block. */
+  padding-block: clamp(24px, 4vw, 48px);
+}
+
+.mkt-layout { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) {
+  /* The sidebar is fixed so every extra pixel of a wide screen goes to the
+     grid, where it buys another column, rather than to filters that do not
+     need it. */
+  .mkt-layout { grid-template-columns: 264px minmax(0, 1fr); gap: 24px; }
+}
+@media (min-width: 1400px) { .mkt-layout { grid-template-columns: 288px minmax(0, 1fr); } }
+
+.mkt-sidebar {
+  position: sticky;
+  top: calc(var(--header-h) + 12px);
+  max-height: calc(100vh - var(--header-h) - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+@media (max-width: 899px) { .mkt-sidebar { position: static; max-height: none; overflow: visible; } }
+
+.mkt-toolbar {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 14px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.mkt-count {
+  display: inline-flex; align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--r-full);
+  background: var(--primary-fixed);
+  color: var(--on-primary-container);
+  font-size: 0.75rem; font-weight: 700;
+}
 
 .svc-grid {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  /* auto-fill rather than a 4-column cap: now that the section is full
+     bleed, capping at 4 would stretch each card past 500px on a wide
+     monitor. Cards hold 264-340px and the column count rises instead. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 264px), 1fr));
 }
-/* Two columns is the intended reading rhythm; above ~1500px a third would
-   make each post too narrow for its own price row to breathe. */
-@media (min-width: 1100px) { .svc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .svc-post {
-  display: flex;
-  flex-direction: column;
   position: relative;
+  display: flex; flex-direction: column;
   border: 1px solid var(--outline-variant);
   border-radius: var(--r-lg);
   background: var(--surface-lowest);
   overflow: hidden;
-  transition: background var(--t) var(--ease), border-color var(--t) var(--ease);
+  transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease), transform var(--t) var(--ease);
 }
-/* A soft background tint on hover, the way a feed item lifts under the
-   cursor without a shadow popping into existence — shadow is reserved for
-   things that actually float (menus, modals), not for a card sitting flush
-   in a grid. */
-.svc-post:hover { background: var(--surface-low); border-color: var(--outline); }
+.svc-post:hover { border-color: var(--outline); box-shadow: var(--shadow-md); }
+/* The whole card is one hit target and one tab stop: an invisible button
+   stretched over it by ::after. Keeps real button semantics without nesting
+   interactive elements inside a link. */
+.svc-open {
+  position: absolute; inset: 0; z-index: 2;
+  border: 0; padding: 0; background: transparent;
+  cursor: pointer;
+  border-radius: var(--r-lg);
+}
+.svc-open:focus-visible { outline: 3px solid var(--trust-navy); outline-offset: 2px; }
 
-.svc-head { display: flex; gap: 10px; padding: 14px 14px 0; align-items: flex-start; }
-.svc-head-avatar {
+.svc-media {
   position: relative;
-  width: 44px; height: 44px; flex: none;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-container);
+  overflow: hidden;
+  flex: none;
+}
+.svc-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (prefers-reduced-motion: no-preference) {
+  .svc-media img { transition: transform var(--t-slow) var(--ease); }
+  .svc-post:hover .svc-media img { transform: scale(1.04); }
+}
+/* Media stands in for a missing banner rather than collapsing, so a card
+   without one keeps the same height as its neighbours. */
+.svc-media-fallback { display: grid; place-items: center; height: 100%; color: var(--on-surface-variant); }
+
+.svc-price-tag {
+  position: absolute; left: 10px; bottom: 10px;
+  display: flex; flex-direction: column; gap: 0;
+  padding: 5px 10px;
+  border-radius: var(--r-md);
+  background: rgba(15, 23, 42, 0.86);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  line-height: 1.15;
+}
+.svc-price-tag strong { font-size: 0.9375rem; font-weight: 800; }
+.svc-price-tag span { font-size: 0.625rem; opacity: 0.75; letter-spacing: 0.03em; }
+
+.svc-alt-badge {
+  position: absolute; right: 10px; top: 10px;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.625rem; font-weight: 700; letter-spacing: 0.06em;
+}
+
+.svc-expiry {
+  position: absolute; left: 10px; top: 10px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 0.6875rem; font-weight: 700;
+}
+/* Amber inside 48 hours: "5 hours left" and "3 weeks left" are different
+   kinds of information and should not look identical. */
+.svc-expiry[data-urgent='true'] { background: var(--warning-container); color: var(--on-warning-container); }
+
+.svc-body { padding: 12px 12px 0; display: flex; flex-direction: column; gap: 8px; }
+
+.svc-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.svc-who-avatar {
+  position: relative;
+  width: 28px; height: 28px; flex: none;
   border-radius: var(--r-full);
   overflow: hidden;
   background: var(--surface-container);
 }
-.svc-head-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.svc-who-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.svc-who-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.svc-who-name { display: flex; align-items: center; gap: 3px; min-width: 0; font-size: 0.8125rem; font-weight: 700; }
+.svc-who-handle { font-size: 0.6875rem; color: var(--on-surface-variant); }
 
-/* Name · verified tick · @handle · time, one line, exactly the rhythm a
-   social profile trains people to scan in half a second. */
-.svc-name-row {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  min-width: 0;
-  flex-wrap: nowrap;
-}
-.svc-name-row strong {
-  font-size: 0.9375rem;
-  font-weight: 800;
+.svc-title {
+  margin: 0;
+  font-size: 0.875rem; font-weight: 700; line-height: 1.3;
   color: var(--on-surface);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.svc-handle, .svc-dot, .svc-time {
-  font-size: 0.875rem;
-  color: var(--on-surface-variant);
-  white-space: nowrap;
-  flex: none;
-}
-.svc-handle { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
-
-.svc-head-info { min-width: 0; flex: 1; padding-right: 72px; }
-
-/* Where the whole post gets scanned before the price is even reached, so
-   it earns the same top-right corner a "Promoted" tag would occupy on a
-   social card — seen without competing with the name row for attention. */
-.svc-price-tag {
-  position: absolute;
-  top: 14px; right: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.1;
-}
-.svc-price-tag strong { font-size: 1rem; font-weight: 800; color: var(--on-surface); }
-.svc-price-tag span { font-size: 0.6875rem; color: var(--on-surface-variant); }
-
-.svc-meta-line {
-  display: flex; align-items: center; gap: 4px;
+/* Two lines are *reserved*, not merely capped: `.clamp-2` stops a long
+   pitch overflowing but lets a short one occupy a single line, and that
+   alone was the whole residual height variance across the grid (19px). The
+   min-height is derived from this rule's own font-size and line-height so
+   it cannot drift out of step with them. */
+.svc-pitch {
+  margin: 0;
   font-size: 0.8125rem;
+  line-height: 1.45;
+  min-height: calc(2 * 1.45 * 0.8125rem);
   color: var(--on-surface-variant);
-  margin-top: 1px;
 }
 
-.svc-body { padding: 8px 14px 0; }
-.svc-title { font-size: 0.9375rem; font-weight: 700; color: var(--on-surface); margin: 0 0 2px; }
-.svc-pitch { font-size: 0.9375rem; line-height: 1.5; color: var(--on-surface); margin: 0; }
+.svc-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.svc-chips .chip { font-size: 0.6875rem; padding: 2px 8px; min-height: 0; }
 
-.svc-rating-row { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.8125rem; }
+.svc-foot {
+  margin-top: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+}
+.svc-foot-where { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.svc-foot-more { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.svc-post:hover .svc-foot-more { text-decoration: underline; }
 
-/* Media sits edge-to-edge within the card's own padding and carries its
-   own rounded corners and hairline border — the same treatment a link
-   preview gets on a social card, never a bleed to the card's own edge. */
-.svc-banner {
+/* --- listing detail (split media / info panel) --------------------------- */
+
+.lst-backdrop {
+  position: fixed; inset: 0; z-index: var(--z-modal);
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(4px);
+  display: grid; place-items: center;
+  padding: clamp(8px, 2vh, 32px) clamp(8px, 2vw, 32px);
+}
+.lst-panel {
   position: relative;
-  display: block;
-  margin: 10px 14px 0;
-  border-radius: var(--r-md);
+  width: min(1080px, 100%);
+  max-height: min(92vh, 900px);
+  background: var(--surface-lowest);
   border: 1px solid var(--outline-variant);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  background: var(--surface-container);
+  display: flex; flex-direction: column;
 }
-.svc-banner img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
-/* The ALT badge is a promise the composer enforces: every banner carries a
-   description, and the badge is how a sighted author can see that it did. */
-.svc-alt-badge {
-  position: absolute;
-  left: 8px; bottom: 8px;
-  padding: 3px 7px;
-  border-radius: var(--r-sm);
-  background: rgba(15, 23, 42, 0.72);
-  color: #fff;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
+@media (min-width: 860px) { .lst-panel { flex-direction: row; } }
 
-.svc-podcast {
-  display: flex; align-items: center; gap: 10px;
-  margin: 10px 14px 0;
-  padding: 9px 11px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--r-md);
-  background: transparent;
+.lst-close {
+  position: absolute; top: 12px; right: 12px; z-index: 4;
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border: 0; border-radius: var(--r-full);
+  background: rgba(15, 23, 42, 0.68);
+  color: #fff;
+  cursor: pointer;
   transition: background var(--t) var(--ease);
 }
-.svc-post:hover .svc-podcast { background: var(--surface-container); }
-.svc-podcast-play {
+.lst-close:hover { background: rgba(15, 23, 42, 0.88); }
+
+.lst-media {
+  position: relative;
+  background: var(--trust-navy);
+  flex: none;
+  min-height: 220px;
   display: grid; place-items: center;
-  width: 32px; height: 32px; flex: none;
+  padding: 16px;
+}
+@media (min-width: 860px) { .lst-media { flex: 1 1 58%; min-height: 0; } }
+/* `contain`, not `cover`: in a detail view the whole image matters, and a
+   crop that hides half the subject is worse than letterboxing. */
+.lst-media img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--r-md); }
+
+.lst-alt {
+  position: absolute; left: 16px; right: 16px; bottom: 16px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.lst-alt-label {
+  display: block; margin-bottom: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem; font-weight: 700; letter-spacing: 0.07em;
+  color: var(--primary-fixed-dim);
+}
+.lst-alt p { margin: 0; font-size: 0.75rem; line-height: 1.45; color: rgba(255, 255, 255, 0.86); }
+
+.lst-info { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+@media (min-width: 860px) { .lst-info { flex: 1 1 42%; max-width: 440px; } }
+.lst-info-scroll { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; flex: 1 1 auto; }
+.lst-info-foot {
+  flex: none;
+  padding: 14px 20px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--surface-low);
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.lst-price { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); font-weight: 800; color: var(--primary); line-height: 1.1; }
+
+.lst-specs {
+  padding: 12px 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-low);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.lst-spec-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.8125rem; }
+.lst-spec-row dt { color: var(--on-surface-variant); }
+.lst-spec-row dd { margin: 0; font-weight: 700; text-align: right; }
+
+.lst-provider {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-container);
+}
+.lst-provider-avatar {
+  position: relative;
+  width: 46px; height: 46px; flex: none;
+  border-radius: var(--r-full);
+  overflow: hidden;
+  background: var(--surface-high);
+}
+.lst-provider-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.lst-podcast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-low);
+}
+.lst-podcast-play {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; flex: none;
   border-radius: var(--r-full);
   background: var(--trust-navy);
   color: var(--surface-lowest);
 }
-:root:not([data-theme='light']) .svc-podcast-play { background: var(--surface-highest); color: var(--on-surface); }
+:root:not([data-theme='light']) .lst-podcast-play { background: var(--surface-highest); color: var(--on-surface); }
 
-.svc-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 14px 0; }
-.svc-chips .chip, .svc-chips .chip-outline { font-size: 0.75rem; padding: 3px 9px; min-height: 0; }
+.lst-cta-row { display: flex; gap: 8px; }
+.lst-cta-row .btn { flex: 1 1 0; min-width: 0; }
 
-/* The action row: no fill, no boxed background — a hairline separator and
-   evenly spaced icon-led controls, the same shape a social post's engagement
-   bar takes. Buy stays the one filled control since it is the sole
-   irreversible action in the row; Message and Book stay ghost, matching how
-   a feed treats "reply" and "repost" as lightweight and "the thing that
-   costs money" as the odd one out. */
-.svc-actions-row {
-  margin-top: 12px;
-  padding: 6px 6px;
-  border-top: 1px solid var(--outline-variant);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
-.svc-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: var(--r-full);
-  background: transparent;
-  color: var(--on-surface-variant);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--t) var(--ease), color var(--t) var(--ease);
-}
-.svc-action-btn:hover { background: var(--surface-container); color: var(--on-surface); }
-.svc-action-btn[data-tone='book']:hover { background: rgba(0, 107, 95, 0.12); color: var(--secondary); }
-:root:not([data-theme='light']) .svc-action-btn[data-tone='book']:hover { color: var(--growth-teal); }
-.svc-action-btn[data-tone='buy'] {
-  background: var(--primary);
-  color: var(--on-primary);
-  padding: 7px 14px;
-}
-.svc-action-btn[data-tone='buy']:hover { background: var(--primary); filter: brightness(1.06); color: var(--on-primary); }
+/* --- filters sheet (under 900px) ----------------------------------------- */
 
-/* Price shown in-card once means the price tag can crowd the header on the
-   narrowest cards; the row wraps rather than truncating the name. */
-@media (max-width: 380px) {
-  .svc-price-tag { position: static; align-items: flex-start; margin: 8px 14px 0; order: 1; }
-  .svc-head-info { padding-right: 0; }
-}
-
-/* Expiry. Amber inside 48 hours, because "3 days left" and "5 hours left"
-   are different kinds of information and should not look identical. */
-.svc-expiry { display: inline-flex; align-items: center; gap: 4px; }
-.svc-expiry[data-urgent='true'] { background: var(--warning-container); color: var(--on-warning-container); }
-
+.mkt-filter-toggle { display: inline-flex; }
+@media (min-width: 900px) { .mkt-filter-toggle { display: none; } }
+.mkt-sidebar-desktop { display: none; }
+@media (min-width: 900px) { .mkt-sidebar-desktop { display: block; } }
+.mkt-chips-mobile { display: flex; gap: 6px; padding-bottom: 12px; }
+@media (min-width: 900px) { .mkt-chips-mobile { display: none; } }
 
 /* --- threads ------------------------------------------------------------ */
 

@@ -11,6 +11,14 @@ const config: NextConfig = {
     formats: ['image/webp'],
   },
   poweredByHeader: false,
+  async redirects() {
+    return [
+      // The marketplace used to be a separate page with its own filter set and
+      // placeholder cards. It now lives inside /for-professionals, which is
+      // also where "Claim your profile" points, so the two cannot drift apart.
+      { source: '/marketplace', destination: '/for-professionals#marketplace', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
