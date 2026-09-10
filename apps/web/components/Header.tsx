@@ -21,6 +21,7 @@ export function Header({ totalProfessionals }: { totalProfessionals?: number }) 
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const navRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelClose = useCallback(() => {
@@ -38,6 +39,27 @@ export function Header({ totalProfessionals }: { totalProfessionals?: number }) 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // --header-h had been a hard-coded guess that three unrelated layouts
+  // relied on for exact-pixel sticky offsets, and the codebase's own
+  // comments disagreed on the real number (61px in one place, 68px at
+  // :root, 72px in another) because none of them actually measured it. The
+  // header's own height changes with viewport width (it drops to a
+  // narrower mobile-nav layout well below the point other components
+  // switch to their own "desktop" chrome), so one static constant can
+  // never be right everywhere it's read. Measuring it here fixes accuracy
+  // for every consumer at once — nothing else needs to change.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const setHeaderHeight = () => {
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`);
+    };
+    setHeaderHeight();
+    const ro = new ResizeObserver(setHeaderHeight);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // Close everything on navigation, and lock scroll while the drawer is open.
@@ -79,7 +101,7 @@ export function Header({ totalProfessionals }: { totalProfessionals?: number }) 
   };
 
   return (
-    <header className="site-header" data-scrolled={scrolled}>
+    <header className="site-header" data-scrolled={scrolled} ref={headerRef}>
       <div className="container row" style={{ justifyContent: 'space-between', gap: 16 }}>
         <div className="row gap-2" style={{ alignItems: 'center' }}>
           <Link href="/" className="wordmark" aria-label={`${BRAND.name} home`}>

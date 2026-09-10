@@ -6,6 +6,7 @@ import { FilterPanel, type FilterGroupSpec } from '@/components/FilterPanel';
 import { IndiaStateMap } from '@/components/IndiaStateMap';
 import { QuickFilterBar } from '@/components/QuickFilterBar';
 import { EmptyState, Notice } from '@/components/States';
+import { Pagination } from '@/components/Pagination';
 import { runSearch, getPracticeAreas, getCourts, getStates, recordSearchEvent, databaseReady } from '@/lib/data';
 import { formatNumber } from '@/lib/format';
 
@@ -262,15 +263,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </Notice>
           )}
 
-          {totalPages > 1 && (
-            <nav className="row wrap gap-2" aria-label="Pagination" style={{ justifyContent: 'center', paddingTop: 8 }}>
-              {outcome.page > 1 && <Link href={pageHref(outcome.page - 1)} className="btn btn-secondary btn-sm" rel="prev">Previous</Link>}
-              <span className="t-body-sm ink-variant" style={{ alignSelf: 'center' }}>
-                Page {outcome.page} of {totalPages}
-              </span>
-              {outcome.page < totalPages && <Link href={pageHref(outcome.page + 1)} className="btn btn-secondary btn-sm" rel="next">Next</Link>}
-            </nav>
-          )}
+          <Pagination page={outcome.page} totalPages={totalPages} pageHref={pageHref} />
         </div>
 
         <IndiaStateMap

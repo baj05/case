@@ -72,6 +72,11 @@ export function ProviderProfile({
   onOpen: (l: MarketplaceListingFull) => void;
 }) {
   const [tab, setTab] = useState<Tab>('services');
+  // Session-local only — no account system backs this, and the whole
+  // provider is already disclosed as fictional demo data on this page. An
+  // optimistic ±1 on the displayed count is the ordinary behaviour of a
+  // follow button anywhere, not a new claim about real social proof.
+  const [following, setFollowing] = useState(false);
   const badges = provider.badges.split(',').filter(Boolean);
 
   const podcasts = useMemo(
@@ -103,8 +108,17 @@ export function ProviderProfile({
               <img src={provider.avatarPath} alt="" />
             </div>
             <div className="row wrap gap-2">
-              <button type="button" className="btn btn-secondary btn-sm">Follow</button>
-              <button type="button" className="btn btn-primary btn-sm">Message</button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                aria-pressed={following}
+                onClick={() => setFollowing((v) => !v)}
+              >
+                {following ? 'Following' : 'Follow'}
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('services')}>
+                Message
+              </button>
             </div>
           </div>
 
@@ -149,7 +163,7 @@ export function ProviderProfile({
               <strong>{formatNumber(provider.listingCount)}</strong><span>services</span>
             </span>
             <span className="adv-stat">
-              <strong>{formatNumber(provider.followers)}</strong><span>followers</span>
+              <strong>{formatNumber(provider.followers + (following ? 1 : 0))}</strong><span>followers</span>
             </span>
             <span className="adv-stat">
               <strong>{provider.ratingX10 > 0 ? (provider.ratingX10 / 10).toFixed(1) : '—'}</strong>
@@ -221,7 +235,13 @@ export function ProviderProfile({
                         </span>
                       </span>
                     </span>
-                    <button type="button" className="btn btn-secondary btn-sm">Play</button>
+                    {/* No audio file backs this — podcastTitle/podcastMinutes are
+                        text-only fields the composer collects, never a real
+                        recording. A "Play" button here would be a fake
+                        capability, so this stays a plain, inert label. */}
+                    <span className="chip chip-outline" style={{ flex: 'none' }}>
+                      <MicIcon size={12} /> Audio note
+                    </span>
                   </div>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import {
 } from '@/lib/data';
 import { formatNumber, compactIndian } from '@/lib/format';
 import { Notice } from '@/components/States';
+import { Pagination } from '@/components/Pagination';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -152,12 +153,7 @@ export default async function CourtDirectoryPage({
             </div>
           )}
 
-          {pages > 1 && (
-            <div className="row wrap gap-2" style={{ justifyContent: 'center' }}>
-              {page > 1 && <Link href={pageHref(page - 1)} className="btn btn-secondary btn-sm">← Previous</Link>}
-              {page < pages && <Link href={pageHref(page + 1)} className="btn btn-secondary btn-sm">Next →</Link>}
-            </div>
-          )}
+          <Pagination page={page} totalPages={pages} pageHref={pageHref} />
         </section>
 
         {courts.length > 0 && (

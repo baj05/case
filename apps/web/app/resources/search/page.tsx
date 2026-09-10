@@ -6,6 +6,7 @@ import { Notice, EmptyState } from '@/components/States';
 import { ResourceSearch } from '@/components/ResourceSearch';
 import { ResourceCard } from '@/components/ResourceCard';
 import { ResourceFilters } from '@/components/ResourceFilters';
+import { Pagination } from '@/components/Pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,13 +200,7 @@ export default async function ResourceSearchPage({ searchParams }: {
                 {outcome.hits.map((card) => <ResourceCard key={card.id} card={card} />)}
               </div>
 
-              {lastPage > 1 && (
-                <nav className="row gap-2" style={{ justifyContent: 'center' }} aria-label="Pagination">
-                  {page > 1 && <Link href={pageHref(page - 1)} className="btn btn-secondary btn-sm">Previous</Link>}
-                  <span className="t-body-sm ink-variant">Page {page} of {lastPage}</span>
-                  {page < lastPage && <Link href={pageHref(page + 1)} className="btn btn-secondary btn-sm">Next</Link>}
-                </nav>
-              )}
+              <Pagination page={page} totalPages={lastPage} pageHref={pageHref} />
             </>
           )}
 
