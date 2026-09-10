@@ -61,44 +61,120 @@ const TEMPLATES: Record<string, Array<{ title: string; description: string; pric
     { title: 'FIR review and bail application', description: 'Reviews the FIR, advises on grounds and files a bail application at the jurisdictional court.', priceMinor: [800000, 2500000], basis: 'starting_at', response: [30, 240] },
     { title: 'Criminal trial representation', description: 'Represents you through hearings for an ongoing criminal trial, one court appearance at a time.', priceMinor: [500000, 1500000], basis: 'starting_at', response: [60, 480] },
     { title: 'Quashing petition (Section 482)', description: 'Drafts and files a quashing petition before the High Court where the FIR does not disclose an offence.', priceMinor: [1500000, 4000000], basis: 'fixed', response: [120, 1440] },
+    { title: 'Anticipatory bail application (Section 438)', description: 'Files an anticipatory bail application before arrest and argues it at the sessions court.', priceMinor: [1000000, 3000000], basis: 'starting_at', response: [60, 480] },
+    { title: 'Cheque bounce defence (Section 138)', description: 'Represents you in a cheque-dishonour complaint from the first summons through to compounding or trial.', priceMinor: [600000, 2000000], basis: 'starting_at', response: [60, 720] },
+    { title: 'Charge sheet review, sensitive matter', description: 'Reviews the charge sheet and prepares a defence strategy for a sensitive criminal matter; an in-person consultation comes first.', priceMinor: [1200000, 3500000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Cybercrime FIR and complaint drafting', description: 'Drafts a cybercrime complaint for fraud, hacking or online harassment and follows it up with the cyber cell.', priceMinor: [400000, 1200000], basis: 'starting_at', response: [120, 720] },
+    { title: 'Bail bond and surety paperwork', description: 'Prepares the bail bond and surety documents once bail is granted, so release is not delayed by paperwork.', priceMinor: [150000, 400000], basis: 'fixed', response: [30, 180] },
+    { title: 'NDPS Act bail application', description: 'Files a bail application under the NDPS Act, where bail conditions are stricter and the burden of proof shifts.', priceMinor: [1800000, 5000000], basis: 'starting_at', response: [120, 1440] },
+    { title: 'Domestic violence complaint or defence', description: 'Drafts a complaint under the Protection of Women from Domestic Violence Act, or defends one, including interim relief.', priceMinor: [700000, 2000000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Cross-examination brief for ongoing trial', description: 'Prepares a written cross-examination brief for your existing counsel, or takes over a single hearing.', priceMinor: [500000, 1500000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Discharge application before framing of charges', description: 'Files a discharge application arguing the evidence does not disclose a prima facie case against you.', priceMinor: [1000000, 2800000], basis: 'starting_at', response: [180, 1440] },
   ],
   urgent_consultation: [
     { title: 'Get a lawyer on call, right now', description: 'A 20-minute phone consultation for a legal problem that cannot wait for an office appointment.', priceMinor: [50000, 150000], basis: 'fixed', response: [10, 60] },
     { title: 'Same-day in-person consultation', description: 'Books a same-day slot for a first consultation on an urgent matter.', priceMinor: [200000, 500000], basis: 'fixed', response: [60, 240] },
     { title: 'Emergency injunction advice', description: 'Rapid advice on whether an urgent injunction is available before a deadline passes.', priceMinor: [300000, 800000], basis: 'starting_at', response: [30, 180] },
+    { title: 'Police station accompaniment', description: 'An advocate meets you at the police station within the hour for questioning or a raid.', priceMinor: [400000, 1200000], basis: 'fixed', response: [20, 90] },
+    { title: 'Weekend legal helpline', description: 'A 15-minute call on a Saturday or Sunday for a problem that surfaced outside office hours.', priceMinor: [40000, 120000], basis: 'fixed', response: [10, 60] },
+    { title: 'Demolition or sealing notice, same-day advice', description: 'Same-day advice on a municipal demolition or sealing notice, including whether a stay is realistic.', priceMinor: [250000, 700000], basis: 'fixed', response: [60, 240] },
+    { title: 'Arrest memo review on the spot', description: 'Reviews an arrest memo and remand papers within the hour and tells you what happens next.', priceMinor: [150000, 400000], basis: 'fixed', response: [15, 60] },
+    { title: 'Lock-out emergency advice', description: 'Advice within the hour on an illegal lock-out or forced eviction, including what to do tonight.', priceMinor: [150000, 450000], basis: 'fixed', response: [15, 90] },
+    { title: 'Termination letter, same-day review', description: 'Reviews a termination letter issued today and tells you whether to sign the full-and-final settlement.', priceMinor: [200000, 600000], basis: 'fixed', response: [30, 180] },
+    { title: 'Payment or cheque hold, urgent advice', description: 'Rapid advice on stopping a payment or cheque before it clears, with the steps that actually work.', priceMinor: [100000, 350000], basis: 'fixed', response: [15, 90] },
+    { title: 'Missed court deadline, urgent remedy check', description: 'Tells you within the hour whether a missed filing deadline can still be cured, and how.', priceMinor: [150000, 500000], basis: 'fixed', response: [15, 60] },
+    { title: 'Advice before you sign anything, today', description: 'A 20-minute call before you sign a document today, to flag anything you would regret tomorrow.', priceMinor: [60000, 180000], basis: 'fixed', response: [10, 60] },
   ],
   document_drafting: [
     { title: 'Legal notice drafting', description: 'Drafts a formal legal notice — recovery of dues, tenancy, or a consumer complaint — ready to send.', priceMinor: [150000, 400000], basis: 'fixed', response: [120, 720] },
     { title: 'Agreement drafting (any kind)', description: 'Drafts a rent, service, vendor or partnership agreement to your specifics, with one round of edits.', priceMinor: [200000, 600000], basis: 'starting_at', response: [180, 1440] },
     { title: 'Affidavit and declaration', description: 'Drafts a court-ready affidavit or declaration, formatted for the relevant registry.', priceMinor: [80000, 250000], basis: 'fixed', response: [60, 480] },
+    { title: 'Partnership deed drafting', description: 'Drafts a partnership deed with profit-sharing, exit and dispute-resolution clauses, ready for registration.', priceMinor: [250000, 700000], basis: 'fixed', response: [180, 1440] },
+    { title: 'Power of Attorney drafting', description: 'Drafts a general or specific Power of Attorney tailored to what you actually need someone else to do.', priceMinor: [100000, 300000], basis: 'fixed', response: [120, 720] },
+    { title: 'Consumer complaint drafting', description: 'Drafts a complaint for the district consumer commission, evidence organised the way the forum expects.', priceMinor: [150000, 450000], basis: 'fixed', response: [120, 1440] },
+    { title: 'Reply to a legal notice received', description: 'Drafts a reply to a legal notice you have received, so silence does not become an admission.', priceMinor: [150000, 400000], basis: 'fixed', response: [60, 480] },
+    { title: 'Loan or promissory note drafting', description: 'Drafts a promissory note or loan agreement between individuals, enforceable if the loan is not repaid.', priceMinor: [120000, 350000], basis: 'fixed', response: [120, 720] },
+    { title: 'Franchise agreement drafting', description: 'Drafts a franchise agreement covering territory, fees, termination and what happens to the brand on exit.', priceMinor: [400000, 1200000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Non-disclosure agreement drafting', description: 'Drafts a one-way or mutual NDA from scratch, in plain language rather than a boilerplate template.', priceMinor: [80000, 220000], basis: 'fixed', response: [60, 480] },
+    { title: 'Gift deed drafting', description: 'Drafts a gift deed for a property or asset transfer within the family, ready for stamping.', priceMinor: [200000, 550000], basis: 'fixed', response: [180, 1440] },
+    { title: 'Website terms and privacy policy', description: 'Drafts terms of use and a privacy policy that actually match what your app or site does.', priceMinor: [250000, 700000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'RTI application drafting', description: 'Drafts a Right to Information application addressed to the correct authority, with follow-up steps if it is denied.', priceMinor: [60000, 180000], basis: 'fixed', response: [60, 480] },
   ],
   notary: [
     { title: 'Notarisation at your location', description: 'A notary travels to your home or office to attest documents — no queue, no travel.', priceMinor: [50000, 150000], basis: 'fixed', response: [30, 180] },
     { title: 'Same-day document notarisation', description: 'Notarises affidavits, POAs and declarations same-day at the office.', priceMinor: [30000, 100000], basis: 'fixed', response: [15, 120] },
     { title: 'Power of Attorney notarisation', description: 'Reviews and notarises a Power of Attorney, including guidance on stamp duty.', priceMinor: [60000, 180000], basis: 'fixed', response: [60, 240] },
+    { title: 'Affidavit attestation for court filing', description: 'Attests an affidavit meant for a specific court filing, formatted the way that registry expects.', priceMinor: [40000, 120000], basis: 'fixed', response: [30, 180] },
+    { title: 'Apostille and embassy attestation guidance', description: 'Guides you through apostille or embassy attestation for a document headed abroad, notarising the underlying paper first.', priceMinor: [80000, 250000], basis: 'starting_at', response: [60, 480] },
+    { title: 'Indemnity bond notarisation', description: 'Notarises an indemnity bond, commonly needed for a lost share certificate or duplicate document.', priceMinor: [50000, 140000], basis: 'fixed', response: [30, 180] },
+    { title: 'Notarised true copy certification', description: 'Certifies a true copy of an original document for submission where the original cannot be handed over.', priceMinor: [30000, 90000], basis: 'fixed', response: [15, 120] },
+    { title: 'Rent agreement notarisation', description: 'Notarises a rent agreement same day, including guidance on whether registration is also required in your state.', priceMinor: [40000, 120000], basis: 'fixed', response: [30, 180] },
+    { title: 'Adoption deed notarisation', description: 'Notarises an adoption deed and the supporting consent affidavits.', priceMinor: [60000, 170000], basis: 'fixed', response: [60, 300] },
+    { title: 'NRI Power of Attorney notarisation', description: 'Notarises a Power of Attorney for an NRI client over video call where the format allows it.', priceMinor: [90000, 250000], basis: 'fixed', response: [60, 480] },
+    { title: 'Vehicle sale affidavit notarisation', description: 'Notarises the affidavit and Form 35 paperwork for a private vehicle sale.', priceMinor: [30000, 90000], basis: 'fixed', response: [30, 180] },
+    { title: 'Educational document affidavit', description: 'Notarises a name-mismatch or date-of-birth affidavit needed for an educational or visa application.', priceMinor: [30000, 100000], basis: 'fixed', response: [30, 180] },
   ],
   property_management: [
     { title: 'Title search and verification', description: 'Full chain-of-title verification before a purchase, with a written report.', priceMinor: [800000, 2000000], basis: 'starting_at', response: [720, 4320] },
     { title: 'Rent agreement, state-compliant', description: 'Drafts and registers a rent agreement compliant with your state’s tenancy rules.', priceMinor: [250000, 700000], basis: 'fixed', response: [180, 1440] },
     { title: 'Tenant eviction proceedings', description: 'Handles an eviction filing end to end before the rent controller or civil court.', priceMinor: [1500000, 4000000], basis: 'starting_at', response: [240, 1440] },
     { title: 'Society or builder dispute', description: 'Represents you in a dispute with a housing society, RWA or builder over possession or dues.', priceMinor: [1000000, 3000000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Sale deed drafting and registration', description: 'Drafts a sale deed and accompanies you to the sub-registrar for registration.', priceMinor: [600000, 1800000], basis: 'starting_at', response: [360, 2880] },
+    { title: 'RERA complaint against a builder', description: 'Files a complaint before the state RERA authority for delayed possession or a builder’s broken promise.', priceMinor: [1200000, 3500000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Property mutation and record update', description: 'Handles the mutation application so the revenue record reflects your name after a purchase or inheritance.', priceMinor: [300000, 900000], basis: 'starting_at', response: [720, 4320] },
+    { title: 'Encumbrance certificate application', description: 'Applies for and interprets an encumbrance certificate before you commit to a property purchase.', priceMinor: [150000, 450000], basis: 'fixed', response: [360, 1440] },
+    { title: 'Partition suit for ancestral property', description: 'Files a partition suit to divide ancestral property among legal heirs.', priceMinor: [2000000, 5500000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Lease deed for commercial premises', description: 'Drafts a commercial lease deed with lock-in, escalation and exit clauses.', priceMinor: [400000, 1200000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Encroachment or illegal construction complaint', description: 'Drafts a complaint to the municipal authority over an encroachment or unauthorised construction next door.', priceMinor: [200000, 600000], basis: 'fixed', response: [240, 1440] },
+    { title: 'Home loan legal document review', description: 'Reviews the legal documents a bank asks for before a home loan is disbursed.', priceMinor: [250000, 700000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Redevelopment agreement review', description: 'Reviews a housing society’s redevelopment agreement before the general body votes on it.', priceMinor: [500000, 1500000], basis: 'starting_at', response: [360, 2880] },
   ],
   contract_review: [
     { title: 'Employment contract review', description: 'Reviews an offer letter or employment contract and flags anything against your interest.', priceMinor: [100000, 300000], basis: 'fixed', response: [120, 720] },
     { title: 'Vendor/service contract review', description: 'Line-by-line review of a vendor or service agreement before you sign.', priceMinor: [150000, 450000], basis: 'starting_at', response: [180, 1440] },
     { title: 'NDA review, same-day', description: 'Turns around a mutual or one-way NDA review the same business day.', priceMinor: [60000, 180000], basis: 'fixed', response: [60, 480] },
+    { title: 'Founders’ agreement review', description: 'Reviews a founders’ agreement for vesting, equity and what happens if a co-founder leaves early.', priceMinor: [300000, 900000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Freelance or consulting contract review', description: 'Reviews a freelance or consulting contract before you sign, checking IP ownership and payment terms.', priceMinor: [100000, 300000], basis: 'fixed', response: [120, 720] },
+    { title: 'Lease or rental contract review', description: 'Reviews a commercial or residential lease before signing, flagging one-sided maintenance and exit clauses.', priceMinor: [120000, 350000], basis: 'fixed', response: [120, 1440] },
+    { title: 'Shareholders’ agreement review', description: 'Reviews a shareholders’ agreement for drag-along, tag-along and exit provisions before you sign.', priceMinor: [400000, 1200000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Distribution or dealership agreement review', description: 'Reviews a distribution or dealership agreement, particularly the termination and territory clauses.', priceMinor: [250000, 700000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Software licensing agreement review', description: 'Reviews a SaaS or software licensing agreement for liability caps and data-handling terms.', priceMinor: [200000, 600000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Insurance policy fine-print review', description: 'Reads an insurance policy’s exclusions and fine print before a claim, or before you buy it.', priceMinor: [80000, 220000], basis: 'fixed', response: [120, 720] },
+    { title: 'Severance and settlement agreement review', description: 'Reviews a severance package before you sign the release, checking what rights it asks you to give up.', priceMinor: [150000, 450000], basis: 'fixed', response: [120, 720] },
+    { title: 'Franchise agreement review (franchisee side)', description: 'Reviews a franchise agreement from the franchisee’s side, before the territory and fees are locked in.', priceMinor: [300000, 900000], basis: 'starting_at', response: [180, 1440] },
   ],
   family_paperwork: [
     { title: 'Mutual consent divorce filing', description: 'Prepares and files a mutual-consent divorce petition, both parties in agreement.', priceMinor: [1500000, 3500000], basis: 'starting_at', response: [720, 4320] },
     { title: 'Will drafting and registration', description: 'Drafts a will reflecting your wishes and arranges registration.', priceMinor: [300000, 800000], basis: 'fixed', response: [240, 1440] },
     { title: 'Adoption paperwork guidance', description: 'Guides you through the legal paperwork for a domestic adoption, CARA-compliant.', priceMinor: [500000, 1500000], basis: 'starting_at', response: [720, 2880] },
+    { title: 'Contested divorce filing', description: 'Files a contested divorce petition and represents you through the maintenance and custody hearings that follow.', priceMinor: [2500000, 6000000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Child custody petition', description: 'Files a custody petition and prepares the supporting affidavits a family court expects to see.', priceMinor: [1500000, 4000000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Maintenance application (Section 125)', description: 'Files a maintenance application under Section 125 CrPC for a spouse or dependent parent.', priceMinor: [800000, 2200000], basis: 'starting_at', response: [360, 1440] },
+    { title: 'Succession certificate application', description: 'Applies for a succession certificate so bank accounts and assets can be transferred after a death.', priceMinor: [700000, 1800000], basis: 'starting_at', response: [480, 4320] },
+    { title: 'Legal heir certificate assistance', description: 'Guides you through obtaining a legal heir certificate from the tahsildar’s office.', priceMinor: [300000, 800000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Marriage registration', description: 'Registers a marriage under the Special Marriage Act or the applicable personal law, paperwork handled end to end.', priceMinor: [400000, 1000000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Prenuptial or postnuptial agreement drafting', description: 'Drafts a prenuptial or postnuptial agreement, with the limits on enforceability explained honestly upfront.', priceMinor: [400000, 1200000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Guardian and ward petition', description: 'Files a guardianship petition for a minor or a dependent adult who needs a legal guardian appointed.', priceMinor: [1000000, 2500000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Domestic violence protection order', description: 'Files for a protection order and interim maintenance under the Domestic Violence Act.', priceMinor: [700000, 2000000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Name change affidavit and gazette notification', description: 'Drafts the affidavit and handles the gazette notification for a legal name change.', priceMinor: [250000, 700000], basis: 'fixed', response: [480, 4320] },
   ],
   ip_filing: [
     { title: 'Trademark search and filing', description: 'Conducts a clearance search and files a trademark application in the right class.', priceMinor: [700000, 1800000], basis: 'starting_at', response: [240, 1440] },
     { title: 'Copyright registration', description: 'Files a copyright registration for written, musical or software work.', priceMinor: [400000, 1000000], basis: 'fixed', response: [240, 1440] },
     { title: 'Trademark objection response', description: 'Drafts and files a response to a trademark examination report or objection.', priceMinor: [500000, 1200000], basis: 'starting_at', response: [180, 1440] },
+    { title: 'Patent search and filing', description: 'Conducts a prior-art search and files a patent application, including the provisional specification.', priceMinor: [1500000, 4500000], basis: 'starting_at', response: [480, 2880] },
+    { title: 'Design registration filing', description: 'Files an industrial design registration for a product’s visual appearance, not its function.', priceMinor: [600000, 1500000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Trademark renewal', description: 'Renews a trademark registration before it lapses, including the late-renewal window if you have already missed the date.', priceMinor: [300000, 800000], basis: 'fixed', response: [180, 1440] },
+    { title: 'Trademark assignment or licensing agreement', description: 'Drafts a trademark assignment or licensing agreement when a brand changes hands or is franchised.', priceMinor: [400000, 1100000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'Cease and desist letter, IP infringement', description: 'Drafts a cease-and-desist letter where someone is using your trademark, copyright or design without permission.', priceMinor: [250000, 700000], basis: 'fixed', response: [120, 720] },
+    { title: 'Domain name dispute (INDRP/UDRP)', description: 'Files a domain-name dispute complaint where someone has registered a name confusingly similar to your trademark.', priceMinor: [800000, 2200000], basis: 'starting_at', response: [360, 2880] },
+    { title: 'Software or code copyright registration', description: 'Registers copyright in source code or a software product, with the deposit copy prepared correctly.', priceMinor: [400000, 1000000], basis: 'fixed', response: [240, 1440] },
+    { title: 'GI tag application guidance', description: 'Guides an association or producer group through a Geographical Indication registration application.', priceMinor: [1200000, 3500000], basis: 'starting_at', response: [720, 4320] },
+    { title: 'Trade secret and confidentiality audit', description: 'Reviews your NDAs and internal practices to check a trade secret would actually hold up if challenged.', priceMinor: [500000, 1500000], basis: 'starting_at', response: [240, 1440] },
+    { title: 'IP due diligence for acquisition', description: 'Runs an IP due-diligence check on trademarks, patents and copyrights before an acquisition or investment closes.', priceMinor: [1000000, 3000000], basis: 'starting_at', response: [360, 2880] },
   ],
 };
+
 
 /**
  * The twelve demo providers who own the seeded listings.
@@ -248,18 +324,114 @@ export const DELIVERY_MODES = [
   { key: 'virtual', label: 'Virtual', hint: 'Call or video, no travel' },
 ] as const;
 
-/** Banner imagery per category. Reused editorial photography already
- * licensed for the site — never a photo implying a specific practitioner. */
-const CATEGORY_BANNER: Record<string, { src: string; alt: string }> = {
-  criminal_defense: { src: '/img/editorial/pa-criminal.jpg', alt: 'A courtroom corridor in a district court complex' },
-  urgent_consultation: { src: '/img/editorial/meeting-office.jpg', alt: 'Two people in conversation across an office desk' },
-  document_drafting: { src: '/img/editorial/documents-signing.jpg', alt: 'A printed legal document being signed with a fountain pen' },
-  notary: { src: '/img/editorial/documents-signing.jpg', alt: 'Stamped and attested paperwork on a desk' },
-  property_management: { src: '/img/editorial/pa-property.jpg', alt: 'Residential buildings photographed from street level' },
-  contract_review: { src: '/img/editorial/pa-corporate.jpg', alt: 'A bound commercial contract open on a table' },
-  family_paperwork: { src: '/img/editorial/pa-family.jpg', alt: 'An empty consultation room with two chairs facing each other' },
-  ip_filing: { src: '/img/editorial/pa-ip.jpg', alt: 'A workbench with design sketches and prototypes' },
-};
+/** One real photo per listing, sourced from Wikimedia Commons under a
+ * reusable licence, downloaded to this project's own origin (never
+ * hotlinked). Full attribution lives in
+ * `apps/web/public/img/marketplace/credits.json`. Indexed 1:1 against
+ * FLAT_TEMPLATES — LISTING_BANNERS[i] is listing #(i+1)'s own image, not
+ * a category shared across a dozen listings. */
+const LISTING_BANNERS: Array<{ src: string; alt: string }> = [
+  { src: '/img/marketplace/listing-001.jpg', alt: 'Central Marin Police Station, 250 Doherty Dr, Larkspur, CA' },
+  { src: '/img/marketplace/listing-002.jpg', alt: 'Trial of Edward Oxford, at the Central Criminal Court' },
+  { src: '/img/marketplace/listing-003.jpg', alt: 'Excavation of foundation of High Court Building Chandigarh' },
+  { src: '/img/marketplace/listing-004.jpg', alt: 'A member of the 834th Security Police Squadron handcuffs the Rev DF-ST-87-11070' },
+  { src: '/img/marketplace/listing-005.jpg', alt: 'U.S. Air Force Staff Sgt. Kyle Deconnick, with the 379th Expeditionary Logistics Readiness Squadron, completes paperwork on returned items in Southwest Asia Oct. 7, 2013 131007-F-EN483-172' },
+  { src: '/img/marketplace/listing-006.jpg', alt: 'StateLibQld 2 112024 Roma Street Police Barracks, Brisbane, 1883' },
+  { src: '/img/marketplace/listing-007.jpg', alt: 'Don’t be a victim- Protect yourself from cyber crime' },
+  { src: '/img/marketplace/listing-008.jpg', alt: 'Document USSR. img 01' },
+  { src: '/img/marketplace/listing-009.jpg', alt: 'Narco submarine seized in Ecuador 2010-07-02 7' },
+  { src: '/img/marketplace/listing-010.jpg', alt: 'Domestic Violence Awareness' },
+  { src: '/img/marketplace/listing-011.jpg', alt: 'Cross examination of a witness in a case of crim con LCCN94504605' },
+  { src: '/img/marketplace/listing-012.jpg', alt: 'The faces behind the gavel- who represents who at the 48th' },
+  { src: '/img/marketplace/listing-013.jpg', alt: '2009-05-03 Man talking on cell phone in parking lot' },
+  { src: '/img/marketplace/listing-014.jpg', alt: 'HUB Ashdod accelerator meeting room at Kivunim Youth Centre' },
+  { src: '/img/marketplace/listing-015.jpg', alt: 'Exterior of the Birch Bayh Federal Building & U.S. Courthouse - 2015-08-02 - 02' },
+  { src: '/img/marketplace/listing-016.jpg', alt: 'Charleston - Police Station' },
+  { src: '/img/marketplace/listing-017.jpg', alt: 'Office, desk, telephone, blotter, seal Fortepan 8190' },
+  { src: '/img/marketplace/listing-018.jpg', alt: '1926 - PPL Building Demolition - 15 Mar - Allentown PA' },
+  { src: '/img/marketplace/listing-019.jpg', alt: 'Police intervention and arrest of suspects by Miami Beach police (Florida) 01' },
+  { src: '/img/marketplace/listing-020.jpg', alt: 'Door lock, Dalmore House, Stair' },
+  { src: '/img/marketplace/listing-021.jpg', alt: 'EFTA00002338 - Cluttered office storage area with shelves filled with supplies boxes and equipment featuring a desk with paperwork and an office chair in the background' },
+  { src: '/img/marketplace/listing-022.jpg', alt: 'American Express Traveler Cheque, with denomination 20 US-Dollars' },
+  { src: '/img/marketplace/listing-023.jpg', alt: 'Deadline extended in North Carolina' },
+  { src: '/img/marketplace/listing-024.jpg', alt: 'Fountain pen writing (literacy)' },
+  { src: '/img/marketplace/listing-025.jpg', alt: 'Bell telephone magazine (1922)' },
+  { src: '/img/marketplace/listing-026.jpg', alt: 'Signature Henry de Smidt' },
+  { src: '/img/marketplace/listing-027.jpg', alt: 'Affidavit of Sarah F. Mudd - NARA - 6943465 (page 3)' },
+  { src: '/img/marketplace/listing-028.jpg', alt: 'Handshake partnership' },
+  { src: '/img/marketplace/listing-029.jpg', alt: 'Document signed Thomas Jefferson, power of attorney, 1786' },
+  { src: '/img/marketplace/listing-030.jpg', alt: 'Consumer-protection-division-chief-scott-shafter 4420614634 o' },
+  { src: '/img/marketplace/listing-031.jpg', alt: '1683 Polish version Cossack letter to the sultan' },
+  { src: '/img/marketplace/listing-032.jpg', alt: 'A bill of exchange used in 1873 in England' },
+  { src: '/img/marketplace/listing-033.jpg', alt: 'Puritan and Homer Buildings, Allen Street, Allentown, Buffalo, NY' },
+  { src: '/img/marketplace/listing-034.jpg', alt: 'Handshake - Men - 37969911295' },
+  { src: '/img/marketplace/listing-035.jpg', alt: 'Sacred Heart Church Maniamkunnu (Parish Property Gift Deed) doc 1' },
+  { src: '/img/marketplace/listing-036.jpg', alt: 'Students using a computer laptop' },
+  { src: '/img/marketplace/listing-037.jpg', alt: 'Ilokano Freedom of Information briefer (Philippines)' },
+  { src: '/img/marketplace/listing-038.jpg', alt: 'Mexico 1901 fragment with revenue and sealing stamp' },
+  { src: '/img/marketplace/listing-039.jpg', alt: 'Czech office time stamp with inkpillow' },
+  { src: '/img/marketplace/listing-040.jpg', alt: 'Document signed by Benjamin Clark. power of attorney, September 22, 1797 - DPLA - f04d27aabc677baeafafa9da468b872b (page 1)' },
+  { src: '/img/marketplace/listing-041.jpg', alt: 'Affidavit of Calloway Ellis - DPLA - dff8d4ca3a2477631f1f72ee8f01c72a' },
+  { src: '/img/marketplace/listing-042.jpg', alt: 'Passport stamp KPP Sheremetyevo' },
+  { src: '/img/marketplace/listing-043.jpg', alt: 'Water supply document - Police d\'abonnement of the Municipality of Saigon (1926) Notestamps 01' },
+  { src: '/img/marketplace/listing-044.jpg', alt: 'A true copy of a note of Samuel Washington, signed W. Kerr, April 11, 1806' },
+  { src: '/img/marketplace/listing-045.jpg', alt: 'StateLibQld 1 104780 Furnished flats for rent in New Farm, ca. 1937' },
+  { src: '/img/marketplace/listing-046.jpg', alt: 'Office desk with papers - DPLA - bacc10bd7825152341818a63e9628905' },
+  { src: '/img/marketplace/listing-047.jpg', alt: 'Computer Desk at Narita Airport 1' },
+  { src: '/img/marketplace/listing-048.jpg', alt: 'Bahnhof Bad Aussee - Park and Ride Anlage' },
+  { src: '/img/marketplace/listing-049.jpg', alt: 'Certificate of Government Admission - French Indo-China (1931) Vietcollections 01' },
+  { src: '/img/marketplace/listing-050.jpg', alt: 'Certified copy of deed for Antoine Saugrain for St. Louis property, April 10, 1812' },
+  { src: '/img/marketplace/listing-051.jpg', alt: 'House lease agreement between Frederick Saugrain and Adolph Meyer Livery and Undertaking Co. for duration of five years for a monthly rent of $6, October 3, 1891' },
+  { src: '/img/marketplace/listing-052.jpg', alt: 'Eviction scene, The Council' },
+  { src: '/img/marketplace/listing-053.jpg', alt: 'Residential apartment block in Aktau, Kazakhstan, illustrating the city’s unique address system' },
+  { src: '/img/marketplace/listing-054.jpg', alt: 'Dulles State Office Building Exterior - Playground' },
+  { src: '/img/marketplace/listing-055.jpg', alt: 'Tower crane at a building construction site in Taichung 2023-05-13 01' },
+  { src: '/img/marketplace/listing-056.jpg', alt: 'Cincinnati federal land office records - DPLA - 50473b7c8c3e10a3deeadefdb7b42d7d' },
+  { src: '/img/marketplace/listing-057.jpg', alt: 'Paperwork for a visit to the DDR, November 1989' },
+  { src: '/img/marketplace/listing-058.jpg', alt: 'Viceroy\'s House India old' },
+  { src: '/img/marketplace/listing-059.jpg', alt: 'Medallions for lease 40 Av 31 St jeh' },
+  { src: '/img/marketplace/listing-060.jpg', alt: 'Building demolition in Tottenham London 01a' },
+  { src: '/img/marketplace/listing-061.jpg', alt: 'Counter, NatWest bank, Market Street, Falmouth, Cornwall - August 2022' },
+  { src: '/img/marketplace/listing-062.jpg', alt: 'Building Construction Site, Elebu' },
+  { src: '/img/marketplace/listing-063.jpg', alt: 'Employment Standards Administration - Exhibit Photo Office of Federal Contract Compliance Programs (OFCCP) - DPLA - 14ef40f273aee022dad9d0d1b5149130' },
+  { src: '/img/marketplace/listing-064.jpg', alt: 'Vendor outside Haymarket station, 1984' },
+  { src: '/img/marketplace/listing-065.jpg', alt: 'Code on computer monitor (Unsplash)' },
+  { src: '/img/marketplace/listing-066.jpg', alt: 'Minimalist meeting room (Unsplash)' },
+  { src: '/img/marketplace/listing-067.jpg', alt: 'Apple-desk-laptop-working' },
+  { src: '/img/marketplace/listing-068.jpg', alt: 'Warehouse interior showcasing organized shelving and packages' },
+  { src: '/img/marketplace/listing-069.jpg', alt: 'Berkshire Hathaway Annual Meeting 2025' },
+  { src: '/img/marketplace/listing-070.jpg', alt: 'Anheuser Busch Wholesale Distribution Center, Warehouse and Stable, New Orleans' },
+  { src: '/img/marketplace/listing-071.jpg', alt: 'ComputerProgrammer' },
+  { src: '/img/marketplace/listing-072.jpg', alt: 'Insurance policy issued by the Post Office of the Japanese Government-General of Korea (1944) 옛날물건 01' },
+  { src: '/img/marketplace/listing-073.jpg', alt: 'Paperless work desk with an iPad, iMac and a MacBook' },
+  { src: '/img/marketplace/listing-074.jpg', alt: 'Agreement Signing Ceremony Between Saif Powertech And Bangladesh Football Federation Regarding Bangladesh Super League 2016 At Hotel Westin Dhaka 2016-01-05 (PID-0056584)' },
+  { src: '/img/marketplace/listing-075.jpg', alt: 'Samuel D. Ehrhart - An International High Noon Divorce' },
+  { src: '/img/marketplace/listing-076.jpg', alt: 'Abraham Salter (1789-1874) last will and testament, page 1' },
+  { src: '/img/marketplace/listing-077.jpg', alt: 'Air Force family adopts child from Ukraine' },
+  { src: '/img/marketplace/listing-078.jpg', alt: 'Zhou Fang. Court Ladies Playing Double-sixes. Freer Gallery of Art' },
+  { src: '/img/marketplace/listing-079.jpg', alt: 'Anne Nicole Voullemier - Yound mother and her child' },
+  { src: '/img/marketplace/listing-080.jpg', alt: 'View of Mumbai City Civil & Sessions Court from Convocation Hall of University of Mumbai' },
+  { src: '/img/marketplace/listing-081.jpg', alt: 'HK KT 堅尼地城 Kennedy Town 卑路乍街 Belcher\'s Street shop 恆生銀行 Hang Seng Bank August 2025 N13P 01' },
+  { src: '/img/marketplace/listing-082.jpg', alt: 'Adolf Klimovič school certificate (Švenčionys, 1914)' },
+  { src: '/img/marketplace/listing-083.jpg', alt: 'Else Freudenberg (1880-1944) and Oscar Johan Julius Amort marriage certificate' },
+  { src: '/img/marketplace/listing-084.jpg', alt: 'Groom touching wedding band (Unsplash)' },
+  { src: '/img/marketplace/listing-085.jpg', alt: 'Queen Rose Retirement Home, 11 Jun 2026' },
+  { src: '/img/marketplace/listing-086.jpg', alt: 'FFSC Domestic Violence Proclamation Signing' },
+  { src: '/img/marketplace/listing-087.jpg', alt: 'Journal officiel de la République Française du 28 avril 1923' },
+  { src: '/img/marketplace/listing-088.jpg', alt: 'Universal Films Trademark Registration Certificate Jun 29 1915' },
+  { src: '/img/marketplace/listing-089.jpg', alt: 'Rose-on-music-book-on-piano' },
+  { src: '/img/marketplace/listing-090.jpg', alt: 'Macy\'s Trademark Registration Certificate Feb 10 1925' },
+  { src: '/img/marketplace/listing-091.jpg', alt: 'Hardware circular buffer implementation patent us3979733 fig4' },
+  { src: '/img/marketplace/listing-092.jpg', alt: 'Product configuration' },
+  { src: '/img/marketplace/listing-093.jpg', alt: 'Her-Husbands-Trademark-publictyphoto1922' },
+  { src: '/img/marketplace/listing-094.jpg', alt: 'Handshake - Men - 37969912965' },
+  { src: '/img/marketplace/listing-095.jpg', alt: 'Unterlassungserklärung Agnes Spindler' },
+  { src: '/img/marketplace/listing-096.jpg', alt: 'An annotated example of a domain name' },
+  { src: '/img/marketplace/listing-097.jpg', alt: 'IT researcher, Hanoi 2003' },
+  { src: '/img/marketplace/listing-098.jpg', alt: 'EU PROTECTED GEOGRAPHICAL INDICATION.סימון הגנת מוצר גאוגרפית' },
+  { src: '/img/marketplace/listing-099.jpg', alt: 'Confidential letter of transmittal' },
+  { src: '/img/marketplace/listing-100.jpg', alt: '31st Force Support Squadron Passport Office- Small office, big impact' },
+];
 
 /** Optional audio attached to a post — an advocate explaining the thing
  * they are selling, in their own words, before you pay for it. */
@@ -273,6 +445,20 @@ const PODCASTS: Record<string, { title: string; minutes: number }> = {
   ip_filing: { title: 'Picking the right trademark class the first time', minutes: 10 },
 };
 
+/** TEMPLATES flattened once, category tagged, in a fixed order — so
+ * buildSeeds() can read listing #i's content directly by index instead of
+ * picking a category and then modulo-picking a variant within it. The old
+ * two-step pick() only worked because every category happened to have the
+ * same template count as its round-robin visit count; a mismatch there
+ * silently drops some templates and repeats others, which is exactly the
+ * bug "100 different listings" cannot tolerate. */
+const FLAT_TEMPLATES: Array<{
+  category: string; title: string; description: string;
+  priceMinor: [number, number]; basis: Seed['priceBasis']; response: [number, number] | null;
+}> = Object.entries(TEMPLATES).flatMap(
+  ([category, variants]) => variants.map((v) => ({ category, ...v })),
+);
+
 function pick<T>(arr: T[], seed: number): T { return arr[((seed % arr.length) + arr.length) % arr.length] as T; }
 
 /** Deterministic pseudo-random in [min,max] from an integer seed, so the
@@ -285,13 +471,16 @@ function seededRange(seed: number, min: number, max: number): number {
 }
 
 function buildSeeds(count: number, seededAt: number): Seed[] {
-  const categories = Object.keys(TEMPLATES);
   const categoryTurn = new Map<string, number>();
   const out: Seed[] = [];
   for (let i = 0; i < count; i += 1) {
-    const category = pick(categories, i);
-    const variants = TEMPLATES[category] ?? [];
-    const variant = pick(variants, i * 7 + 3);
+    // Direct index, not category-then-variant picking: FLAT_TEMPLATES has
+    // exactly 100 entries by construction (asserted where it is authored),
+    // so this uses every one of the 100 hand-written listings exactly once
+    // rather than risking the old scheme's silent repeats/omissions.
+    const item = FLAT_TEMPLATES[i % FLAT_TEMPLATES.length] as (typeof FLAT_TEMPLATES)[number];
+    const category = item.category;
+    const variant = item;
     // The owner is drawn only from providers who offer this category, so a
     // criminal-defence practitioner never ends up with a trademark filing
     // in their feed. Rotation is counted *per category* rather than off the
@@ -307,7 +496,11 @@ function buildSeeds(count: number, seededAt: number): Seed[] {
     const city = CITIES.find((c) => c.name === provider.city) ?? (CITIES[0] as (typeof CITIES)[number]);
     const radii = [5, 10, 25, 50, 100];
     const availabilities = ['Available now', 'Responds within the hour', 'Available today', 'Available this week', 'By appointment'];
-    const banner = CATEGORY_BANNER[category] ?? { src: '/img/editorial/law-books.jpg', alt: 'Bound law reports on a shelf' };
+    // Every listing owns its own downloaded photo — LISTING_BANNERS is
+    // index-aligned with FLAT_TEMPLATES, so listing #(i+1) always gets
+    // banner #(i+1), never a category-wide photo shared across a dozen
+    // otherwise-unrelated listings.
+    const banner = LISTING_BANNERS[i] ?? { src: '/img/editorial/law-books.jpg', alt: 'Bound law reports on a shelf' };
 
     // Expiry: about a third of posts run indefinitely, the rest close
     // between 24 hours and 30 days out. Anchored to the seed run so the
