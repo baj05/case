@@ -60,7 +60,7 @@ export default function CaseInsightsPage() {
       </div>
 
       <Notice tone="info" title="How to read these numbers">
-        Case counts are matched to an advocate by name on the source site (ecourtsindia.com), not a
+        Case counts are matched to an advocate by name, not a
         verified unique identity — {stats.implausibleVolumeCount} profile{stats.implausibleVolumeCount === 1 ? '' : 's'} out
         of {grouped(stats.professionalsWithCases)} with case history show an implausibly high count
         (over {grouped(IMPLAUSIBLE_CASE_COUNT)}), almost certainly several real people sharing a common
@@ -169,7 +169,6 @@ export default function CaseInsightsPage() {
       </section>
 
       <p className="t-caption">
-        Sourced from ecourtsindia.com&rsquo;s public case listings and Verified Advocates directory.
         &ldquo;Disposed&rdquo; means a case concluded, not who prevailed — this platform does not
         record or infer outcomes. <Link href="/search" style={{ textDecoration: 'underline' }}>Browse the full directory</Link>.
       </p>

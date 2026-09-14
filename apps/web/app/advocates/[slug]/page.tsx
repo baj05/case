@@ -81,6 +81,11 @@ export default async function ProfilePage({
   const isUnclaimed = p.claimStatus === 'unclaimed' || p.claimStatus === 'claim_pending';
   const isOfficialSource = p.sourceAuthority === 'official_regulator'
     || p.sourceAuthority === 'official_court' || p.sourceAuthority === 'government';
+  // Real case-record names/case-history are matched from a licensed third-party
+  // aggregator, not the Bar Council register this profile's other facts come
+  // from. The provenance card still discloses that distinction, just without
+  // naming the aggregator or linking to its own listing for this person.
+  const sourceIsThirdPartyAggregator = (detail?.source.authority ?? p.sourceAuthority) === 'third_party_scraped';
 
   // Real, non-fabricated highlight facts only — each one true or omitted,
   // never a placeholder. Deliberately excludes verification level and
@@ -348,7 +353,7 @@ export default async function ProfilePage({
                 )}
 
                 <p className="t-caption">
-                  Computed from case records matched to this name on eCourts India (see &ldquo;Where this
+                  Computed from case records matched to this name (see &ldquo;Where this
                   came from&rdquo; in the sidebar). &ldquo;Disposed&rdquo; means the case concluded, not
                   who prevailed — this platform does not record or infer outcomes.
                 </p>
@@ -357,7 +362,7 @@ export default async function ProfilePage({
 
             {detail?.declaredAreas && detail.declaredAreas.length > 0 && (
               <section className="stack gap-3" id="declared-areas">
-                <h2 className="t-headline-md">Self-declared on eCourts India</h2>
+                <h2 className="t-headline-md">Self-declared</h2>
                 <p className="t-caption">
                   Case-type categories the professional selected on their own directory profile — not this
                   platform&rsquo;s practice-area taxonomy, and not verified against actual case filings.
@@ -641,13 +646,15 @@ export default async function ProfilePage({
                 <div className="stack gap-1">
                   <dt className="t-label-mono ink-variant">Source</dt>
                   <dd className="t-body-sm">
-                    {detail?.source.publisher ?? p.sourceName ?? 'Not recorded'}
+                    {sourceIsThirdPartyAggregator
+                      ? 'Unverified case-record match'
+                      : (detail?.source.publisher ?? p.sourceName ?? 'Not recorded')}
                     {detail?.source.authority === 'official_regulator' && (
                       <span className="chip chip-lime" style={{ marginLeft: 6, fontSize: '0.6875rem' }}>Official regulator</span>
                     )}
                   </dd>
                 </div>
-                {p.sourceUrl && (
+                {p.sourceUrl && !sourceIsThirdPartyAggregator && (
                   <div className="stack gap-1">
                     <dt className="t-label-mono ink-variant">Source page</dt>
                     <dd className="t-body-sm">

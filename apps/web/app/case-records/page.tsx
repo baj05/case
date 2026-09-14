@@ -10,10 +10,10 @@ import { Pagination } from '@/components/Pagination';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Advocate names on the record — licensed case-record data',
+  title: 'Advocate names on the record — unverified case-record data',
   description:
-    'Advocate names appearing on real court case records, sourced under licence from the '
-    + 'eCourtsIndia API — distinct from CaseADVO\'s main Bar Council–sourced directory.',
+    'Advocate names appearing on real court case records — distinct from CaseADVO\'s main '
+    + 'Bar Council–sourced directory, and not independently verified.',
 };
 
 const PAGE_SIZE = 30;
@@ -74,9 +74,9 @@ export default async function CourtDirectoryPage({
 
       <div className="container stack gap-6" style={{ paddingBottom: 'clamp(48px, 8vw, 96px)' }}>
         <Notice tone="legal" title="On the record — not verified profiles">
-          These advocate names come from case records supplied under licence by the eCourtsIndia API
-          {retrieved ? `, retrieved ${retrieved}` : ''}. A name here means it <strong>appeared on a court
-          record</strong> — it is not a CaseADVO-verified profile, and it is not the same as our{' '}
+          These are unverified profiles: a name here means it <strong>appeared on a court
+          record</strong>{retrieved ? `, as of ${retrieved}` : ''} — it is not a CaseADVO-verified
+          profile, and it is not the same as our{' '}
           <Link href="/search" style={{ textDecoration: 'underline' }}>Bar Council–sourced directory</Link>.
           Names are often partial, so two similar entries may or may not be one person; nothing is merged
           on a guess. No litigant or party records are held.
@@ -194,7 +194,7 @@ export default async function CourtDirectoryPage({
             <Link href="/judicial-data" className="btn btn-secondary">Judicial statistics</Link>
           </div>
           <p className="t-caption">
-            Source: eCourtsIndia partner API (licensed){retrieved ? ` · retrieved ${retrieved}` : ''} ·{' '}
+            Unverified profiles{retrieved ? ` · as of ${retrieved}` : ''} ·{' '}
             {compactIndian(stats.appearances)} appearances recorded across {formatNumber(stats.advocates)} names.
           </p>
         </section>
